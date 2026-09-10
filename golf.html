@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>リバーサイドフェニックス GC スコア登録（完全版）</title>
+    <title>リバーサイドフェニックス GC スコア登録</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #eef2f5; padding: 6px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; touch-action: manipulation; }
@@ -74,8 +74,8 @@
         .start-course-btn.active { background: #1e40af; color: white; border-color: #1e40af; }
         
         .selected-summary { font-size: 11px; font-weight: bold; color: #1e40af; background: #eff6ff; padding: 4px 6px; border-radius: 6px; margin-bottom: 6px; border: 1px dashed #93c5fd; }
-        .member-labels { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; max-height: 100px; overflow-y: auto; }
-        .member-label { display: inline-flex; align-items: center; padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 11px; font-weight: bold; color: #334155; cursor: pointer; }
+        .member-labels { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; max-height: 120px; overflow-y: auto; }
+        .member-label { display: inline-flex; align-items: center; padding: 8px 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 16px; font-size: 14px; font-weight: bold; color: #334155; cursor: pointer; }
         .member-label.selected { background: #2e7d32; color: white; border-color: #2e7d32; }
 
         /* ボタンレイアウト整理 */
@@ -94,36 +94,33 @@
         }
         .start-round-btn:active { opacity: 0.9; }
 
+        .load-history-btn {
+            background: #0284c7;
+            color: white;
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(2,132,199,0.2);
+        }
+        .load-history-btn:active { opacity: 0.9; }
+
         .master-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .sub-btn-card { 
             background: #f8fafc; 
             border: 1px solid #cbd5e1; 
             color: #334155; 
-            padding: 8px 4px; 
-            font-size: 11px; 
+            padding: 10px 4px; 
+            font-size: 12px; 
             font-weight: bold; 
             border-radius: 6px; 
             cursor: pointer; 
             text-align: center;
         }
         .sub-btn-card:active { background: #e2e8f0; }
-
-        .backup-group { 
-            margin-top: 4px; 
-            border-top: 1px dashed #cbd5e1; 
-            padding-top: 8px; 
-            display: flex; 
-            justify-content: space-around; 
-        }
-        .text-link-btn { 
-            background: none; 
-            border: none; 
-            color: #64748b; 
-            font-size: 10px; 
-            font-weight: bold; 
-            text-decoration: underline; 
-            cursor: pointer; 
-        }
 
         /* 自分専用メインスコアエリア */
         .my-score-card { background: #f0fdf4; border: 2px solid #2e7d32; border-radius: 10px; padding: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(46,125,50,0.12); }
@@ -215,7 +212,7 @@
         .prev { background: #e2e8f0; color: #334155; }
         .next { background: #1e40af; color: white; }
         
-        .submit-btn { background: #2e7d32; color: white; width: 100%; padding: 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 4px; }
+        .submit-btn { background: #2e7d32; color: white; width: 100%; padding: 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 4px; display: none; }
 
         /* モーダル共通 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
@@ -233,16 +230,26 @@
         .tab-btn { flex: 1; padding: 6px; font-size: 11px; font-weight: bold; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b; border-radius: 6px; cursor: pointer; text-align: center; }
         .tab-btn.active { background: #1e40af; color: white; border-color: #1e40af; }
 
-        /* 行＝ホール、列＝名前のスコア表スタイル */
-        .scorecard-table-wrapper { overflow-x: auto; overflow-y: auto; flex-grow: 1; max-height: 70vh; border: 1px solid #cbd5e1; border-radius: 6px; }
-        .scorecard-table { width: 100%; border-collapse: collapse; font-size: 11px; background: white; text-align: center; white-space: nowrap; }
-        .scorecard-table th { background: #1e3a8a; color: white; padding: 6px 4px; font-weight: bold; position: sticky; top: 0; z-index: 2; }
+        /* 履歴アイテム専用スタイル */
+        .history-item { padding: 8px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+        .history-info { display: flex; flex-direction: column; gap: 2px; }
+        .history-date { font-weight: bold; color: #1e3a8a; font-size: 13px; }
+        .history-players { color: #64748b; font-size: 11px; }
+        .view-history-btn { background: #0284c7; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+        /* 行＝ホール、列＝名前のスコア表スタイル（数値を拡大） */
+        .scorecard-table-wrapper { overflow-x: auto; overflow-y: auto; flex-grow: 1; max-height: 60vh; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 8px; }
+        .scorecard-table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; text-align: center; white-space: nowrap; }
+        .scorecard-table th { background: #1e3a8a; color: white; padding: 8px 6px; font-weight: bold; font-size: 13px; position: sticky; top: 0; z-index: 2; }
         .scorecard-table th.col-hole { position: sticky; left: 0; z-index: 3; background: #1e3a8a; }
-        .scorecard-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 5px 4px; color: #334155; }
-        .scorecard-table td.col-hole { position: sticky; left: 0; background: #f8fafc; font-weight: bold; color: #1e3a8a; border-right: 2px solid #cbd5e1; z-index: 1; }
-        .scorecard-table tr.subtotal-row td { background: #e0f2fe; font-weight: 800; color: #0369a1; border-top: 1.5px solid #0284c7; border-bottom: 1.5px solid #0284c7; }
-        .scorecard-table tr.total-row td { background: #f1f5f9; font-weight: 800; color: #0f172a; border-top: 2px solid #cbd5e1; position: sticky; bottom: 0; z-index: 2; }
+        .scorecard-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 8px 6px; font-weight: 700; color: #1e293b; }
+        .scorecard-table td.col-hole { position: sticky; left: 0; background: #f8fafc; font-weight: bold; color: #1e3a8a; border-right: 2px solid #cbd5e1; z-index: 1; font-size: 13px; }
+        .scorecard-table tr.subtotal-row td { background: #e0f2fe; font-weight: 800; color: #0369a1; font-size: 15px; border-top: 1.5px solid #0284c7; border-bottom: 1.5px solid #0284c7; }
+        .scorecard-table tr.total-row td { background: #f1f5f9; font-weight: 900; color: #0f172a; font-size: 16px; border-top: 2px solid #cbd5e1; position: sticky; bottom: 0; z-index: 2; }
         .scorecard-table tr.total-row td.col-hole { z-index: 3; background: #e2e8f0; }
+
+        /* 未入力ハイライト用 */
+        .missing-score { color: #dc2626 !important; background: #fee2e2; }
     </style>
 </head>
 <body>
@@ -282,19 +289,13 @@
         <!-- 整理されたボタンエリア -->
         <div class="btn-section">
             <button class="start-round-btn" onclick="startRound()">🚀 ラウンド開始 (18H)</button>
+            <button class="load-history-btn" onclick="openHistoryModal()">📂 過去のスコアデータ呼出</button>
             
             <div class="master-btns-grid">
                 <button class="sub-btn-card" onclick="openMasterModal()">⚙️ 同伴者管理</button>
                 <button class="sub-btn-card" onclick="openShotTagModal()">🏷️ 傾向/理由管理</button>
             </div>
-
-            <div class="backup-group">
-                <button class="text-link-btn" onclick="exportData()">💾 フルバックアップ出力</button>
-                <button class="text-link-btn" onclick="importData()">📂 バックアップ復元</button>
-            </div>
         </div>
-        
-        <input type="file" id="importFile" style="display:none;" accept=".json" onchange="handleFileSelect(event)">
     </div>
 
     <!-- スコア入力画面 -->
@@ -320,7 +321,7 @@
             <button class="nav-btn prev" id="prevBtn" onclick="moveHole(-1)">前ホール</button>
             <button class="nav-btn next" id="nextBtn" onclick="moveHole(1)">次ホール</button>
         </div>
-        <button class="submit-btn" id="finishBtn" style="display: none;" onclick="saveRound()">ラウンド完了・スコア保存</button>
+        <button class="submit-btn" id="finishBtn" onclick="tryFinishRound()">ラウンド完了・スコア保存</button>
     </div>
 </div>
 
@@ -359,23 +360,33 @@
     </div>
 </div>
 
-<!-- スコア一覧表示モーダル（行＝ホール、列＝名前、ハーフ小計付き） -->
+<!-- 過去履歴一覧表示モーダル -->
+<div class="modal" id="historyModal">
+    <div class="modal-content" style="max-width: 95%; width: 380px;">
+        <div class="modal-header">
+            <div class="modal-title">📂 過去の保存データ一覧</div>
+            <button class="close-btn" onclick="closeHistoryModal()">✕</button>
+        </div>
+        <div class="master-list" id="historyListContainer" style="max-height: 60vh;"></div>
+    </div>
+</div>
+
+<!-- スコア一覧表示用モーダル -->
 <div class="modal" id="scorecardModal">
     <div class="modal-content" style="max-width: 95%; width: 380px; max-height: 85vh;">
         <div class="modal-header">
-            <div class="modal-title">📋 スコア一覧表</div>
+            <div class="modal-title" id="scorecardModalTitle">📋 スコア一覧</div>
             <button class="close-btn" onclick="closeScorecardModal()">✕</button>
         </div>
-        <div class="scorecard-table-wrapper" id="scorecardTableWrapper">
-            <!-- JSで動적生成 -->
-        </div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;" id="scorecardCheckMsg">赤字の箇所は未入力です。タップして直接修正も可能です。</div>
+        <div class="scorecard-table-wrapper" id="scorecardTableWrapper"></div>
+        <button class="submit-btn" style="display: block;" onclick="closeScorecardModal()">入力に戻る</button>
     </div>
 </div>
 
 <script>
     const defaultMembers = ["佐藤", "鈴木", "高橋", "田中", "伊藤", "渡辺", "山本", "中村"];
     
-    // 18ホール分のパー設定 (1~18番)
     const fullHolePars = [
         4, 5, 4, 3, 4, 5, 4, 3, 4, // 1〜9番 (OUT)
         5, 4, 4, 3, 4, 3, 4, 4, 5  // 10〜18番 (IN)
@@ -388,9 +399,8 @@
     let currentMasterTab = 'tag';
     let isRoundActive = false;
     let isReorderEnabled = false;
-    let startHoleNum = 1; // 1 (OUTスタート) or 10 (INスタート)
+    let startHoleNum = 1;
 
-    // 誤離脱防止
     window.addEventListener('beforeunload', (e) => {
         if (isRoundActive) {
             e.preventDefault();
@@ -585,16 +595,14 @@
 
     renderMemberLabels();
 
-    let currentStepIndex = 0; // 0〜17
+    let currentStepIndex = 0;
     let players = [];
     let scoresData = [];
 
-    // ステップインデックス(0〜17)から実際のホール番号を取得
     function getActualHoleNumber(stepIdx) {
         if (startHoleNum === 1) {
-            return stepIdx + 1; // 1〜18
+            return stepIdx + 1;
         } else {
-            // IN(10H)スタートの場合: 10〜18, そのあと 1〜9
             return (stepIdx < 9) ? (stepIdx + 10) : (stepIdx - 8);
         }
     }
@@ -603,7 +611,6 @@
         const myName = document.getElementById('p0').value.trim() || '自分';
         players = [myName, ...selectedCompanions];
 
-        // 18ホール分のスコアデータを初期化
         scoresData = players.map(() => 
             Array.from({ length: 18 }, (_, i) => {
                 const actualHole = getActualHoleNumber(i);
@@ -635,14 +642,13 @@
         }
     }
 
-    // ボギーベース(Par + 1)との差分を計算（未入力は0扱い）
     function getPlayerFor90Cumulative(pIdx, upToStepIdx) {
         let totalDiff = 0;
         for (let i = 0; i <= upToStepIdx; i++) {
             const hData = scoresData[pIdx][i];
             if (hData.stroke !== null) {
-                const bogeyVal = hData.par + 1; // ボギーの打数
-                const diff = hData.stroke - bogeyVal; // ボギーより多ければ+, 少なければ-
+                const bogeyVal = hData.par + 1;
+                const diff = hData.stroke - bogeyVal;
                 totalDiff += diff;
             }
         }
@@ -725,7 +731,9 @@
         document.getElementById('prevBtn').style.visibility = (currentStepIndex === 0) ? 'hidden' : 'visible';
         
         const isLastHole = (currentStepIndex === 17);
-        document.getElementById('nextBtn').style.display = isLastHole ? 'none' : 'block';
+        document.getElementById('nextBtn').innerText = isLastHole ? '18H完了' : '次ホール';
+        
+        // 18番目（最後のステップ）の時だけラウンド完了ボタンを表示する
         document.getElementById('finishBtn').style.display = isLastHole ? 'block' : 'none';
     }
 
@@ -880,6 +888,10 @@
         return scoresData[pIdx].reduce((sum, h) => sum + (h.stroke !== null ? h.stroke : 0), 0);
     }
 
+    function getPlayerTotalPutt(pIdx) {
+        return scoresData[pIdx].reduce((sum, h) => sum + (h.putt !== null ? h.putt : 0), 0);
+    }
+
     function getPlayerHalfTotal(pIdx, startIdx, endIdx) {
         let sum = 0;
         for (let i = startIdx; i <= endIdx; i++) {
@@ -889,31 +901,101 @@
         return sum;
     }
 
+    function getPlayerHalfTotalPutt(pIdx, startIdx, endIdx) {
+        let sum = 0;
+        for (let i = startIdx; i <= endIdx; i++) {
+            const val = scoresData[pIdx][i].putt;
+            if (val !== null) sum += val;
+        }
+        return sum;
+    }
+
     function moveHole(dir) {
-        currentStepIndex = currentStepIndex + dir;
+        const nextIdx = currentStepIndex + dir;
+        if (nextIdx > 17) {
+            openScorecardModal();
+            return;
+        }
+        currentStepIndex = nextIdx;
         updateUI();
     }
 
-    // --- スコア一覧表示モーダル ---
+    function openHistoryModal() {
+        renderHistoryList();
+        document.getElementById('historyModal').style.display = 'flex';
+    }
+
+    function closeHistoryModal() {
+        document.getElementById('historyModal').style.display = 'none';
+    }
+
+    function renderHistoryList() {
+        const container = document.getElementById('historyListContainer');
+        const history = JSON.parse(localStorage.getItem('riverside_scores') || '[]');
+        
+        container.innerHTML = history.length === 0 ? 
+            '<div style="text-align:center; color:#94a3b8; padding:12px; font-size:12px;">保存された過去データはありません</div>' : '';
+
+        history.slice().reverse().forEach((round, revIdx) => {
+            const actualIdx = history.length - 1 - revIdx;
+            const dateStr = round.date || '日付不明';
+            const playersStr = round.players ? round.players.join(', ') : 'プレイヤー不明';
+            const startHoleStr = round.startHole === 10 ? 'INスタート' : 'OUTスタート';
+
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div class="history-info">
+                    <span class="history-date">📅 ${dateStr} (${startHoleStr})</span>
+                    <span class="history-players">👤 ${playersStr}</span>
+                </div>
+                <button class="view-history-btn" onclick="viewHistoryScorecard(${actualIdx})">表示</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function viewHistoryScorecard(historyIndex) {
+        const history = JSON.parse(localStorage.getItem('riverside_scores') || '[]');
+        const round = history[historyIndex];
+        if (!round) return;
+
+        players = round.players;
+        scoresData = round.scores;
+        startHoleNum = round.startHole || 1;
+
+        closeHistoryModal();
+        document.getElementById('scorecardModalTitle').innerText = `📋 過去スコア (${round.date || ''})`;
+        document.getElementById('scorecardCheckMsg').style.display = 'none';
+        openScorecardModal();
+    }
+
     function openScorecardModal() {
+        document.getElementById('scorecardModalTitle').innerText = '📋 スコア一覧';
+        document.getElementById('scorecardCheckMsg').style.display = 'block';
         renderScorecardTable();
         document.getElementById('scorecardModal').style.display = 'flex';
     }
 
     function closeScorecardModal() {
         document.getElementById('scorecardModal').style.display = 'none';
+        if (document.getElementById('stepScore').style.display === 'block') {
+            updateUI();
+        }
     }
 
     function renderScorecardTable() {
         const wrapper = document.getElementById('scorecardTableWrapper');
         let html = `<table class="scorecard-table"><thead><tr><th class="col-hole">Hole (Par)</th>`;
 
-        players.forEach(player => {
+        players.forEach((player, pIdx) => {
             html += `<th>${player}</th>`;
+            if (pIdx === 0) {
+                html += `<th>(パット)</th>`;
+            }
         });
         html += `</tr></thead><tbody>`;
 
-        // 前半9ホール (0〜8)
         for (let i = 0; i < 9; i++) {
             const actualHole = getActualHoleNumber(i);
             const par = fullHolePars[actualHole - 1];
@@ -922,21 +1004,29 @@
             html += `<td class="col-hole">${actualHole} (P${par})</td>`;
             players.forEach((player, pIdx) => {
                 const hData = scoresData[pIdx][i];
-                const stroke = hData.stroke !== null ? hData.stroke : '-';
-                html += `<td>${stroke}</td>`;
+                const stroke = hData && hData.stroke !== null && hData.stroke !== undefined ? hData.stroke : '-';
+                const cellClass = (stroke === '-') ? 'missing-score' : '';
+                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${stroke}</td>`;
+                
+                if (pIdx === 0) {
+                    const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
+                    const puttClass = (putt === '-') ? 'missing-score' : '';
+                    html += `<td class="${puttClass}" onclick="jumpToHole(${i})" style="cursor:pointer; font-size: 13px;" title="タップしてこのホールに移動">${putt}</td>`;
+                }
             });
             html += `</tr>`;
         }
 
-        // 前半小計
         const firstHalfName = (startHoleNum === 1) ? 'OUT 小計' : 'IN 小計';
         html += `<tr class="subtotal-row"><td class="col-hole">${firstHalfName}</td>`;
         players.forEach((player, pIdx) => {
             html += `<td>${getPlayerHalfTotal(pIdx, 0, 8)}</td>`;
+            if (pIdx === 0) {
+                html += `<td>${getPlayerHalfTotalPutt(pIdx, 0, 8)}</td>`;
+            }
         });
         html += `</tr>`;
 
-        // 後半9ホール (9〜17)
         for (let i = 9; i < 18; i++) {
             const actualHole = getActualHoleNumber(i);
             const par = fullHolePars[actualHole - 1];
@@ -945,30 +1035,69 @@
             html += `<td class="col-hole">${actualHole} (P${par})</td>`;
             players.forEach((player, pIdx) => {
                 const hData = scoresData[pIdx][i];
-                const stroke = hData.stroke !== null ? hData.stroke : '-';
-                html += `<td>${stroke}</td>`;
+                const stroke = hData && hData.stroke !== null && hData.stroke !== undefined ? hData.stroke : '-';
+                const cellClass = (stroke === '-') ? 'missing-score' : '';
+                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${stroke}</td>`;
+                
+                if (pIdx === 0) {
+                    const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
+                    const puttClass = (putt === '-') ? 'missing-score' : '';
+                    html += `<td class="${puttClass}" onclick="jumpToHole(${i})" style="cursor:pointer; font-size: 13px;" title="タップしてこのホールに移動">${putt}</td>`;
+                }
             });
             html += `</tr>`;
         }
 
-        // 後半小計
         const secondHalfName = (startHoleNum === 1) ? 'IN 小計' : 'OUT 小計';
         html += `<tr class="subtotal-row"><td class="col-hole">${secondHalfName}</td>`;
         players.forEach((player, pIdx) => {
             html += `<td>${getPlayerHalfTotal(pIdx, 9, 17)}</td>`;
+            if (pIdx === 0) {
+                html += `<td>${getPlayerHalfTotalPutt(pIdx, 9, 17)}</td>`;
+            }
         });
         html += `</tr>`;
 
-        // 総合計 (TOTAL) 行
         html += `<tr class="total-row"><td class="col-hole">TOTAL</td>`;
         players.forEach((player, pIdx) => {
             const total = getPlayerTotal(pIdx);
             html += `<td>${total}</td>`;
+            if (pIdx === 0) {
+                html += `<td>${getPlayerTotalPutt(pIdx)}</td>`;
+            }
         });
         html += `</tr>`;
 
         html += `</tbody></table>`;
         wrapper.innerHTML = html;
+    }
+
+    function jumpToHole(stepIdx) {
+        currentStepIndex = stepIdx;
+        closeScorecardModal();
+        updateUI();
+    }
+
+    function tryFinishRound() {
+        let missingList = [];
+        for (let pIdx = 0; pIdx < players.length; pIdx++) {
+            for (let i = 0; i < 18; i++) {
+                if (scoresData[pIdx][i].stroke === null) {
+                    const actualHole = getActualHoleNumber(i);
+                    missingList.push(`${players[pIdx]}のHole ${actualHole}`);
+                }
+            }
+        }
+
+        if (missingList.length > 0) {
+            const confirmMsg = `⚠️ まだ未入力のホールがあります！\n\n【未入力箇所】\n${missingList.slice(0, 5).join('\n')}${missingList.length > 5 ? '\n...ほか' : ''}\n\nこのまま保存しますか？（「一覧」から修正できます）`;
+            if (!confirm(confirmMsg)) {
+                openScorecardModal();
+                return;
+            }
+        }
+
+        saveRound();
     }
 
     function saveRound() {
@@ -997,53 +1126,6 @@
         
         document.getElementById('stepScore').style.display = 'none';
         document.getElementById('stepSetup').style.display = 'block';
-    }
-
-    // フルバックアップ出力関数
-    function exportData() {
-        const exportObj = {
-            appVersion: "1.0",
-            exportDate: new Date().toISOString(),
-            data: {
-                members: JSON.parse(localStorage.getItem('riverside_members') || '[]'),
-                commonMaster: JSON.parse(localStorage.getItem('riverside_common_master_v4') || '{}'),
-                scores: JSON.parse(localStorage.getItem('riverside_scores') || '[]')
-            }
-        };
-        const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `riverside_full_backup_${new Date().toISOString().slice(0, 10)}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    function importData() {
-        document.getElementById('importFile').click();
-    }
-
-    function handleFileSelect(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            try {
-                const parsed = JSON.parse(evt.target.result);
-                // フルバックアップ形式または旧形式のどちらにも対応
-                const targetData = parsed.data ? parsed.data : parsed;
-
-                if (targetData.members) localStorage.setItem('riverside_members', JSON.stringify(targetData.members));
-                if (targetData.commonMaster) localStorage.setItem('riverside_common_master_v4', JSON.stringify(targetData.commonMaster));
-                if (targetData.scores) localStorage.setItem('riverside_scores', JSON.stringify(targetData.scores));
-                
-                alert('フルバックアップデータを正常に復元しました。');
-                renderMemberLabels();
-            } catch (err) {
-                alert('ファイルの読み込みに失敗しました。正しいJSONファイルを選択してください。');
-            }
-        };
-        reader.readAsText(file);
     }
 </script>
 
