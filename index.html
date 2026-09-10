@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マイ リンク集</title>
+  <style>
+    :root {
+      --bg-color: #f4f7f6;
+      --card-bg: #ffffff;
+      --primary-color: #007bff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .form-container {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      margin-bottom: 24px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input {
+      padding: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .link-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .link-item {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .link-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+    }
+
+    .link-title {
+      font-weight: bold;
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    .link-title:hover {
+      text-decoration: underline;
+    }
+
+    .link-url {
+      font-size: 12px;
+      color: #777;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>マイ リンク集</h1>
+
+  <div class="form-container">
+    <form id="link-form" class="input-group">
+      <input type="text" id="title-input" placeholder="タイトル (例: Google)" required>
+      <input type="url" id="url-input" placeholder="URL (例: https://google.com)" required>
+      <button type="submit">リンクを追加</button>
+    </form>
+  </div>
+
+  <ul id="link-list" class="link-list"></ul>
+
+  <script>
+    const linkForm = document.getElementById('link-form');
+    const titleInput = document.getElementById('title-input');
+    const urlInput = document.getElementById('url-input');
+    const linkList = document.getElementById('link-list');
+
+    // ローカルストレージからデータ取得
+    let links = JSON.parse(localStorage.getItem('my_links')) || [];
+
+    // 画面描写
+    function renderLinks() {
+      linkList.innerHTML = '';
+      links.forEach((link, index) => {
+        const li = document.createElement('li');
+        li.className = 'link-item';
+        li.innerHTML = `
+          <div class="link-info">
+            <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-title">${escapeHtml(link.title)}</a>
+            <span class="link-url">${escapeHtml(link.url)}</span>
+          </div>
+          <button class="delete-btn" onclick="deleteLink(${index})">削除</button>
+        `;
+        linkList.appendChild(li);
+      });
+    }
+
+    // リンク追加
+    linkForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newLink = {
+        title: titleInput.value.trim(),
+        url: urlInput.value.trim()
+      };
+      
+      links.push(newLink);
+      saveAndRender();
+
+      titleInput.value = '';
+      urlInput.value = '';
+    });
+
+    // リンク削除
+    function deleteLink(index) {
+      links.splice(index, 1);
+      saveAndRender();
+    }
+
+    // 保存＆再描画
+    function saveAndRender() {
+      localStorage.setItem('my_links', JSON.stringify(links));
+      renderLinks();
+    }
+
+    // XSS対策の文字エスケープ
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, (match) => {
+        const escapeMap = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        };
+        return escapeMap[match];
+      });
+    }
+
+    // 初期表示
+    renderLinks();
+  </script>
+</body>
+</html>
