@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>リバーサイドフェニックス GC スコア登録（完全版）</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #eef2f5; padding: 6px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; touch-action: manipulation; }
+        .card { background: white; width: 100%; max-width: 400px; border-radius: 12px; padding: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        
+        /* スコア入力時にヘッダーを上部固定 */
+        .header { 
+            position: sticky; 
+            top: 0; 
+            background: white; 
+            z-index: 10; 
+            border-bottom: 2px solid #e2e8f0; 
+            padding-bottom: 6px; 
+            margin-bottom: 8px; 
+            text-align: center; 
+        }
+        .club-title { font-size: 13px; font-weight: bold; color: #2e7d32; }
+        .hole-info { font-size: 20px; font-weight: 800; color: #1a365d; }
+        
+        /* 中断・一覧ボタン */
+        .top-cancel-btn { 
+            position: absolute; 
+            top: 0; 
+            right: 0; 
+            background: #ec4899; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            padding: 3px 10px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .top-scorecard-btn {
+            position: absolute; 
+            top: 0; 
+            right: 52px; 
+            background: #0284c7; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            padding: 3px 10px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .top-cancel-btn:active, .top-scorecard-btn:active { opacity: 0.8; }
+
+        .form-row { margin-bottom: 10px; }
+        .form-row label { display: block; font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 3px; }
+        
+        .form-control { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            background-color: white; 
+            -webkit-appearance: none;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+        .start-course-group { display: flex; gap: 4px; height: 35px; }
+        .start-course-btn { flex: 1; display: flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1; background: white; border-radius: 6px; font-size: 12px; font-weight: bold; color: #334155; cursor: pointer; }
+        .start-course-btn.active { background: #1e40af; color: white; border-color: #1e40af; }
+        
+        .selected-summary { font-size: 11px; font-weight: bold; color: #1e40af; background: #eff6ff; padding: 4px 6px; border-radius: 6px; margin-bottom: 6px; border: 1px dashed #93c5fd; }
+        .member-labels { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; max-height: 100px; overflow-y: auto; }
+        .member-label { display: inline-flex; align-items: center; padding: 4px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 11px; font-weight: bold; color: #334155; cursor: pointer; }
+        .member-label.selected { background: #2e7d32; color: white; border-color: #2e7d32; }
+
+        /* ボタンレイアウト整理 */
+        .btn-section { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .start-round-btn { 
+            background: #2e7d32; 
+            color: white; 
+            width: 100%; 
+            padding: 12px; 
+            font-size: 16px; 
+            font-weight: 800; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            box-shadow: 0 2px 5px rgba(46,125,50,0.3);
+        }
+        .start-round-btn:active { opacity: 0.9; }
+
+        .master-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .sub-btn-card { 
+            background: #f8fafc; 
+            border: 1px solid #cbd5e1; 
+            color: #334155; 
+            padding: 8px 4px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            text-align: center;
+        }
+        .sub-btn-card:active { background: #e2e8f0; }
+
+        .backup-group { 
+            margin-top: 4px; 
+            border-top: 1px dashed #cbd5e1; 
+            padding-top: 8px; 
+            display: flex; 
+            justify-content: space-around; 
+        }
+        .text-link-btn { 
+            background: none; 
+            border: none; 
+            color: #64748b; 
+            font-size: 10px; 
+            font-weight: bold; 
+            text-decoration: underline; 
+            cursor: pointer; 
+        }
+
+        /* 自分専用メインスコアエリア */
+        .my-score-card { background: #f0fdf4; border: 2px solid #2e7d32; border-radius: 10px; padding: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(46,125,50,0.12); }
+        .my-score-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 800; color: #14532d; margin-bottom: 6px; }
+        .my-score-stats { font-size: 11px; font-weight: 700; color: #15803d; display: flex; gap: 6px; }
+
+        .counter-group-main { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+        .counter-box { background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 6px; text-align: center; }
+        .counter-title { font-size: 11px; font-weight: 800; color: #166534; margin-bottom: 4px; }
+        .counter-control { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+        .btn-cnt-lg { flex: 1; height: 48px; font-size: 24px; font-weight: 800; border: none; border-radius: 8px; background: #2e7d32; color: white; cursor: pointer; touch-action: manipulation; max-width: 50px; }
+        .btn-cnt-lg.putt { background: #475569; }
+        .btn-cnt-lg:active { opacity: 0.8; }
+        .val-lg { font-size: 26px; font-weight: 900; color: #0f172a; flex: 1; text-align: center; }
+        .val-lg.unset { color: #dc2626; font-weight: 700; }
+
+        /* ホール別打球傾向・理由エリア */
+        .shot-tag-title { font-size: 10px; font-weight: bold; color: #166534; margin-top: 6px; margin-bottom: 3px; }
+        .fw-options { display: flex; flex-wrap: wrap; gap: 4px; }
+        .fw-btn, .reason-btn { flex: 1 0 calc(25% - 4px); min-width: 60px; padding: 6px 2px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; font-size: 11px; font-weight: bold; color: #475569; cursor: pointer; text-align: center; }
+        .fw-btn.active { background: #2e7d32; color: white; border-color: #2e7d32; font-weight: 800; }
+        .reason-btn.active { background: #b91c1c; color: white; border-color: #b91c1c; font-weight: 800; }
+
+        /* 同伴者エリア & ドラッグコントロール */
+        .reorder-control-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 2px 4px; background: #f1f5f9; border-radius: 6px; }
+        .drag-instruction { font-size: 10px; color: #64748b; font-weight: bold; }
+        .lock-toggle-btn { padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; cursor: pointer; }
+        .lock-toggle-btn.active { background: #0284c7; color: white; border-color: #0284c7; }
+
+        .companions-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; position: relative; }
+        
+        .companion-card { 
+            background: #f8fafc; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            padding: 4px 8px; 
+            user-select: none;
+            -webkit-user-select: none;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .companion-card.reorder-active {
+            cursor: grab;
+            touch-action: none;
+            border: 1px dashed #0284c7;
+            background: #f0f9ff;
+        }
+
+        .companion-card.dragging-placeholder { opacity: 0.15; transform: scale(0.98); }
+
+        .drag-clone {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.95;
+            transform: scale(1.02);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+            background: #ffffff;
+            border: 1.5px solid #0284c7;
+            border-radius: 6px;
+            padding: 4px 8px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            will-change: transform, top, left;
+        }
+
+        .companion-info { display: flex; align-items: center; gap: 6px; pointer-events: none; }
+        .companion-name { font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px; }
+        .companion-total { font-size: 10px; font-weight: bold; color: #64748b; }
+        .drag-handle { background: #e2e8f0; color: #64748b; border-radius: 3px; padding: 0px 4px; font-size: 10px; font-weight: bold; opacity: 0.4; }
+        .companion-card.reorder-active .drag-handle { background: #0284c7; color: white; opacity: 1; }
+        
+        .counter-inline-sm { display: flex; align-items: center; gap: 4px; }
+        .btn-cnt-sm { width: 30px; height: 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 4px; background: #64748b; color: white; cursor: pointer; touch-action: manipulation; }
+        .btn-cnt-sm:active { opacity: 0.7; }
+        .val-sm { font-size: 15px; font-weight: 800; color: #0f172a; text-align: center; min-width: 20px; pointer-events: none; }
+        .val-sm.unset { color: #dc2626; font-weight: 700; }
+
+        .nav-btns { display: flex; gap: 6px; margin-top: 4px; }
+        .nav-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+        .prev { background: #e2e8f0; color: #334155; }
+        .next { background: #1e40af; color: white; }
+        
+        .submit-btn { background: #2e7d32; color: white; width: 100%; padding: 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 4px; }
+
+        /* モーダル共通 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+        .modal-content { background: white; width: 90%; max-width: 360px; border-radius: 10px; padding: 12px; max-height: 85vh; display: flex; flex-direction: column; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+        .modal-title { font-weight: bold; font-size: 13px; color: #1e293b; }
+        .close-btn { background: none; border: none; font-size: 16px; cursor: pointer; color: #64748b; }
+        .master-input-group { display: flex; gap: 4px; margin-bottom: 6px; }
+        .master-list { overflow-y: auto; flex-grow: 1; max-height: 200px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; }
+        .master-item { display: flex; justify-content: space-between; align-items: center; padding: 4px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+        .del-btn { background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+        .add-btn { background: #2e7d32; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap; }
+        
+        .tab-group { display: flex; gap: 4px; margin-bottom: 6px; }
+        .tab-btn { flex: 1; padding: 6px; font-size: 11px; font-weight: bold; border: 1px solid #cbd5e1; background: #f8fafc; color: #64748b; border-radius: 6px; cursor: pointer; text-align: center; }
+        .tab-btn.active { background: #1e40af; color: white; border-color: #1e40af; }
+
+        /* 行＝ホール、列＝名前のスコア表スタイル */
+        .scorecard-table-wrapper { overflow-x: auto; overflow-y: auto; flex-grow: 1; max-height: 70vh; border: 1px solid #cbd5e1; border-radius: 6px; }
+        .scorecard-table { width: 100%; border-collapse: collapse; font-size: 11px; background: white; text-align: center; white-space: nowrap; }
+        .scorecard-table th { background: #1e3a8a; color: white; padding: 6px 4px; font-weight: bold; position: sticky; top: 0; z-index: 2; }
+        .scorecard-table th.col-hole { position: sticky; left: 0; z-index: 3; background: #1e3a8a; }
+        .scorecard-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 5px 4px; color: #334155; }
+        .scorecard-table td.col-hole { position: sticky; left: 0; background: #f8fafc; font-weight: bold; color: #1e3a8a; border-right: 2px solid #cbd5e1; z-index: 1; }
+        .scorecard-table tr.subtotal-row td { background: #e0f2fe; font-weight: 800; color: #0369a1; border-top: 1.5px solid #0284c7; border-bottom: 1.5px solid #0284c7; }
+        .scorecard-table tr.total-row td { background: #f1f5f9; font-weight: 800; color: #0f172a; border-top: 2px solid #cbd5e1; position: sticky; bottom: 0; z-index: 2; }
+        .scorecard-table tr.total-row td.col-hole { z-index: 3; background: #e2e8f0; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <!-- 設定画面 -->
+    <div id="stepSetup">
+        <div class="header">
+            <div class="club-title">⛳ リバーサイドフェニックス GC</div>
+        </div>
+        
+        <div class="grid-2 form-row">
+            <div>
+                <label>プレー日</label>
+                <input type="date" id="playDate" class="form-control">
+            </div>
+            <div>
+                <label>スタート</label>
+                <div class="start-course-group">
+                    <div class="start-course-btn active" id="btnStartOut" onclick="selectStartCourse(1)">OUTコース</div>
+                    <div class="start-course-btn" id="btnStartIn" onclick="selectStartCourse(10)">INコース</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <label>自分の名前</label>
+            <input type="text" id="p0" class="form-control" value="浅香博一" placeholder="名前を入力">
+        </div>
+
+        <div class="form-row">
+            <label>同伴者を選択 (最大3名)</label>
+            <div class="selected-summary" id="selectedSummary">選択中: なし</div>
+            <div class="member-labels" id="memberLabelsContainer"></div>
+        </div>
+
+        <!-- 整理されたボタンエリア -->
+        <div class="btn-section">
+            <button class="start-round-btn" onclick="startRound()">🚀 ラウンド開始 (18H)</button>
+            
+            <div class="master-btns-grid">
+                <button class="sub-btn-card" onclick="openMasterModal()">⚙️ 同伴者管理</button>
+                <button class="sub-btn-card" onclick="openShotTagModal()">🏷️ 傾向/理由管理</button>
+            </div>
+
+            <div class="backup-group">
+                <button class="text-link-btn" onclick="exportData()">💾 バックアップ出力</button>
+                <button class="text-link-btn" onclick="importData()">📂 バックアップ復元</button>
+            </div>
+        </div>
+        
+        <input type="file" id="importFile" style="display:none;" accept=".json" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- スコア入力画面 -->
+    <div id="stepScore" style="display: none;">
+        <div class="header">
+            <button class="top-cancel-btn" onclick="abortRound()">中断</button>
+            <button class="top-scorecard-btn" onclick="openScorecardModal()">一覧</button>
+            <div class="club-title">⛳ リバーサイドフェニックス GC</div>
+            <div class="hole-info" id="holeTitle">Hole 1 (Par 4)</div>
+        </div>
+
+        <!-- 自分（主役エリア） -->
+        <div class="my-score-card" id="myScoreContainer"></div>
+        
+        <!-- 同伴者（スリムエリア） -->
+        <div class="reorder-control-bar">
+            <span class="drag-instruction" id="dragInstructionText">🔒 並び替え固定中</span>
+            <button class="lock-toggle-btn" id="lockToggleBtn" onclick="toggleReorderMode()">並び替えモード</button>
+        </div>
+        <div class="companions-list" id="companionsContainer"></div>
+
+        <div class="nav-btns">
+            <button class="nav-btn prev" id="prevBtn" onclick="moveHole(-1)">前ホール</button>
+            <button class="nav-btn next" id="nextBtn" onclick="moveHole(1)">次ホール</button>
+        </div>
+        <button class="submit-btn" id="finishBtn" style="display: none;" onclick="saveRound()">ラウンド完了・スコア保存</button>
+    </div>
+</div>
+
+<!-- モーダル各種 -->
+<div class="modal" id="masterModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">同伴者マスター管理</div>
+            <button class="close-btn" onclick="closeMasterModal()">✕</button>
+        </div>
+        <div class="master-input-group">
+            <input type="text" id="newMemberName" class="form-control" placeholder="新しい同伴者名">
+            <button class="add-btn" onclick="addMember()">追加</button>
+        </div>
+        <div class="master-list" id="memberListContainer"></div>
+    </div>
+</div>
+
+<div class="modal" id="shotTagModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">傾向・理由マスター管理</div>
+            <button class="close-btn" onclick="closeShotTagModal()">✕</button>
+        </div>
+
+        <div class="tab-group">
+            <div class="tab-btn active" id="tabTagBtn" onclick="switchMasterTab('tag')">打球傾向 (結果)</div>
+            <div class="tab-btn" id="tabReasonBtn" onclick="switchMasterTab('reason')">何でそうなった？ (理由)</div>
+        </div>
+
+        <div class="master-input-group">
+            <input type="text" id="newShotTag" class="form-control" placeholder="新しい項目">
+            <button class="add-btn" onclick="addShotTag()">追加</button>
+        </div>
+        <div class="master-list" id="shotTagListContainer"></div>
+    </div>
+</div>
+
+<!-- スコア一覧表示モーダル（行＝ホール、列＝名前、ハーフ小計付き） -->
+<div class="modal" id="scorecardModal">
+    <div class="modal-content" style="max-width: 95%; width: 380px; max-height: 85vh;">
+        <div class="modal-header">
+            <div class="modal-title">📋 スコア一覧表</div>
+            <button class="close-btn" onclick="closeScorecardModal()">✕</button>
+        </div>
+        <div class="scorecard-table-wrapper" id="scorecardTableWrapper">
+            <!-- JSで動적生成 -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const defaultMembers = ["佐藤", "鈴木", "高橋", "田中", "伊藤", "渡辺", "山本", "中村"];
+    
+    // 18ホール分のパー設定 (1~18番)
+    const fullHolePars = [
+        4, 5, 4, 3, 4, 5, 4, 3, 4, // 1〜9番 (OUT)
+        5, 4, 4, 3, 4, 3, 4, 4, 5  // 10〜18番 (IN)
+    ];
+
+    const defaultShotTags = ["👌60点", "👌80点", "👌100点", "ひっかけ", "どスライス", "トップ", "ダフリ"];
+    const defaultReasons = ["イメージしてない", "トップで伸びてない", "手打ち", "わからない"];
+    
+    let selectedCompanions = [];
+    let currentMasterTab = 'tag';
+    let isRoundActive = false;
+    let isReorderEnabled = false;
+    let startHoleNum = 1; // 1 (OUTスタート) or 10 (INスタート)
+
+    // 誤離脱防止
+    window.addEventListener('beforeunload', (e) => {
+        if (isRoundActive) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    function toggleReorderMode() {
+        isReorderEnabled = !isReorderEnabled;
+        const btn = document.getElementById('lockToggleBtn');
+        const text = document.getElementById('dragInstructionText');
+        
+        if (isReorderEnabled) {
+            btn.classList.add('active');
+            btn.textContent = '完了 (固定)';
+            text.textContent = '🔓 ドラッグで順番を入れ替え';
+        } else {
+            btn.classList.remove('active');
+            btn.textContent = '並び替えモード';
+            text.textContent = '🔒 並び替え固定中';
+        }
+        renderCompanions();
+    }
+
+    function selectStartCourse(hole) {
+        startHoleNum = hole;
+        document.getElementById('btnStartOut').classList.toggle('active', hole === 1);
+        document.getElementById('btnStartIn').classList.toggle('active', hole === 10);
+    }
+
+    function getMembers() {
+        const stored = localStorage.getItem('riverside_members');
+        return stored ? JSON.parse(stored) : defaultMembers;
+    }
+
+    function saveMembers(members) {
+        localStorage.setItem('riverside_members', JSON.stringify(members));
+    }
+
+    function getCommonMasterData() {
+        const stored = localStorage.getItem('riverside_common_master_v4');
+        if (stored) {
+            try { return JSON.parse(stored); } catch (e) {}
+        }
+        return {
+            tags: [...defaultShotTags],
+            reasons: [...defaultReasons]
+        };
+    }
+
+    function saveCommonMasterData(data) {
+        localStorage.setItem('riverside_common_master_v4', JSON.stringify(data));
+    }
+
+    document.getElementById('playDate').valueAsDate = new Date();
+
+    function renderMemberLabels() {
+        const members = getMembers();
+        const container = document.getElementById('memberLabelsContainer');
+        container.innerHTML = '';
+
+        members.forEach(name => {
+            const isSelected = selectedCompanions.includes(name);
+            const label = document.createElement('span');
+            label.className = `member-label ${isSelected ? 'selected' : ''}`;
+            label.textContent = name;
+            label.onclick = () => toggleSelectMember(name);
+            container.appendChild(label);
+        });
+        updateSelectedSummary();
+    }
+
+    function toggleSelectMember(name) {
+        const idx = selectedCompanions.indexOf(name);
+        if (idx > -1) {
+            selectedCompanions.splice(idx, 1);
+        } else {
+            if (selectedCompanions.length >= 3) {
+                alert('同伴者は最大3名まで選択可能です。');
+                return;
+            }
+            selectedCompanions.push(name);
+        }
+        renderMemberLabels();
+    }
+
+    function updateSelectedSummary() {
+        const summary = document.getElementById('selectedSummary');
+        summary.textContent = selectedCompanions.length === 0 ? 
+            '選択中: なし' : `選択中 (${selectedCompanions.length}/3名): ${selectedCompanions.join(', ')}`;
+    }
+
+    function openMasterModal() {
+        renderMemberList();
+        document.getElementById('masterModal').style.display = 'flex';
+    }
+
+    function closeMasterModal() {
+        document.getElementById('masterModal').style.display = 'none';
+        const currentMembers = getMembers();
+        selectedCompanions = selectedCompanions.filter(name => currentMembers.includes(name));
+        renderMemberLabels();
+    }
+
+    function renderMemberList() {
+        const members = getMembers();
+        const container = document.getElementById('memberListContainer');
+        container.innerHTML = members.length === 0 ? 
+            '<div style="text-align:center; color:#94a3b8; padding:8px; font-size:12px;">登録メンバーがいません</div>' : '';
+
+        members.forEach((name, idx) => {
+            const div = document.createElement('div');
+            div.className = 'master-item';
+            div.innerHTML = `<span>👤 ${name}</span><button class="del-btn" onclick="removeMember(${idx})">削除</button>`;
+            container.appendChild(div);
+        });
+    }
+
+    function addMember() {
+        const input = document.getElementById('newMemberName');
+        const name = input.value.trim();
+        if (!name) return;
+        const members = getMembers();
+        if (members.includes(name)) return alert('すでに入力された同名メンバーがいます。');
+        members.push(name);
+        saveMembers(members);
+        input.value = '';
+        renderMemberList();
+    }
+
+    function removeMember(idx) {
+        const members = getMembers();
+        members.splice(idx, 1);
+        saveMembers(members);
+        renderMemberList();
+    }
+
+    function openShotTagModal() {
+        renderShotTagList();
+        document.getElementById('shotTagModal').style.display = 'flex';
+    }
+
+    function closeShotTagModal() {
+        document.getElementById('shotTagModal').style.display = 'none';
+        if (document.getElementById('stepScore').style.display === 'block') updateUI();
+    }
+
+    function switchMasterTab(tab) {
+        currentMasterTab = tab;
+        document.getElementById('tabTagBtn').classList.toggle('active', tab === 'tag');
+        document.getElementById('tabReasonBtn').classList.toggle('active', tab === 'reason');
+        renderShotTagList();
+    }
+
+    function renderShotTagList() {
+        const data = getCommonMasterData();
+        const list = currentMasterTab === 'tag' ? data.tags : data.reasons;
+        const container = document.getElementById('shotTagListContainer');
+        container.innerHTML = (!list || list.length === 0) ? 
+            '<div style="text-align:center; color:#94a3b8; padding:8px; font-size:12px;">登録項目がありません</div>' : '';
+
+        list.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = 'master-item';
+            div.innerHTML = `<span>${currentMasterTab === 'tag' ? '🏷️' : '❓'} ${item}</span><button class="del-btn" onclick="removeShotTag(${idx})">削除</button>`;
+            container.appendChild(div);
+        });
+    }
+
+    function addShotTag() {
+        const input = document.getElementById('newShotTag');
+        const item = input.value.trim();
+        if (!item) return;
+
+        const data = getCommonMasterData();
+        const targetList = currentMasterTab === 'tag' ? data.tags : data.reasons;
+
+        if (targetList.includes(item)) return alert('すでに登録されている項目です。');
+        targetList.push(item);
+        saveCommonMasterData(data);
+        input.value = '';
+        renderShotTagList();
+    }
+
+    function removeShotTag(idx) {
+        const data = getCommonMasterData();
+        const targetList = currentMasterTab === 'tag' ? data.tags : data.reasons;
+        targetList.splice(idx, 1);
+        saveCommonMasterData(data);
+        renderShotTagList();
+    }
+
+    renderMemberLabels();
+
+    let currentStepIndex = 0; // 0〜17
+    let players = [];
+    let scoresData = [];
+
+    // ステップインデックス(0〜17)から実際のホール番号を取得
+    function getActualHoleNumber(stepIdx) {
+        if (startHoleNum === 1) {
+            return stepIdx + 1; // 1〜18
+        } else {
+            // IN(10H)スタートの場合: 10〜18, そのあと 1〜9
+            return (stepIdx < 9) ? (stepIdx + 10) : (stepIdx - 8);
+        }
+    }
+
+    function startRound() {
+        const myName = document.getElementById('p0').value.trim() || '自分';
+        players = [myName, ...selectedCompanions];
+
+        // 18ホール分のスコアデータを初期化
+        scoresData = players.map(() => 
+            Array.from({ length: 18 }, (_, i) => {
+                const actualHole = getActualHoleNumber(i);
+                const par = fullHolePars[actualHole - 1];
+                return {
+                    hole: actualHole,
+                    par: par,
+                    stroke: par,
+                    putt: 2,
+                    fw: '',
+                    reason: []
+                };
+            })
+        );
+
+        currentStepIndex = 0;
+        isRoundActive = true;
+
+        document.getElementById('stepSetup').style.display = 'none';
+        document.getElementById('stepScore').style.display = 'block';
+        updateUI();
+    }
+
+    function abortRound() {
+        if (confirm('入力中のスコアを破棄してトップ画面に戻りますか？')) {
+            isRoundActive = false;
+            document.getElementById('stepScore').style.display = 'none';
+            document.getElementById('stepSetup').style.display = 'block';
+        }
+    }
+
+    function updateUI() {
+        const actualHole = getActualHoleNumber(currentStepIndex);
+        const par = fullHolePars[actualHole - 1];
+        document.getElementById('holeTitle').innerText = `Hole ${actualHole} (Par ${par})`;
+
+        const myData = scoresData[0][currentStepIndex];
+        const myContainer = document.getElementById('myScoreContainer');
+        const commonMaster = getCommonMasterData();
+        
+        const strokeDisplay = myData.stroke !== null ? myData.stroke : '-';
+        const puttDisplay = myData.putt !== null ? myData.putt : '-';
+        const strokeClass = myData.stroke !== null ? '' : 'unset';
+        const puttClass = myData.putt !== null ? '' : 'unset';
+
+        let myTotal = 0;
+        scoresData[0].forEach((h) => {
+            const val = h.stroke !== null ? h.stroke : 0;
+            myTotal += val;
+        });
+
+        let myHtml = `
+            <div class="my-score-header">
+                <span>👤 ${players[0]}</span>
+                <span class="my-score-stats">
+                    <span>TOTAL: ${myTotal}</span>
+                </span>
+            </div>
+            <div class="counter-group-main">
+                <div class="counter-box">
+                    <div class="counter-title">打数</div>
+                    <div class="counter-control">
+                        <button class="btn-cnt-lg" onclick="changeVal(0, 'stroke', -1)">-</button>
+                        <span class="val-lg ${strokeClass}">${strokeDisplay}</span>
+                        <button class="btn-cnt-lg" onclick="changeVal(0, 'stroke', 1)">+</button>
+                    </div>
+                </div>
+                <div class="counter-box">
+                    <div class="counter-title">パット</div>
+                    <div class="counter-control">
+                        <button class="btn-cnt-lg putt" onclick="changeVal(0, 'putt', -1)">-</button>
+                        <span class="val-lg ${puttClass}">${puttDisplay}</span>
+                        <button class="btn-cnt-lg putt" onclick="changeVal(0, 'putt', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (commonMaster.tags && commonMaster.tags.length > 0) {
+            myHtml += `<div class="shot-tag-title">打球傾向</div><div class="fw-options">`;
+            commonMaster.tags.forEach(tag => {
+                myHtml += `<button class="fw-btn ${myData.fw === tag ? 'active' : ''}" onclick="setFW(0, '${tag}')">${tag}</button>`;
+            });
+            myHtml += `</div>`;
+        }
+
+        if (commonMaster.reasons && commonMaster.reasons.length > 0) {
+            myHtml += `<div class="shot-tag-title" style="color:#b91c1c;">何でそうなった？ (理由)</div><div class="fw-options">`;
+            commonMaster.reasons.forEach(r => {
+                const isSelected = Array.isArray(myData.reason) 
+                    ? myData.reason.includes(r) 
+                    : myData.reason === r;
+
+                myHtml += `<button class="reason-btn ${isSelected ? 'active' : ''}" onclick="setReason(0, '${r}')">${r}</button>`;
+            });
+            myHtml += `</div>`;
+        }
+
+        myContainer.innerHTML = myHtml;
+        renderCompanions();
+
+        document.getElementById('prevBtn').style.visibility = (currentStepIndex === 0) ? 'hidden' : 'visible';
+        
+        const isLastHole = (currentStepIndex === 17);
+        document.getElementById('nextBtn').style.display = isLastHole ? 'none' : 'block';
+        document.getElementById('finishBtn').style.display = isLastHole ? 'block' : 'none';
+    }
+
+    function renderCompanions() {
+        const companionsContainer = document.getElementById('companionsContainer');
+        companionsContainer.innerHTML = '';
+
+        for (let pIdx = 1; pIdx < players.length; pIdx++) {
+            const hData = scoresData[pIdx][currentStepIndex];
+            const compCard = document.createElement('div');
+            compCard.className = `companion-card ${isReorderEnabled ? 'reorder-active' : ''}`;
+            compCard.dataset.index = pIdx;
+
+            const strokeDisplay = hData.stroke !== null ? hData.stroke : '-';
+            const strokeClass = hData.stroke !== null ? '' : 'unset';
+
+            compCard.innerHTML = `
+                <div class="companion-info">
+                    <span class="drag-handle">☰</span>
+                    <span class="companion-name">${players[pIdx]}</span>
+                    <span class="companion-total">(${getPlayerTotal(pIdx)}打)</span>
+                </div>
+                <div class="counter-inline-sm">
+                    <button class="btn-cnt-sm" onclick="changeVal(${pIdx}, 'stroke', -1)">-</button>
+                    <span class="val-sm ${strokeClass}">${strokeDisplay}</span>
+                    <button class="btn-cnt-sm" onclick="changeVal(${pIdx}, 'stroke', 1)">+</button>
+                </div>
+            `;
+
+            if (isReorderEnabled) {
+                attachPointerDragEvents(compCard);
+            }
+            companionsContainer.appendChild(compCard);
+        }
+    }
+
+    function swapPlayers(fromIdx, toIdx) {
+        if (fromIdx === toIdx || fromIdx === 0 || toIdx === 0) return;
+        [players[fromIdx], players[toIdx]] = [players[toIdx], players[fromIdx]];
+        [scoresData[fromIdx], scoresData[toIdx]] = [scoresData[toIdx], scoresData[fromIdx]];
+        updateUI();
+    }
+
+    function attachPointerDragEvents(el) {
+        let clone = null, offsetX = 0, offsetY = 0, isDragging = false, draggedIdx = null, animationFrameId = null;
+
+        const onPointerDown = (e) => {
+            if (!isReorderEnabled || e.target.tagName === 'BUTTON') return;
+
+            if (navigator.vibrate) navigator.vibrate(40);
+            draggedIdx = parseInt(el.dataset.index);
+            const rect = el.getBoundingClientRect();
+
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            isDragging = true;
+            clone = el.cloneNode(true);
+            clone.classList.add('drag-clone');
+            clone.style.width = `${rect.width}px`;
+            clone.style.left = `${e.clientX - offsetX}px`;
+            clone.style.top = `${e.clientY - offsetY}px`;
+            document.body.appendChild(clone);
+
+            el.classList.add('dragging-placeholder');
+
+            window.addEventListener('pointermove', onPointerMove, { passive: false });
+            window.addEventListener('pointerup', onPointerUp);
+            window.addEventListener('pointercancel', onPointerUp);
+        };
+
+        const onPointerMove = (e) => {
+            if (!isDragging || !clone) return;
+            e.preventDefault();
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(() => {
+                if (!clone) return;
+                clone.style.left = `${e.clientX - offsetX}px`;
+                clone.style.top = `${e.clientY - offsetY}px`;
+
+                const cards = document.querySelectorAll('.companion-card:not(.dragging-placeholder)');
+                cards.forEach(card => {
+                    const cRect = card.getBoundingClientRect();
+                    const centerY = cRect.top + cRect.height / 2;
+                    if (Math.abs(e.clientY - centerY) < cRect.height / 2 && e.clientX >= cRect.left && e.clientX <= cRect.right) {
+                        const targetIdx = parseInt(card.dataset.index);
+                        if (targetIdx !== draggedIdx) {
+                            onPointerUp();
+                            swapPlayers(draggedIdx, targetIdx);
+                        }
+                    }
+                });
+            });
+        };
+
+        const onPointerUp = () => {
+            isDragging = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (clone) { clone.remove(); clone = null; }
+            el.classList.remove('dragging-placeholder');
+
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('pointercancel', onPointerUp);
+        };
+
+        el.addEventListener('pointerdown', onPointerDown);
+    }
+
+    function changeVal(pIdx, type, val) {
+        const actualHole = getActualHoleNumber(currentStepIndex);
+        const par = fullHolePars[actualHole - 1];
+
+        const curVal = scoresData[pIdx][currentStepIndex][type];
+        if (curVal === null) {
+            if (val > 0) scoresData[pIdx][currentStepIndex][type] = (type === 'stroke') ? par : 2;
+        } else {
+            const nextVal = curVal + val;
+            const min = type === 'stroke' ? 1 : 0;
+            scoresData[pIdx][currentStepIndex][type] = (nextVal < min) ? null : nextVal;
+        }
+        updateUI();
+    }
+
+    function setFW(pIdx, val) {
+        scoresData[pIdx][currentStepIndex].fw = (scoresData[pIdx][currentStepIndex].fw === val) ? '' : val;
+        updateUI();
+    }
+
+    function setReason(pIdx, val) {
+        const hData = scoresData[pIdx][currentStepIndex];
+        
+        if (!Array.isArray(hData.reason)) {
+            hData.reason = hData.reason ? [hData.reason] : [];
+        }
+        
+        const index = hData.reason.indexOf(val);
+        if (index > -1) {
+            hData.reason.splice(index, 1);
+        } else {
+            hData.reason.push(val);
+        }
+        updateUI();
+    }
+
+    function getPlayerTotal(pIdx) {
+        return scoresData[pIdx].reduce((sum, h) => sum + (h.stroke !== null ? h.stroke : 0), 0);
+    }
+
+    function getPlayerHalfTotal(pIdx, startIdx, endIdx) {
+        let sum = 0;
+        for (let i = startIdx; i <= endIdx; i++) {
+            const val = scoresData[pIdx][i].stroke;
+            if (val !== null) sum += val;
+        }
+        return sum;
+    }
+
+    function moveHole(dir) {
+        currentStepIndex = currentStepIndex + dir;
+        updateUI();
+    }
+
+    // --- スコア一覧表示モーダル（ハーフ小計付き） ---
+    function openScorecardModal() {
+        renderScorecardTable();
+        document.getElementById('scorecardModal').style.display = 'flex';
+    }
+
+    function closeScorecardModal() {
+        document.getElementById('scorecardModal').style.display = 'none';
+    }
+
+    function renderScorecardTable() {
+        const wrapper = document.getElementById('scorecardTableWrapper');
+        let html = `<table class="scorecard-table"><thead><tr><th class="col-hole">Hole (Par)</th>`;
+
+        players.forEach(player => {
+            html += `<th>${player}</th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        // 前半9ホール (ステップ 0〜8)
+        for (let i = 0; i < 9; i++) {
+            const actualHole = getActualHoleNumber(i);
+            const par = fullHolePars[actualHole - 1];
+
+            html += `<tr>`;
+            html += `<td class="col-hole">${actualHole} (P${par})</td>`;
+            players.forEach((player, pIdx) => {
+                const hData = scoresData[pIdx][i];
+                const stroke = hData.stroke !== null ? hData.stroke : '-';
+                html += `<td>${stroke}</td>`;
+            });
+            html += `</tr>`;
+        }
+
+        // 前半小計 (OUT または IN の名前を判定)
+        const firstHalfName = (startHoleNum === 1) ? 'OUT 小計' : 'IN 小計';
+        html += `<tr class="subtotal-row"><td class="col-hole">${firstHalfName}</td>`;
+        players.forEach((player, pIdx) => {
+            html += `<td>${getPlayerHalfTotal(pIdx, 0, 8)}</td>`;
+        });
+        html += `</tr>`;
+
+        // 後半9ホール (ステップ 9〜17)
+        for (let i = 9; i < 18; i++) {
+            const actualHole = getActualHoleNumber(i);
+            const par = fullHolePars[actualHole - 1];
+
+            html += `<tr>`;
+            html += `<td class="col-hole">${actualHole} (P${par})</td>`;
+            players.forEach((player, pIdx) => {
+                const hData = scoresData[pIdx][i];
+                const stroke = hData.stroke !== null ? hData.stroke : '-';
+                html += `<td>${stroke}</td>`;
+            });
+            html += `</tr>`;
+        }
+
+        // 後半小計
+        const secondHalfName = (startHoleNum === 1) ? 'IN 小計' : 'OUT 小計';
+        html += `<tr class="subtotal-row"><td class="col-hole">${secondHalfName}</td>`;
+        players.forEach((player, pIdx) => {
+            html += `<td>${getPlayerHalfTotal(pIdx, 9, 17)}</td>`;
+        });
+        html += `</tr>`;
+
+        // 総合計 (TOTAL) 行
+        html += `<tr class="total-row"><td class="col-hole">TOTAL</td>`;
+        players.forEach((player, pIdx) => {
+            const total = getPlayerTotal(pIdx);
+            html += `<td>${total}</td>`;
+        });
+        html += `</tr>`;
+
+        html += `</tbody></table>`;
+        wrapper.innerHTML = html;
+    }
+
+    function saveRound() {
+        isRoundActive = false;
+        const date = document.getElementById('playDate').value;
+        const resultSummary = players.map((p, idx) => `${p}: ${getPlayerTotal(idx)}打`).join('\n');
+
+        const roundData = {
+            club: 'リバーサイドフェニックスゴルフクラブ',
+            date: date,
+            startHole: startHoleNum,
+            players: players,
+            scores: scoresData
+        };
+
+        const history = JSON.parse(localStorage.getItem('riverside_scores') || '[]');
+        history.push(roundData);
+        localStorage.setItem('riverside_scores', JSON.stringify(history));
+
+        alert(`18ホールの保存が完了しました！\n【最終結果一覧】\n${resultSummary}`);
+        
+        document.getElementById('stepScore').style.display = 'none';
+        document.getElementById('stepSetup').style.display = 'block';
+    }
+
+    function exportData() {
+        const exportObj = {
+            members: JSON.parse(localStorage.getItem('riverside_members') || '[]'),
+            commonMaster: JSON.parse(localStorage.getItem('riverside_common_master_v4') || '{}'),
+            scores: JSON.parse(localStorage.getItem('riverside_scores') || '[]')
+        };
+        const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `riverside_18h_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData() {
+        document.getElementById('importFile').click();
+    }
+
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = JSON.parse(evt.target.result);
+                if (data.members) localStorage.setItem('riverside_members', typeof data.members === 'string' ? data.members : JSON.stringify(data.members));
+                if (data.commonMaster) localStorage.setItem('riverside_common_master_v4', typeof data.commonMaster === 'string' ? data.commonMaster : JSON.stringify(data.commonMaster));
+                if (data.scores) localStorage.setItem('riverside_scores', typeof data.scores === 'string' ? data.scores : JSON.stringify(data.scores));
+                alert('データを正常に復元しました。');
+                renderMemberLabels();
+            } catch (err) {
+                alert('ファイルの読み込みに失敗しました。正しいJSONファイルを選択してください。');
+            }
+        };
+        reader.readAsText(file);
+    }
+</script>
+
+</body>
+</html>

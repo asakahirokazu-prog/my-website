@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>English monster</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      background: #f5f5f7; 
+      color: #333; 
+      padding: 16px; 
+      padding-bottom: 70px;
+      max-width: 500px; 
+      margin: 0 auto; 
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    h1 { font-size: 1.4rem; color: #1d1d1f; font-weight: 800; }
+    
+    .view-toggle-btn {
+      background: #e5e5ea;
+      color: #333;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .view-toggle-btn.active {
+      background: #ff9500;
+      color: #fff;
+    }
+
+    .input-group { display: flex; gap: 8px; margin-bottom: 16px; }
+    input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; outline: none; }
+    input[type="text"]:focus { border-color: #007aff; }
+    .add-btn { padding: 12px 16px; background: #007aff; color: #fff; border: none; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
+    
+    ul { list-style: none; }
+    li { background: #fff; border-radius: 8px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; transition: opacity 0.2s; }
+    
+    li.memorized { opacity: 0.7; background: #eef2f5; }
+    li.memorized .memo-text { text-decoration: line-through; }
+    
+    .memo-row { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+    .memo-text { flex: 1; word-break: break-all; margin-right: 8px; }
+    .btn-group { display: flex; gap: 6px; align-items: center; }
+    
+    .tr-btn { background: #34c759; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+    .done-btn { background: #ff9500; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; }
+    .del-btn { 
+      background: rgba(0, 0, 0, 0.2); 
+      color: #333; 
+      border: none; 
+      width: 28px; 
+      height: 28px; 
+      border-radius: 50%; 
+      font-size: 0.85rem; 
+      font-weight: bold; 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 0; 
+      line-height: 1; 
+    }
+    .del-btn:active { background: rgba(0, 0, 0, 0.4); }
+    
+    .accordion { display: none; background: #f0f4f8; padding: 10px 16px; border-top: 1px solid #e5e5ea; font-size: 0.9rem; color: #444; }
+    .accordion.open { display: block; }
+    .trans-title { font-weight: bold; font-size: 0.75rem; color: #007aff; margin-bottom: 4px; }
+
+    /* バックアップコントロール群 */
+    .backup-fixed-group {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      gap: 6px;
+      z-index: 1000;
+    }
+    .backup-btn {
+      padding: 8px 12px;
+      background: rgba(142, 142, 147, 0.9);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .backup-btn:active { background: rgba(100, 100, 100, 0.9); }
+
+    .empty-msg {
+      text-align: center;
+      color: #8e8e93;
+      font-size: 0.9rem;
+      margin-top: 24px;
+    }
+
+    /* エラーエリア＆再取得ボタンのスタイリング */
+    .error-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #ffe5e5;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #ffb3b3;
+    }
+    .error-text {
+      color: #d32f2f;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .retry-btn {
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      background: #ff3b30;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .retry-btn:active {
+      background: #d32f2f;
+    }
+
+    @media screen and (min-aspect-ratio: 13/9) {
+      body { max-width: 480px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-container">
+    <h1>👾 English monster</h1>
+    <button id="viewToggleBtn" class="view-toggle-btn" onclick="toggleViewMode()">覚えた (0)</button>
+  </div>
+
+  <div class="input-group">
+    <input type="text" id="memoInput" placeholder="メモを入力..." onkeydown="handleKeyDown(event)">
+    <button class="add-btn" onclick="addMemo()">追加</button>
+  </div>
+
+  <ul id="memoList"></ul>
+
+  <!-- バックアップ用固定ボタン群 -->
+  <div class="backup-fixed-group">
+    <button class="backup-btn" onclick="exportData()">保存</button>
+    <button class="backup-btn" onclick="document.getElementById('importFile').click()">復元</button>
+    <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'english_monster_data';
+    let showOnlyDone = false;
+
+    document.addEventListener('DOMContentLoaded', renderMemos);
+
+    function getMemos() {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    }
+
+    function saveMemos(memos) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
+    }
+
+    function toggleViewMode() {
+      showOnlyDone = !showOnlyDone;
+      renderMemos();
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Enter' && !event.isComposing) {
+        addMemo();
+      }
+    }
+
+    function renderMemos() {
+      const memos = getMemos();
+      const list = document.getElementById('memoList');
+      const toggleBtn = document.getElementById('viewToggleBtn');
+      list.innerHTML = '';
+
+      const doneCount = memos.filter(m => m.done).length;
+
+      if (showOnlyDone) {
+        toggleBtn.innerText = `一覧に戻る (${doneCount})`;
+        toggleBtn.classList.add('active');
+      } else {
+        toggleBtn.innerText = `覚えた (${doneCount})`;
+        toggleBtn.classList.remove('active');
+      }
+
+      const filteredMemos = memos.map((memo, index) => ({ ...memo, originalIndex: index }))
+                                 .filter(memo => showOnlyDone ? memo.done : !memo.done);
+
+      if (filteredMemos.length === 0) {
+        const emptyMsg = document.createElement('div');
+        emptyMsg.className = 'empty-msg';
+        emptyMsg.innerText = showOnlyDone ? '「覚えた」メモはありません' : 'メモはありません';
+        list.appendChild(emptyMsg);
+        return;
+      }
+
+      filteredMemos.forEach((memo) => {
+        const index = memo.originalIndex;
+        const isDone = memo.done || false;
+        const li = document.createElement('li');
+        if (isDone) li.classList.add('memorized');
+
+        li.innerHTML = `
+          <div class="memo-row">
+            <span class="memo-text"></span>
+            <div class="btn-group">
+              <button class="tr-btn" onclick="toggleTranslation(${index})">翻訳</button>
+              <button class="done-btn" onclick="toggleDone(${index})">${isDone ? '戻す' : '覚えた'}</button>
+              <button class="del-btn" onclick="deleteMemo(${index})" title="削除">✖</button>
+            </div>
+          </div>
+          <div class="accordion" id="acc-${index}">
+            <div class="trans-title">🌐 翻訳結果</div>
+            <div id="trans-content-${index}"></div>
+          </div>
+        `;
+
+        li.querySelector('.memo-text').innerText = memo.text;
+        const transContent = li.querySelector(`#trans-content-${index}`);
+        transContent.innerText = memo.translation ? memo.translation : '未取得';
+
+        list.appendChild(li);
+      });
+    }
+
+    function addMemo() {
+      const input = document.getElementById('memoInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const memos = getMemos();
+      memos.unshift({ text: text, done: false, translation: null });
+      saveMemos(memos);
+      input.value = '';
+      
+      showOnlyDone = false;
+      renderMemos();
+    }
+
+    function toggleDone(index) {
+      const memos = getMemos();
+      memos[index].done = !memos[index].done;
+      saveMemos(memos);
+      renderMemos();
+    }
+
+    function deleteMemo(index) {
+      const memos = getMemos();
+      memos.splice(index, 1);
+      saveMemos(memos);
+      renderMemos();
+    }
+
+    async function toggleTranslation(index, forceRetry = false) {
+      const acc = document.getElementById(`acc-${index}`);
+      const content = document.getElementById(`trans-content-${index}`);
+      const isOpening = !acc.classList.contains('open');
+
+      if (!forceRetry) {
+        acc.classList.toggle('open');
+      }
+
+      if (isOpening || forceRetry) {
+        const memos = getMemos();
+        const memo = memos[index];
+
+        if (memo.translation && !forceRetry) {
+          content.innerText = memo.translation;
+          return;
+        }
+
+        content.innerText = '読み込み中...';
+        const text = memo.text;
+        
+        const hasJapanese = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff]/;
+        const langpair = hasJapanese.test(text) ? 'ja|en' : 'en|ja';
+
+        try {
+          const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langpair}`);
+          const data = await res.json();
+          
+          if (data && data.responseData && data.responseData.translatedText) {
+            const resultText = data.responseData.translatedText;
+            content.innerText = resultText;
+            
+            memos[index].translation = resultText;
+            saveMemos(memos);
+          } else {
+            showErrorWithRetry(index, content, '取得に失敗しました。');
+          }
+        } catch (e) {
+          showErrorWithRetry(index, content, '通信エラーが発生しました。');
+        }
+      }
+    }
+
+    function showErrorWithRetry(index, container, errorMsg) {
+      container.innerHTML = `
+        <div class="error-container">
+          <span class="error-text">⚠️ ${errorMsg} 右のボタンを押して再取得してください。</span>
+          <button class="retry-btn" onclick="toggleTranslation(${index}, true)">再取得</button>
+        </div>
+      `;
+    }
+
+    function getFormattedTimestamp() {
+      const now = new Date();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      return `${mm}${dd}${hh}${min}`;
+    }
+
+    function exportData() {
+      const memos = getMemos();
+      if (memos.length === 0) {
+        alert('保存するデータがありません。');
+        return;
+      }
+      
+      const timestamp = getFormattedTimestamp();
+      const filename = `E-${timestamp}.json`;
+      
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(memos, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", filename);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedMemos = JSON.parse(e.target.result);
+          if (Array.isArray(importedMemos) && importedMemos.every(m => typeof m === 'object' && 'text' in m)) {
+            if (confirm('現在のデータを上書きして復元しますか？')) {
+              saveMemos(importedMemos);
+              renderMemos();
+              alert('復元が完了しました！');
+            }
+          } else {
+            alert('無効なファイル形式です。');
+          }
+        } catch (err) {
+          alert('ファイルの読み込みに失敗しました。');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+  </script>
+</body>
+</html>
