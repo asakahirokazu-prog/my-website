@@ -23,7 +23,7 @@
         .club-title { font-size: 13px; font-weight: bold; color: #2e7d32; }
         .hole-info { font-size: 20px; font-weight: 800; color: #1a365d; }
         
-        /* 中断・一覧ボタン */
+        /* 中断・一覧ボタン（左上に統一・配置） */
         .top-cancel-btn { 
             position: absolute; 
             top: 0; 
@@ -41,7 +41,7 @@
         .top-scorecard-btn {
             position: absolute; 
             top: 0; 
-            right: 52px; 
+            left: 0; 
             background: #0284c7; 
             color: white; 
             border: none; 
@@ -128,7 +128,8 @@
         /* 自分専用メインスコアエリア */
         .my-score-card { background: #f0fdf4; border: 2px solid #2e7d32; border-radius: 10px; padding: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(46,125,50,0.12); }
         .my-score-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 800; color: #14532d; margin-bottom: 6px; }
-        .my-score-stats { font-size: 11px; font-weight: 700; color: #15803d; display: flex; gap: 6px; }
+        .my-score-stats { font-size: 11px; font-weight: 700; color: #15803d; display: flex; gap: 6px; align-items: center; }
+        .for90-badge-my { background: #dcfce7; color: #166534; border: 1px solid #86efac; border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: 950; }
 
         .counter-group-main { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
         .counter-box { background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 6px; text-align: center; }
@@ -198,6 +199,7 @@
 
         .companion-info { display: flex; align-items: center; gap: 6px; pointer-events: none; }
         .companion-name { font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px; }
+        .for90-badge-comp { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1px 4px; font-size: 10px; font-weight: 900; }
         .companion-total { font-size: 10px; font-weight: bold; color: #64748b; }
         .drag-handle { background: #e2e8f0; color: #64748b; border-radius: 3px; padding: 0px 4px; font-size: 10px; font-weight: bold; opacity: 0.4; }
         .companion-card.reorder-active .drag-handle { background: #0284c7; color: white; opacity: 1; }
@@ -287,7 +289,7 @@
             </div>
 
             <div class="backup-group">
-                <button class="text-link-btn" onclick="exportData()">💾 バックアップ出力</button>
+                <button class="text-link-btn" onclick="exportData()">💾 フルバックアップ出力</button>
                 <button class="text-link-btn" onclick="importData()">📂 バックアップ復元</button>
             </div>
         </div>
@@ -298,8 +300,8 @@
     <!-- スコア入力画面 -->
     <div id="stepScore" style="display: none;">
         <div class="header">
-            <button class="top-cancel-btn" onclick="abortRound()">中断</button>
             <button class="top-scorecard-btn" onclick="openScorecardModal()">一覧</button>
+            <button class="top-cancel-btn" onclick="abortRound()">中断</button>
             <div class="club-title">⛳ リバーサイドフェニックス GC</div>
             <div class="hole-info" id="holeTitle">Hole 1 (Par 4)</div>
         </div>
@@ -609,8 +611,8 @@
                 return {
                     hole: actualHole,
                     par: par,
-                    stroke: par,
-                    putt: 2,
+                    stroke: null,
+                    putt: null,
                     fw: '',
                     reason: []
                 };
@@ -633,6 +635,20 @@
         }
     }
 
+    // ボギーベース(Par + 1)との差分を計算（未入力は0扱い）
+    function getPlayerFor90Cumulative(pIdx, upToStepIdx) {
+        let totalDiff = 0;
+        for (let i = 0; i <= upToStepIdx; i++) {
+            const hData = scoresData[pIdx][i];
+            if (hData.stroke !== null) {
+                const bogeyVal = hData.par + 1; // ボギーの打数
+                const diff = hData.stroke - bogeyVal; // ボギーより多ければ+, 少なければ-
+                totalDiff += diff;
+            }
+        }
+        return totalDiff;
+    }
+
     function updateUI() {
         const actualHole = getActualHoleNumber(currentStepIndex);
         const par = fullHolePars[actualHole - 1];
@@ -653,9 +669,12 @@
             myTotal += val;
         });
 
+        const myFor90Val = getPlayerFor90Cumulative(0, currentStepIndex);
+        const myFor90Str = myFor90Val > 0 ? `+${myFor90Val}` : `${myFor90Val}`;
+
         let myHtml = `
             <div class="my-score-header">
-                <span>👤 ${players[0]}</span>
+                <span><span class="for90-badge-my">for90: ${myFor90Str}</span> 👤 ${players[0]}</span>
                 <span class="my-score-stats">
                     <span>TOTAL: ${myTotal}</span>
                 </span>
@@ -723,9 +742,13 @@
             const strokeDisplay = hData.stroke !== null ? hData.stroke : '-';
             const strokeClass = hData.stroke !== null ? '' : 'unset';
 
+            const compFor90Val = getPlayerFor90Cumulative(pIdx, currentStepIndex);
+            const compFor90Str = compFor90Val > 0 ? `+${compFor90Val}` : `${compFor90Val}`;
+
             compCard.innerHTML = `
                 <div class="companion-info">
                     <span class="drag-handle">☰</span>
+                    <span class="for90-badge-comp">for90: ${compFor90Str}</span>
                     <span class="companion-name">${players[pIdx]}</span>
                     <span class="companion-total">(${getPlayerTotal(pIdx)}打)</span>
                 </div>
@@ -823,7 +846,7 @@
 
         const curVal = scoresData[pIdx][currentStepIndex][type];
         if (curVal === null) {
-            if (val > 0) scoresData[pIdx][currentStepIndex][type] = (type === 'stroke') ? par : 2;
+            scoresData[pIdx][currentStepIndex][type] = (type === 'stroke') ? par : 2;
         } else {
             const nextVal = curVal + val;
             const min = type === 'stroke' ? 1 : 0;
@@ -871,7 +894,7 @@
         updateUI();
     }
 
-    // --- スコア一覧表示モーダル（ハーフ小計付き） ---
+    // --- スコア一覧表示モーダル ---
     function openScorecardModal() {
         renderScorecardTable();
         document.getElementById('scorecardModal').style.display = 'flex';
@@ -890,7 +913,7 @@
         });
         html += `</tr></thead><tbody>`;
 
-        // 前半9ホール (ステップ 0〜8)
+        // 前半9ホール (0〜8)
         for (let i = 0; i < 9; i++) {
             const actualHole = getActualHoleNumber(i);
             const par = fullHolePars[actualHole - 1];
@@ -905,7 +928,7 @@
             html += `</tr>`;
         }
 
-        // 前半小計 (OUT または IN の名前を判定)
+        // 前半小計
         const firstHalfName = (startHoleNum === 1) ? 'OUT 小計' : 'IN 小計';
         html += `<tr class="subtotal-row"><td class="col-hole">${firstHalfName}</td>`;
         players.forEach((player, pIdx) => {
@@ -913,7 +936,7 @@
         });
         html += `</tr>`;
 
-        // 後半9ホール (ステップ 9〜17)
+        // 後半9ホール (9〜17)
         for (let i = 9; i < 18; i++) {
             const actualHole = getActualHoleNumber(i);
             const par = fullHolePars[actualHole - 1];
@@ -951,7 +974,12 @@
     function saveRound() {
         isRoundActive = false;
         const date = document.getElementById('playDate').value;
-        const resultSummary = players.map((p, idx) => `${p}: ${getPlayerTotal(idx)}打`).join('\n');
+        const resultSummary = players.map((p, idx) => {
+            const total = getPlayerTotal(idx);
+            const finalFor90 = getPlayerFor90Cumulative(idx, 17);
+            const f9Str = finalFor90 > 0 ? `+${finalFor90}` : `${finalFor90}`;
+            return `${p}: ${total}打 (for90: ${f9Str})`;
+        }).join('\n');
 
         const roundData = {
             club: 'リバーサイドフェニックスゴルフクラブ',
@@ -971,17 +999,22 @@
         document.getElementById('stepSetup').style.display = 'block';
     }
 
+    // フルバックアップ出力関数
     function exportData() {
         const exportObj = {
-            members: JSON.parse(localStorage.getItem('riverside_members') || '[]'),
-            commonMaster: JSON.parse(localStorage.getItem('riverside_common_master_v4') || '{}'),
-            scores: JSON.parse(localStorage.getItem('riverside_scores') || '[]')
+            appVersion: "1.0",
+            exportDate: new Date().toISOString(),
+            data: {
+                members: JSON.parse(localStorage.getItem('riverside_members') || '[]'),
+                commonMaster: JSON.parse(localStorage.getItem('riverside_common_master_v4') || '{}'),
+                scores: JSON.parse(localStorage.getItem('riverside_scores') || '[]')
+            }
         };
         const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `riverside_18h_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `riverside_full_backup_${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -996,11 +1029,15 @@
         const reader = new FileReader();
         reader.onload = function(evt) {
             try {
-                const data = JSON.parse(evt.target.result);
-                if (data.members) localStorage.setItem('riverside_members', typeof data.members === 'string' ? data.members : JSON.stringify(data.members));
-                if (data.commonMaster) localStorage.setItem('riverside_common_master_v4', typeof data.commonMaster === 'string' ? data.commonMaster : JSON.stringify(data.commonMaster));
-                if (data.scores) localStorage.setItem('riverside_scores', typeof data.scores === 'string' ? data.scores : JSON.stringify(data.scores));
-                alert('データを正常に復元しました。');
+                const parsed = JSON.parse(evt.target.result);
+                // フルバックアップ形式または旧形式のどちらにも対応
+                const targetData = parsed.data ? parsed.data : parsed;
+
+                if (targetData.members) localStorage.setItem('riverside_members', JSON.stringify(targetData.members));
+                if (targetData.commonMaster) localStorage.setItem('riverside_common_master_v4', JSON.stringify(targetData.commonMaster));
+                if (targetData.scores) localStorage.setItem('riverside_scores', JSON.stringify(targetData.scores));
+                
+                alert('フルバックアップデータを正常に復元しました。');
                 renderMemberLabels();
             } catch (err) {
                 alert('ファイルの読み込みに失敗しました。正しいJSONファイルを選択してください。');
