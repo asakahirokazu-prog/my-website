@@ -223,7 +223,21 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadChain();
-            window.scrollTo({ top: 0, behavior: 'auto' });
+        });
+
+        // 🔄 中断（バックグラウンド）から復帰した際にレイアウト崩れを防ぐための処理
+        window.addEventListener('pageshow', (event) => {
+            // bfcache（ブラウザの履歴キャッシュ）から復元された場合に再描画
+            if (event.persisted) {
+                loadChain(currentCardIndex);
+            }
+        });
+
+        // ウィンドウサイズ変更時（スマホの向き変更やアドレスバーの伸縮など）にレイアウトを強制再適用
+        window.addEventListener('resize', () => {
+            document.body.style.display = 'none';
+            document.body.offsetHeight; // 再描画を強制
+            document.body.style.display = '';
         });
 
         function handleTextareaEnterKey(event, callback) {
@@ -399,17 +413,6 @@
             pageIndicator.textContent = `${currentCardIndex + 1} / ${chainData.length}`;
             prevBtn.disabled = (currentCardIndex <= 0);
             nextBtn.disabled = (currentCardIndex >= chainData.length - 1);
-
-            // フォーカス調整
-            setTimeout(() => {
-                const activeCard = chainList.querySelector(`.pdca-card[data-index="${currentCardIndex}"]`);
-                if (activeCard) {
-                    const activeInput = activeCard.querySelector('textarea, input[type="text"]');
-                    if (activeInput) {
-                        activeInput.focus({preventScroll: true});
-                    }
-                }
-            }, 50);
         }
 
         // 左右ボタンでカードを切り替える
@@ -614,10 +617,9 @@
             if (navigator.storage && navigator.storage.estimate) {
                 try {
                     const estimate = await navigator.storage.estimate();
-                    const usage = estimate.usage || 0; // 使用量 (バイト)
-                    const quota = estimate.quota || 0; // 最大割当量 (バイト)
+                    const usage = estimate.usage || 0;
+                    const quota = estimate.quota || 0;
 
-                    // 読みやすい単位に変換する関数
                     function formatBytes(bytes) {
                         if (bytes === 0) return '0 Bytes';
                         const k = 1024;
