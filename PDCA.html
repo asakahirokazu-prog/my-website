@@ -2,124 +2,227 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>無限ループ PDCA チェーン</title>
 
     <!-- ♾️ 文字として直接描画するくっきり綺麗なワンソースSVGファビコン -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E♾%EF%B8%8F%3C/text%3E%3C/svg%3E">
 
     <style>
-        * { box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; }
-        body { background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        body { background-color: #f0f2f5; margin: 0; padding: 12px; padding-bottom: 90px; color: #333; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
         
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 800px; margin: 0 auto; width: 100%; position: relative; }
         
-        /* プロジェクトタイトルヘッダー */
-        .project-header { background: #2c3e50; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
-        .project-title { font-size: 24px; font-weight: bold; margin: 0; }
-        .subtitle { color: #bdc3c7; font-size: 13px; margin-top: 5px; }
+        /* プロジェクトタイトルヘッダー（タイトルのみ表示） */
+        .project-header { background: #2c3e50; color: white; padding: 14px 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); text-align: center; }
+        .project-title { font-size: 16px; font-weight: bold; margin: 0; word-break: break-all; line-height: 1.4; }
 
-        /* データ操作エリア */
-        .data-controls { margin-top: 15px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        /* 画面左下の容量確認テキストリンク */
+        .storage-link-wrapper { position: fixed; bottom: 62px; left: 16px; z-index: 890; }
+        .storage-link { font-size: 12px; color: #7f8c8d; text-decoration: underline; cursor: pointer; background: rgba(240, 242, 245, 0.9); padding: 2px 6px; border-radius: 4px; }
+        .storage-link:hover { color: #34495e; }
+
+        /* 画面下部固定の操作バー */
+        .bottom-controls { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); border-top: 1px solid #dcdde1; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; z-index: 900; box-shadow: 0 -2px 8px rgba(0,0,0,0.05); }
+        .control-group-left, .control-group-right { display: flex; align-items: center; gap: 6px; }
         
-        /* ボタン共通設定 */
-        button, .btn-label { border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 13px; }
+        /* 世代切り替えナビゲーション */
+        .pagination-nav { display: flex; align-items: center; gap: 6px; }
+        .page-indicator { font-size: 12px; font-weight: bold; color: #2c3e50; padding: 0 2px; min-width: 45px; text-align: center; }
         
-        .btn-new { background: #e67e22; color: white; }
-        .btn-new:hover { background: #d35400; }
+        .btn-page { background: #34495e; color: white; border: none; width: 26px; height: 26px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-page:active:not(:disabled) { background: #2c3e50; }
+        .btn-page:disabled { background: #bdc3c7; cursor: not-allowed; opacity: 0.6; }
+
+        /* ミニボタン共通設定 */
+        .btn-mini { border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 12px; text-align: center; display: inline-flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
         
-        .btn-json-export { background: #229954; color: white; }
-        .btn-json-export:hover { background: #1e8449; }
+        .btn-new { background: #7f8c8d; color: white; }
+        .btn-new:active { background: #6c7a89; }
         
-        .btn-json-import { background: #2980b9; color: white; display: inline-block; margin: 0; }
-        .btn-json-import:hover { background: #1f6391; }
+        .btn-backup { background: #27ae60; color: white; }
+        .btn-backup:active { background: #219653; }
+
+        .btn-restore { background: #2980b9; color: white; }
+        .btn-restore:active { background: #2471a3; }
+
+        /* カードコンテナ */
+        #chainList { position: relative; width: 100%; }
 
         /* PDCAカードのデザイン */
-        .pdca-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e1e8ed; position: relative; }
+        .pdca-card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e1e8ed; width: 100%; }
         
         /* カード上部のヘッダー構成 */
-        .card-header-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
-        .cycle-badge { display: inline-block; background: #34495e; color: white; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; flex-shrink: 0; }
-        .card-project-title { font-size: 16px; font-weight: bold; color: #2c3e50; }
+        .card-header-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .cycle-info-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .cycle-badge { display: inline-block; background: #34495e; color: white; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; flex-shrink: 0; }
+        .cycle-date { font-size: 11px; color: #7f8c8d; font-weight: 500; }
+        .card-project-title { font-size: 14px; font-weight: bold; color: #2c3e50; word-break: break-all; }
 
-        .step-box { margin-bottom: 15px; padding: 12px; border-radius: 8px; border-left: 5px solid #ccc; }
+        .step-box { margin-bottom: 12px; padding: 12px; border-radius: 8px; border-left: 4px solid #ccc; }
         .step-plan  { background: #eafaf1; border-color: #2ecc71; }
         .step-do    { background: #ebf5fb; border-color: #3498db; }
         .step-check { background: #fef9e7; border-color: #f1c40f; }
         .step-act   { background: #fadbd8; border-color: #e74c3c; }
 
-        .step-title { font-weight: bold; font-size: 15px; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .step-title { font-weight: bold; font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
         
-        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; font-size: 14px; line-height: 1.5; resize: vertical; }
-        input[type="text"]:focus, textarea:focus { border-color: #3498db; outline: none; box-shadow: 0 0 5px rgba(52, 152, 219, 0.5); }
+        input[type="text"], textarea { width: 100%; padding: 12px; border: 1px solid #ccd1d9; border-radius: 8px; margin-top: 6px; font-size: 16px; line-height: 1.5; resize: vertical; background: #fff; }
+        input[type="text"]:focus, textarea:focus { border-color: #3498db; outline: none; box-shadow: 0 0 5px rgba(52, 152, 219, 0.4); }
         
-        .btn-submit { background: #2ecc71; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 15px; }
-        .btn-submit:hover { background: #27ae60; }
-
-        .key-hint { font-size: 11px; color: #7f8c8d; font-weight: normal; }
+        .btn-submit { background: #2ecc71; color: white; width: 100%; padding: 14px; margin-top: 10px; font-size: 15px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer; }
+        .btn-submit:active { background: #27ae60; }
         
         /* 改行表示用 */
-        .text-content { white-space: pre-wrap; word-wrap: break-word; }
+        .text-content { white-space: pre-wrap; word-wrap: break-word; font-size: 14px; line-height: 1.6; color: #2c3e50; }
 
-        /* 矢印（繋ぎ目）のCSS */
-        .chain-arrow { text-align: center; font-size: 24px; color: #7f8c8d; margin: -15px 0 10px; font-weight: bold; }
+        /* 復元用選択リストのモーダルデザイン */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; padding: 0; }
+        @media (min-width: 600px) {
+            .modal-overlay { padding: 20px; align-items: center; }
+        }
+        
+        .modal-content { background: white; border-radius: 16px 16px 0 0; width: 100%; max-width: 500px; padding: 20px; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); max-height: 85vh; display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
+        @media (min-width: 600px) {
+            .modal-content { border-radius: 16px; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header { font-size: 16px; font-weight: bold; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #2c3e50; }
+        .backup-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; max-height: 55vh; padding-right: 2px; }
+        
+        .backup-item { background: #f8f9fa; border: 1px solid #dcdde1; border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+        .backup-info { flex-grow: 1; text-align: left; cursor: pointer; }
+        .backup-title { font-weight: bold; font-size: 15px; color: #2c3e50; margin-bottom: 4px; word-break: break-all; }
+        .backup-date { font-size: 12px; color: #7f8c8d; }
+        
+        .btn-delete-backup { background: #e74c3c; color: white; padding: 8px 12px; font-size: 12px; flex-shrink: 0; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-delete-backup:active { background: #c0392b; }
+
+        .btn-close-modal { background: #95a5a6; color: white; width: 100%; padding: 14px; border-radius: 8px; font-size: 15px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-close-modal:active { background: #7f8c8d; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- プロジェクトタイトル表示エリア（データがある時だけ表示） -->
+        <!-- プロジェクトタイトルヘッダー（タイトルのみ表示） -->
         <div id="projectHeader" class="project-header" style="display: none;">
             <div class="project-title" id="displayTitle"></div>
-            <div class="subtitle">♾️ PDCA 無限チェーン (Enter: 登録 / Shift+Enter: 改行)</div>
-            
-            <!-- 新規作成・JSON保存・読み込みボタン群 -->
-            <div class="data-controls">
-                <button class="btn-new" onclick="createNewProject()">✨ 新規作成</button>
-                <button class="btn-json-export" onclick="exportJSON()">📥 JSON保存</button>
-                <label class="btn-json-import btn-label">
-                    📤 JSON読み込み
-                    <input type="file" id="jsonInput" accept=".json" style="display:none;" onchange="importJSON(event)">
-                </label>
-            </div>
         </div>
 
         <!-- 新規スタート用フォーム -->
         <div id="startSection" class="pdca-card">
-            <h2 style="margin-top:0;">新しいPDCAチェーンを開始</h2>
+            <h2 style="margin-top:0; font-size:18px; color:#2c3e50;">新しいPDCAチェーンを開始</h2>
             
             <div class="step-box" style="background:#f8f9fa; border-left-color:#34495e;">
                 <div class="step-title" style="color: #2c3e50;">📌 タイトル（テーマ・目的）</div>
-                <input type="text" id="projectTitle" placeholder="例：Webサイト制作スキル習得プロジェクト" onkeydown="handleEnterKey(event, focusFirstPlan)">
+                <input type="text" id="projectTitle" placeholder="例：英語スキル習得プロジェクト" onkeydown="handleEnterKey(event, focusFirstPlan)">
             </div>
 
             <div class="step-box step-plan">
                 <div class="step-title" style="color: #27ae60;">
                     <span>P (Plan) - 最初の目標・計画</span>
-                    <span class="key-hint">Enterで開始 / Shift+Enterで改行</span>
                 </div>
-                <textarea id="firstPlan" rows="3" placeholder="例：毎日1時間HTML/CSSの勉強をする" onkeydown="handleTextareaEnterKey(event, startNewChain)"></textarea>
+                <textarea id="firstPlan" rows="3" placeholder="例：毎日15分単語アプリを使う" onkeydown="handleTextareaEnterKey(event, startNewChain)"></textarea>
             </div>
             
             <button class="btn-submit" onclick="startNewChain()">サイクルを開始する</button>
-
-            <!-- 初回表示時のJSONファイル読み込みボタン -->
-            <div style="text-align: center; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 15px;">
-                <label class="btn-json-import btn-label">
-                    📂 過去に保存したJSONから再開する
-                    <input type="file" id="jsonInputStart" accept=".json" style="display:none;" onchange="importJSON(event)">
-                </label>
-            </div>
         </div>
 
-        <!-- PDCA連鎖リストの表示エリア -->
+        <!-- PDCAカードの表示エリア -->
         <div id="chainList"></div>
     </div>
 
+    <!-- 画面左下の容量確認テキストリンク -->
+    <div class="storage-link-wrapper">
+        <span class="storage-link" onclick="checkStorageSize()">ストレージ容量を確認</span>
+    </div>
+
+    <!-- 画面一番下に常時固定するコントロールバー -->
+    <div class="bottom-controls">
+        <div class="control-group-left">
+            <button class="btn-mini btn-new" onclick="createNewProject()" title="新規作成">新規</button>
+            <button class="btn-mini btn-backup" onclick="saveBackupToDB()" title="保存">保存</button>
+            <button class="btn-mini btn-restore" onclick="showRestoreModal()" title="復元">復元</button>
+        </div>
+        <div class="control-group-right">
+            <div class="pagination-nav" id="paginationNav" style="display: none;">
+                <button class="btn-page" id="prevBtn" onclick="changeCard(-1)">〈</button>
+                <span id="pageIndicator" class="page-indicator">- / -</span>
+                <button class="btn-page" id="nextBtn" onclick="changeCard(1)">〉</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 復元用モーダルコンテナ -->
+    <div id="modalContainer"></div>
+
     <script>
+        // --- グローバル変数（現在表示中の世代インデックス） ---
+        let currentCardIndex = 0;
+
+        // --- IndexedDB のセットアップ ---
+        const DB_NAME = 'InfinitePDCA_DB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'pdcaStore';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+            });
+        }
+
+        async function dbGet(key) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(key);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function dbPut(key, value) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(value, key);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function dbDelete(key) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(key);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // --- アプリケーションロジック ---
+
         document.addEventListener('DOMContentLoaded', loadChain);
 
-        // キー入力制御: Enterで送信 / Shift+Enterで改行 (textarea用)
         function handleTextareaEnterKey(event, callback) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
@@ -127,7 +230,6 @@
             }
         }
 
-        // キー入力制御: Enterで送信 (input text用)
         function handleEnterKey(event, callback) {
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -135,7 +237,6 @@
             }
         }
 
-        // タイトル入力後にEnterを押した時、最初のPlan入力欄にフォーカス
         function focusFirstPlan() {
             const title = document.getElementById('projectTitle').value.trim();
             if (!title) {
@@ -145,21 +246,37 @@
             document.getElementById('firstPlan').focus();
         }
 
+        // 日付フォーマット関数 (YYYY/MM/DD)
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return '';
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+
         // データの読み込み＆描画
-        function loadChain() {
+        async function loadChain(targetIndex = null) {
             const chainList = document.getElementById('chainList');
             const startSection = document.getElementById('startSection');
             const projectHeader = document.getElementById('projectHeader');
             const displayTitle = document.getElementById('displayTitle');
+            const paginationNav = document.getElementById('paginationNav');
+            const pageIndicator = document.getElementById('pageIndicator');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
             
             chainList.innerHTML = '';
             
-            let chainData = JSON.parse(localStorage.getItem('infinitePdcaData')) || [];
-            let projectTitle = localStorage.getItem('infinitePdcaTitle') || '';
+            let chainData = (await dbGet('infinitePdcaData')) || [];
+            let projectTitle = (await dbGet('infinitePdcaTitle')) || '';
 
             if (chainData.length === 0) {
                 startSection.style.display = 'block';
                 projectHeader.style.display = 'none';
+                paginationNav.style.display = 'none';
                 
                 document.getElementById('projectTitle').value = '';
                 document.getElementById('firstPlan').value = '';
@@ -172,17 +289,33 @@
             } else {
                 startSection.style.display = 'none';
                 projectHeader.style.display = 'block';
+                paginationNav.style.display = 'flex';
                 displayTitle.textContent = projectTitle;
             }
 
+            // インデックスの範囲調整
+            if (targetIndex !== null) {
+                currentCardIndex = Math.max(0, Math.min(targetIndex, chainData.length - 1));
+            } else {
+                currentCardIndex = chainData.length - 1;
+            }
+
+            // 各世代のカードを生成（該当インデックスのみ表示）
             chainData.forEach((item, index) => {
                 const isLatest = (index === chainData.length - 1);
                 const card = document.createElement('div');
                 card.className = 'pdca-card';
+                card.style.display = (index === currentCardIndex) ? 'block' : 'none';
+                card.dataset.index = index;
+
+                const dateStr = formatDate(item.createdAt);
 
                 let html = `
                     <div class="card-header-bar">
-                        <span class="cycle-badge">第 ${item.cycle} 世代 (Cycle ${item.cycle})</span>
+                        <div class="cycle-info-group">
+                            <span class="cycle-badge">第 ${item.cycle} 世代</span>
+                            ${dateStr ? `<span class="cycle-date">📅 ${dateStr}</span>` : ''}
+                        </div>
                         <span class="card-project-title">📌 ${escapeHtml(projectTitle)}</span>
                     </div>
                 `;
@@ -208,10 +341,9 @@
                         <div class="step-box step-do">
                             <div class="step-title" style="color: #2980b9;">
                                 <span>D (Do) - 実行内容を入力</span>
-                                <span class="key-hint">Enterで登録 / Shift+Enterで改行</span>
                             </div>
-                            <textarea id="inputDo" rows="3" placeholder="実際に行なったこと・進捗状況を入力..." onkeydown="handleTextareaEnterKey(event, () => updateStep(${index}, 'do'))"></textarea>
-                            <button class="btn-submit" onclick="updateStep(${index}, 'do')">Do を完了して Check へ進む</button>
+                            <textarea id="inputDo" rows="3" placeholder="実際に行なったこと・進捗..." onkeydown="handleTextareaEnterKey(event, () => updateStep(${index}, 'do'))"></textarea>
+                            <button class="btn-submit" onclick="updateStep(${index}, 'do')">Do を完了して Check へ</button>
                         </div>
                     `;
                 }
@@ -229,10 +361,9 @@
                         <div class="step-box step-check">
                             <div class="step-title" style="color: #d35400;">
                                 <span>C (Check) - 評価・振り返りを入力</span>
-                                <span class="key-hint">Enterで登録 / Shift+Enterで改行</span>
                             </div>
-                            <textarea id="inputCheck" rows="3" placeholder="良かった点、うまくいかなかった原因を入力..." onkeydown="handleTextareaEnterKey(event, () => updateStep(${index}, 'check'))"></textarea>
-                            <button class="btn-submit" onclick="updateStep(${index}, 'check')">Check を完了して Act へ進む</button>
+                            <textarea id="inputCheck" rows="3" placeholder="良かった点、原因など..." onkeydown="handleTextareaEnterKey(event, () => updateStep(${index}, 'check'))"></textarea>
+                            <button class="btn-submit" onclick="updateStep(${index}, 'check')">Check を完了して Act へ</button>
                         </div>
                     `;
                 }
@@ -249,48 +380,56 @@
                     html += `
                         <div class="step-box step-act">
                             <div class="step-title" style="color: #c0392b;">
-                                <span>A (Act) - 次回への改善策（これが次の Plan になります！）</span>
-                                <span class="key-hint">Enterで登録 / Shift+Enterで改行</span>
+                                <span>A (Act) - 次回の改善策（次の Plan）</span>
                             </div>
-                            <textarea id="inputAct" rows="3" placeholder="次回のサイクルでどう改善するか？を入力..." onkeydown="handleTextareaEnterKey(event, () => nextLoop(${index}))"></textarea>
-                            <button class="btn-submit" style="background: #e74c3c;" onclick="nextLoop(${index})">🔄 次のPDCAサイクル(第${item.cycle + 1}世代)へ連鎖させる！</button>
+                            <textarea id="inputAct" rows="3" placeholder="次回どう改善するか？を入力..." onkeydown="handleTextareaEnterKey(event, () => nextLoop(${index}))"></textarea>
+                            <button class="btn-submit" style="background: #e74c3c;" onclick="nextLoop(${index})">🔄 次のサイクルへ連鎖させる！</button>
                         </div>
                     `;
                 }
 
                 card.innerHTML = html;
                 chainList.appendChild(card);
-
-                if (!isLatest) {
-                    const arrow = document.createElement('div');
-                    arrow.className = 'chain-arrow';
-                    arrow.innerHTML = '⬇️ 改善されて次のサイクルへ';
-                    chainList.appendChild(arrow);
-                }
             });
 
-            // 最新のテキストエリアへ自動フォーカス
+            // インジケーターとボタンの状態更新
+            pageIndicator.textContent = `${currentCardIndex + 1} / ${chainData.length}`;
+            prevBtn.disabled = (currentCardIndex <= 0);
+            nextBtn.disabled = (currentCardIndex >= chainData.length - 1);
+
+            // フォーカス調整
             setTimeout(() => {
-                const activeInputs = document.querySelectorAll('textarea, input[type="text"]');
-                if (activeInputs.length > 0) {
-                    const lastInput = activeInputs[activeInputs.length - 1];
-                    lastInput.focus();
+                const activeCard = chainList.querySelector(`.pdca-card[data-index="${currentCardIndex}"]`);
+                if (activeCard) {
+                    const activeInput = activeCard.querySelector('textarea, input[type="text"]');
+                    if (activeInput) {
+                        activeInput.focus({preventScroll: true});
+                    }
                 }
             }, 50);
         }
 
+        // 左右ボタンでカードを切り替える
+        async function changeCard(direction) {
+            let chainData = (await dbGet('infinitePdcaData')) || [];
+            const newIndex = currentCardIndex + direction;
+            if (newIndex >= 0 && newIndex < chainData.length) {
+                loadChain(newIndex);
+            }
+        }
+
         // 新規作成処理
-        function createNewProject() {
-            if (confirm('新しいプロジェクトを作成しますか？\n（必要に応じて、先に「JSON保存」を行ってください）')) {
-                localStorage.removeItem('infinitePdcaTitle');
-                localStorage.removeItem('infinitePdcaData');
+        async function createNewProject() {
+            if (confirm('新しいプロジェクトを作成しますか？')) {
+                await dbDelete('infinitePdcaTitle');
+                await dbDelete('infinitePdcaData');
                 loadChain();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
         // 最初のサイクルを開始
-        function startNewChain() {
+        async function startNewChain() {
             const title = document.getElementById('projectTitle').value.trim();
             const plan = document.getElementById('firstPlan').value.trim();
 
@@ -303,17 +442,18 @@
                 doText: '',
                 check: '',
                 act: '',
-                status: 'NEED_DO'
+                status: 'NEED_DO',
+                createdAt: new Date().toISOString()
             }];
 
-            localStorage.setItem('infinitePdcaTitle', title);
-            localStorage.setItem('infinitePdcaData', JSON.stringify(chainData));
+            await dbPut('infinitePdcaTitle', title);
+            await dbPut('infinitePdcaData', chainData);
             loadChain();
         }
 
         // ステップを進める
-        function updateStep(index, step) {
-            let chainData = JSON.parse(localStorage.getItem('infinitePdcaData'));
+        async function updateStep(index, step) {
+            let chainData = await dbGet('infinitePdcaData');
             
             if (step === 'do') {
                 const val = document.getElementById('inputDo').value.trim();
@@ -327,16 +467,16 @@
                 chainData[index].status = 'NEED_ACT';
             }
 
-            localStorage.setItem('infinitePdcaData', JSON.stringify(chainData));
-            loadChain();
+            await dbPut('infinitePdcaData', chainData);
+            loadChain(index);
         }
 
         // Actを入力して次のPDCA(Plan)を生成する
-        function nextLoop(currentIndex) {
+        async function nextLoop(currentIndex) {
             const actVal = document.getElementById('inputAct').value.trim();
             if (!actVal) return alert('改善策を入力してください。これが次のPlanになります！');
 
-            let chainData = JSON.parse(localStorage.getItem('infinitePdcaData'));
+            let chainData = await dbGet('infinitePdcaData');
             
             chainData[currentIndex].act = actVal;
             chainData[currentIndex].status = 'COMPLETED';
@@ -348,71 +488,154 @@
                 doText: '',
                 check: '',
                 act: '',
-                status: 'NEED_DO'
+                status: 'NEED_DO',
+                createdAt: new Date().toISOString()
             });
 
-            localStorage.setItem('infinitePdcaData', JSON.stringify(chainData));
-            loadChain();
-
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            await dbPut('infinitePdcaData', chainData);
+            loadChain(chainData.length - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 📥 JSON出力
-        function exportJSON() {
-            const rawTitle = localStorage.getItem('infinitePdcaTitle') || 'PDCA';
-            const data = localStorage.getItem('infinitePdcaData') || '[]';
+        // 📥 保存処理
+        async function saveBackupToDB() {
+            const rawTitle = (await dbGet('infinitePdcaTitle'));
+            const data = (await dbGet('infinitePdcaData')) || [];
 
-            const jsonObject = {
+            if (!rawTitle) {
+                alert('保存するプロジェクトのタイトルがありません。');
+                return;
+            }
+
+            let backups = (await dbGet('infinitePdcaBackups')) || {};
+
+            backups[rawTitle] = {
                 title: rawTitle,
-                chainData: JSON.parse(data),
-                exportedAt: new Date().toISOString()
+                chainData: data,
+                savedAt: new Date().toISOString()
             };
 
-            const now = new Date();
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const timeStamp = `${mm}${dd}_${hh}${min}`;
-
-            const safeTitle = rawTitle.replace(/[\\/:*?"<>|]/g, '_');
-            const fileName = `PDCA_${safeTitle}_${timeStamp}.json`;
-
-            const jsonString = JSON.stringify(jsonObject, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            await dbPut('infinitePdcaBackups', backups);
+            alert(`プロジェクト「${rawTitle}」のバックアップをIndexedDBに保存（上書き）しました！`);
         }
 
-        // 📤 JSON読み込み
-        function importJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // 📤 復元用選択リスト（モーダル）を表示
+        async function showRestoreModal() {
+            const backups = (await dbGet('infinitePdcaBackups')) || {};
+            const titles = Object.keys(backups);
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedObj = JSON.parse(e.target.result);
-                    if (importedObj.title && Array.isArray(importedObj.chainData)) {
-                        localStorage.setItem('infinitePdcaTitle', importedObj.title);
-                        localStorage.setItem('infinitePdcaData', JSON.stringify(importedObj.chainData));
-                        alert('データを無事読み込みました！');
-                        loadChain();
+            const modalContainer = document.getElementById('modalContainer');
+
+            if (titles.length === 0) {
+                alert('IndexedDB内に保存されたバックアップデータがありません。');
+                return;
+            }
+
+            let listHtml = '';
+            titles.forEach((title) => {
+                const backup = backups[title];
+                const dateStr = backup.savedAt ? new Date(backup.savedAt).toLocaleString() : '日時不明';
+                listHtml += `
+                    <div class="backup-item">
+                        <div class="backup-info" onclick="restoreSelectedBackup('${escapeAttribute(title)}')">
+                            <div class="backup-title">📌 ${escapeHtml(title)}</div>
+                            <div class="backup-date">保存日時: ${dateStr}</div>
+                        </div>
+                        <button class="btn-delete-backup" onclick="deleteBackup('${escapeAttribute(title)}')">🗑️ 削除</button>
+                    </div>
+                `;
+            });
+
+            modalContainer.innerHTML = `
+                <div class="modal-overlay" onclick="closeRestoreModal(event)">
+                    <div class="modal-content" onclick="event.stopPropagation()">
+                        <div class="modal-header">
+                            <span>📤 復元または削除するプロジェクト</span>
+                            <span style="cursor:pointer; font-size:20px; padding: 0 5px;" onclick="closeRestoreModal()">✕</span>
+                        </div>
+                        <div class="backup-list">
+                            ${listHtml}
+                        </div>
+                        <button class="btn-close-modal" onclick="closeRestoreModal()">閉じる</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function closeRestoreModal() {
+            document.getElementById('modalContainer').innerHTML = '';
+        }
+
+        async function restoreSelectedBackup(titleKey) {
+            const backups = (await dbGet('infinitePdcaBackups')) || {};
+            const backup = backups[titleKey];
+
+            if (!backup) {
+                alert('指定されたバックアップが見つかりませんでした。');
+                return;
+            }
+
+            if (confirm(`「${backup.title}」のバックアップデータを復元しますか？`)) {
+                await dbPut('infinitePdcaTitle', backup.title);
+                await dbPut('infinitePdcaData', backup.chainData);
+                closeRestoreModal();
+                loadChain();
+                alert('データを正常に復元しました！');
+            }
+        }
+
+        async function deleteBackup(titleKey) {
+            if (confirm(`本当に「${titleKey}」のバックアップを削除しますか？`)) {
+                let backups = (await dbGet('infinitePdcaBackups')) || {};
+                
+                if (backups[titleKey]) {
+                    delete backups[titleKey];
+                    await dbPut('infinitePdcaBackups', backups);
+                    
+                    if (Object.keys(backups).length > 0) {
+                        showRestoreModal();
                     } else {
-                        alert('正しいフォーマットのPDCA JSONファイルではありません');
+                        closeRestoreModal();
                     }
-                } catch (err) {
-                    alert('JSONファイルの読み込みに失敗しました');
+                    alert(`「${titleKey}」のバックアップを削除しました。`);
                 }
-            };
-            reader.readAsText(file);
+            }
+        }
+
+        // 📊 IndexedDBのストレージ使用量・上限を確認する関数
+        async function checkStorageSize() {
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    const usage = estimate.usage || 0; // 使用量 (バイト)
+                    const quota = estimate.quota || 0; // 最大割当量 (バイト)
+
+                    // 読みやすい単位に変換する関数
+                    function formatBytes(bytes) {
+                        if (bytes === 0) return '0 Bytes';
+                        const k = 1024;
+                        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                        const i = Math.floor(Math.log(bytes) / Math.log(k));
+                        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                    }
+
+                    const usageFormatted = formatBytes(usage);
+                    const quotaFormatted = formatBytes(quota);
+                    const percentage = quota > 0 ? ((usage / quota) * 100).toFixed(2) + '%' : '不明';
+
+                    alert(
+                        `📊 ストレージ使用状況 (IndexedDB / ブラウザ全体)\n\n` +
+                        `・現在の使用量: ${usageFormatted}\n` +
+                        `・利用可能な上限: ${quotaFormatted}\n` +
+                        `・使用割合: ${percentage}`
+                    );
+                } catch (error) {
+                    console.error(error);
+                    alert('ストレージ情報の取得に失敗しました。');
+                }
+            } else {
+                alert('お使いのブラウザはこの機能（StorageManager API）に対応していません。');
+            }
         }
 
         // エスケープ処理
@@ -423,6 +646,11 @@
                       .replace(/>/g, '&gt;')
                       .replace(/"/g, '&quot;')
                       .replace(/'/g, '&#039;');
+        }
+
+        function escapeAttribute(str) {
+            if(!str) return '';
+            return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         }
     </script>
 </body>
