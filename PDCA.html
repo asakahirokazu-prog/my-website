@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>無限ループ PDCA チェーン</title>
+
+    <!-- ♾️ 文字として直接描画するくっきり綺麗なワンソースSVGファビコン -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E♾%EF%B8%8F%3C/text%3E%3C/svg%3E">
+
+    <style>
+        * { box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        body { background-color: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        
+        .container { max-width: 800px; margin: 0 auto; }
+        
+        /* プロジェクトタイトルヘッダー */
+        .project-header { background: #2c3e50; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
+        .project-title { font-size: 24px; font-weight: bold; margin: 0; }
+        .subtitle { color: #bdc3c7; font-size: 13px; margin-top: 5px; }
+
+        /* データ操作エリア */
+        .data-controls { margin-top: 15px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        
+        /* ボタン共通設定 */
+        button, .btn-label { border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 13px; }
+        
+        .btn-new { background: #e67e22; color: white; }
+        .btn-new:hover { background: #d35400; }
+        
+        .btn-json-export { background: #229954; color: white; }
+        .btn-json-export:hover { background: #1e8449; }
+        
+        .btn-json-import { background: #2980b9; color: white; display: inline-block; margin: 0; }
+        .btn-json-import:hover { background: #1f6391; }
+
+        /* PDCAカードのデザイン */
+        .pdca-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e1e8ed; position: relative; }
+        
+        /* カード上部のヘッダー構成 */
+        .card-header-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; }
+        .cycle-badge { display: inline-block; background: #34495e; color: white; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+        .card-project-title { font-size: 16px; font-weight: bold; color: #2c3e50; }
+
+        .step-box { margin-bottom: 15px; padding: 12px; border-radius: 8px; border-left: 5px solid #ccc; }
+        .step-plan  { background: #eafaf1; border-color: #2ecc71; }
+        .step-do    { background: #ebf5fb; border-color: #3498db; }
+        .step-check { background: #fef9e7; border-color: #f1c40f; }
+        .step-act   { background: #fadbd8; border-color: #e74c3c; }
+
+        .step-title { font-weight: bold; font-size: 15px; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        
+        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; font-size: 14px; line-height: 1.5; resize: vertical; }
+        input[type="text"]:focus, textarea:focus { border-color: #3498db; outline: none; box-shadow: 0 0 5px rgba(52, 152, 219, 0.5); }
+        
+        .btn-submit { background: #2ecc71; color: white; width: 100%; padding: 12px; margin-top: 10px; font-size: 15px; }
+        .btn-submit:hover { background: #27ae60; }
+
+        .key-hint { font-size: 11px; color: #7f8c8d; font-weight: normal; }
+        
+        /* 改行表示用 */
+        .text-content { white-space: pre-wrap; word-wrap: break-word; }
+
+        /* 矢印（繋ぎ目）のCSS */
+        .chain-arrow { text-align: center; font-size: 24px; color: #7f8c8d; margin: -15px 0 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- プロジェクトタイトル表示エリア（データがある時だけ表示） -->
+        <div id="projectHeader" class="project-header" style="display: none;">
+            <div class="project-title" id="displayTitle"></div>
+            <div class="subtitle">♾️ PDCA 無限チェーン (Enter: 登録 / Shift+Enter: 改行)</div>
+            
+            <!-- 新規作成・JSON保存・読み込みボタン群 -->
+            <div class="data-controls">
+                <button class="btn-new" onclick="createNewProject()">✨ 新規作成</button>
+                <button class="btn-json-export" onclick="exportJSON()">📥 JSON保存</button>
+                <label class="btn-json-import btn-label">
+                    📤 JSON読み込み
+                    <input type="file" id="jsonInput" accept=".json" style="display:none;" onchange="importJSON(event)">
+                </label>
+            </div>
+        </div>
+
+        <!-- 新規スタート用フォーム -->
+        <div id="startSection" class="pdca-card">
+            <h2 style="margin-top:0;">新しいPDCAチェーンを開始</h2>
+            
+            <div class="step-box" style="background:#f8f9fa; border-left-color:#34495e;">
+                <div class="step-title" style="color: #2c3e50;">📌 タイトル（テーマ・目的）</div>
+                <input type="text" id="projectTitle" placeholder="例：Webサイト制作スキル習得プロジェクト" onkeydown="handleEnterKey(event, focusFirstPlan)">
+            </div>
+
+            <div class="step-box step-plan">
+                <div class="step-title" style="color: #27ae60;">
+                    <span>P (Plan) - 最初の目標・計画</span>
+                    <span class="key-hint">Enterで開始 / Shift+Enterで改行</span>
+                </div>
+                <textarea id="firstPlan" rows="3" placeholder="例：毎日1時間HTML/CSSの勉強をする" onkeydown="handleTextareaEnterKey(event, startNewChain)"></textarea>
+            </div>
+            
+            <button class="btn-submit" onclick="startNewChain()">サイクルを開始する</button>
+
+            <!-- 初回表示時のJSONファイル読み込みボタン -->
+            <div style="text-align: center; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 15px;">
+                <label class="btn-json-import btn-label">
+                    📂 過去に保存したJSONから再開する
+                    <input type="file" id="jsonInputStart" accept=".json" style="display:none;" onchange="importJSON(event)">
+                </label>
+            </div>
+        </div>
+
+        <!-- PDCA連鎖リストの表示エリア -->
+        <div id="chainList"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadChain);
+
+        // キー入力制御: Enterで送信 / Shift+Enterで改行 (textarea用)
+        function handleTextareaEnterKey(event, callback) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                callback();
+            }
+        }
+
+        // キー入力制御: Enterで送信 (input text用)
+        function handleEnterKey(event, callback) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                callback();
+            }
+        }
+
+        // タイトル入力後にEnterを押した時、最初のPlan入力欄にフォーカス
+        function focusFirstPlan() {
+            const title = document.getElementById('projectTitle').value.trim();
+            if (!title) {
+                alert('タイトルを入力してください');
+                return;
+            }
+            document.getElementById('firstPlan').focus();
+        }
+
+        // データの読み込み＆描画
+        function loadChain() {
+            const chainList = document.getElementById('chainList');
+            const startSection = document.getElementById('startSection');
+            const projectHeader = document.getElementById('projectHeader');
+            const displayTitle = document.getElementById('displayTitle');
+            
+            chainList.innerHTML = '';
+            
+            let chainData = JSON.parse(localStorage.getItem('infinitePdcaData')) || [];
+            let projectTitle = localStorage.getItem('infinitePdcaTitle') || '';
+
+            if (chainData.length === 0) {
+                startSection.style.display = 'block';
+                projectHeader.style.display = 'none';
+                
+                document.getElementById('projectTitle').value = '';
+                document.getElementById('firstPlan').value = '';
+
+                setTimeout(() => {
+                    const titleInput = document.getElementById('projectTitle');
+                    if (titleInput) titleInput.focus();
+                }, 50);
+                return;
+            } else {
+                startSection.style.display = 'none';
+                projectHeader.style.display = 'block';
+                displayTitle.textContent = projectTitle;
+            }
+
+            chainData.forEach((item, index) => {
+                const isLatest = (index === chainData.length - 1);
+                const card = document.createElement('div');
+                card.className = 'pdca-card';
+
+                let html = `
+                    <div class="card-header-bar">
+                        <span class="cycle-badge">第 ${item.cycle} 世代 (Cycle ${item.cycle})</span>
+                        <span class="card-project-title">📌 ${escapeHtml(projectTitle)}</span>
+                    </div>
+                `;
+
+                // 1. PLAN
+                html += `
+                    <div class="step-box step-plan">
+                        <div class="step-title" style="color: #27ae60;">P (Plan) - 計画</div>
+                        <div class="text-content">${escapeHtml(item.plan)}</div>
+                    </div>
+                `;
+
+                // 2. DO
+                if (item.status === 'PLAN_DONE' || !isLatest) {
+                    html += `
+                        <div class="step-box step-do">
+                            <div class="step-title" style="color: #2980b9;">D (Do) - 実行</div>
+                            <div class="text-content">${escapeHtml(item.doText)}</div>
+                        </div>
+                    `;
+                } else if (item.status === 'NEED_DO') {
+                    html += `
+                        <div class="step-box step-do">
+                            <div class="step-title" style="color: #2980b9;">
+                                <span>D (Do) - 実行内容を入力</span>
+                                <span class="key-hint">Enterで登録 / Shift+Enterで改行</span>
+                            </div>
+                            <textarea id="inputDo" rows="3" placeholder="実際に行なったこと・進捗状況を入力..." onkeydown="handleTextareaEnterKey(event, () => updateStep(${index}, 'do'))"></textarea>
+                            <button class="btn-submit" onclick="updateStep(${index}, 'do')">Do を完了して Check へ進む</button>
+                        </div>
+                    `;
+                }
+
+                // 3. CHECK
+                if (item.status === 'DO_DONE' || (!isLatest && item.check)) {
+                    html += `
+                        <div class="step-box step-check">
+                            <div class="step-title" style="color: #d35400;">C (Check) - 評価・振り返り</div>
+                            <div class="text-content">${escapeHtml(item.check)}</div>
+                        </div>
+                    `;
+                } else if (item.status === 'NEED_CHECK') {
+                    html += `
+                        <div class="step-box step-check">
+                            <div class="step-title" style="color: #d35400;">
+                                <span>C (Check) - 評価・振り返りを入力</span>
+                                <span class="key-hint">Enterで登録 / Shift+Enterで改行</span>
+                            </div>
+                            <textarea id="inputCheck" rows="3" placeholder="良かった点、うまくいかなかった原因を入力..." onkeydown="handleTextareaEnterKey(event, () => updateStep(${index}, 'check'))"></textarea>
+                            <button class="btn-submit" onclick="updateStep(${index}, 'check')">Check を完了して Act へ進む</button>
+                        </div>
+                    `;
+                }
+
+                // 4. ACT
+                if (!isLatest) {
+                    html += `
+                        <div class="step-box step-act">
+                            <div class="step-title" style="color: #c0392b;">A (Act) - 改善策</div>
+                            <div class="text-content">${escapeHtml(item.act)}</div>
+                        </div>
+                    `;
+                } else if (item.status === 'NEED_ACT') {
+                    html += `
+                        <div class="step-box step-act">
+                            <div class="step-title" style="color: #c0392b;">
+                                <span>A (Act) - 次回への改善策（これが次の Plan になります！）</span>
+                                <span class="key-hint">Enterで登録 / Shift+Enterで改行</span>
+                            </div>
+                            <textarea id="inputAct" rows="3" placeholder="次回のサイクルでどう改善するか？を入力..." onkeydown="handleTextareaEnterKey(event, () => nextLoop(${index}))"></textarea>
+                            <button class="btn-submit" style="background: #e74c3c;" onclick="nextLoop(${index})">🔄 次のPDCAサイクル(第${item.cycle + 1}世代)へ連鎖させる！</button>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = html;
+                chainList.appendChild(card);
+
+                if (!isLatest) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'chain-arrow';
+                    arrow.innerHTML = '⬇️ 改善されて次のサイクルへ';
+                    chainList.appendChild(arrow);
+                }
+            });
+
+            // 最新のテキストエリアへ自動フォーカス
+            setTimeout(() => {
+                const activeInputs = document.querySelectorAll('textarea, input[type="text"]');
+                if (activeInputs.length > 0) {
+                    const lastInput = activeInputs[activeInputs.length - 1];
+                    lastInput.focus();
+                }
+            }, 50);
+        }
+
+        // 新規作成処理
+        function createNewProject() {
+            if (confirm('新しいプロジェクトを作成しますか？\n（必要に応じて、先に「JSON保存」を行ってください）')) {
+                localStorage.removeItem('infinitePdcaTitle');
+                localStorage.removeItem('infinitePdcaData');
+                loadChain();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // 最初のサイクルを開始
+        function startNewChain() {
+            const title = document.getElementById('projectTitle').value.trim();
+            const plan = document.getElementById('firstPlan').value.trim();
+
+            if (!title) return alert('タイトルを入力してください');
+            if (!plan) return alert('最初のPlanを入力してください');
+
+            const chainData = [{
+                cycle: 1,
+                plan: plan,
+                doText: '',
+                check: '',
+                act: '',
+                status: 'NEED_DO'
+            }];
+
+            localStorage.setItem('infinitePdcaTitle', title);
+            localStorage.setItem('infinitePdcaData', JSON.stringify(chainData));
+            loadChain();
+        }
+
+        // ステップを進める
+        function updateStep(index, step) {
+            let chainData = JSON.parse(localStorage.getItem('infinitePdcaData'));
+            
+            if (step === 'do') {
+                const val = document.getElementById('inputDo').value.trim();
+                if (!val) return alert('実行内容を入力してください');
+                chainData[index].doText = val;
+                chainData[index].status = 'NEED_CHECK';
+            } else if (step === 'check') {
+                const val = document.getElementById('inputCheck').value.trim();
+                if (!val) return alert('振り返りを入力してください');
+                chainData[index].check = val;
+                chainData[index].status = 'NEED_ACT';
+            }
+
+            localStorage.setItem('infinitePdcaData', JSON.stringify(chainData));
+            loadChain();
+        }
+
+        // Actを入力して次のPDCA(Plan)を生成する
+        function nextLoop(currentIndex) {
+            const actVal = document.getElementById('inputAct').value.trim();
+            if (!actVal) return alert('改善策を入力してください。これが次のPlanになります！');
+
+            let chainData = JSON.parse(localStorage.getItem('infinitePdcaData'));
+            
+            chainData[currentIndex].act = actVal;
+            chainData[currentIndex].status = 'COMPLETED';
+
+            const nextCycle = chainData[currentIndex].cycle + 1;
+            chainData.push({
+                cycle: nextCycle,
+                plan: actVal,
+                doText: '',
+                check: '',
+                act: '',
+                status: 'NEED_DO'
+            });
+
+            localStorage.setItem('infinitePdcaData', JSON.stringify(chainData));
+            loadChain();
+
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        // 📥 JSON出力
+        function exportJSON() {
+            const rawTitle = localStorage.getItem('infinitePdcaTitle') || 'PDCA';
+            const data = localStorage.getItem('infinitePdcaData') || '[]';
+
+            const jsonObject = {
+                title: rawTitle,
+                chainData: JSON.parse(data),
+                exportedAt: new Date().toISOString()
+            };
+
+            const now = new Date();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const timeStamp = `${mm}${dd}_${hh}${min}`;
+
+            const safeTitle = rawTitle.replace(/[\\/:*?"<>|]/g, '_');
+            const fileName = `PDCA_${safeTitle}_${timeStamp}.json`;
+
+            const jsonString = JSON.stringify(jsonObject, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 📤 JSON読み込み
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedObj = JSON.parse(e.target.result);
+                    if (importedObj.title && Array.isArray(importedObj.chainData)) {
+                        localStorage.setItem('infinitePdcaTitle', importedObj.title);
+                        localStorage.setItem('infinitePdcaData', JSON.stringify(importedObj.chainData));
+                        alert('データを無事読み込みました！');
+                        loadChain();
+                    } else {
+                        alert('正しいフォーマットのPDCA JSONファイルではありません');
+                    }
+                } catch (err) {
+                    alert('JSONファイルの読み込みに失敗しました');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // エスケープ処理
+        function escapeHtml(str) {
+            if(!str) return '';
+            return str.replace(/&/g, '&amp;')
+                      .replace(/</g, '&lt;')
+                      .replace(/>/g, '&gt;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
