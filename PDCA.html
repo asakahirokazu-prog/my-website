@@ -14,14 +14,15 @@
         
         .container { max-width: 800px; margin: 0 auto; width: 100%; position: relative; }
         
-        /* プロジェクトタイトルヘッダー（タイトルのみ表示） */
-        .project-header { background: #2c3e50; color: white; padding: 14px 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); text-align: center; }
-        .project-title { font-size: 16px; font-weight: bold; margin: 0; word-break: break-all; line-height: 1.4; }
-
-        /* 画面左下の容量確認テキストリンク */
-        .storage-link-wrapper { position: fixed; bottom: 62px; left: 16px; z-index: 890; }
-        .storage-link { font-size: 12px; color: #7f8c8d; text-decoration: underline; cursor: pointer; background: rgba(240, 242, 245, 0.9); padding: 2px 6px; border-radius: 4px; }
+        /* 画面左上の容量確認テキストリンク */
+        .storage-link-wrapper { margin-bottom: 8px; padding-left: 2px; }
+        .storage-link { font-size: 12px; color: #7f8c8d; text-decoration: underline; cursor: pointer; display: inline-block; }
         .storage-link:hover { color: #34495e; }
+
+        /* プロジェクトタイトルヘッダー */
+        .project-header { background: #2c3e50; color: white; padding: 14px 16px; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .project-title-area { flex-grow: 1; min-width: 0; }
+        .project-title { font-size: 16px; font-weight: bold; margin: 0; word-break: break-all; line-height: 1.4; }
 
         /* 画面下部固定の操作バー */
         .bottom-controls { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); border-top: 1px solid #dcdde1; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; z-index: 900; box-shadow: 0 -2px 8px rgba(0,0,0,0.05); }
@@ -58,7 +59,6 @@
         .cycle-info-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .cycle-badge { display: inline-block; background: #34495e; color: white; padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; flex-shrink: 0; }
         .cycle-date { font-size: 11px; color: #7f8c8d; font-weight: 500; }
-        .card-project-title { font-size: 14px; font-weight: bold; color: #2c3e50; word-break: break-all; }
 
         .step-box { margin-bottom: 12px; padding: 12px; border-radius: 8px; border-left: 4px solid #ccc; }
         .step-plan  { background: #eafaf1; border-color: #2ecc71; }
@@ -76,6 +76,15 @@
         
         /* 改行表示用 */
         .text-content { white-space: pre-wrap; word-wrap: break-word; font-size: 14px; line-height: 1.6; color: #2c3e50; }
+
+        /* 編集ボタン共通 */
+        .btn-edit-step { background: transparent; border: 1px solid #95a5a6; color: #7f8c8d; font-size: 11px; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-weight: normal; flex-shrink: 0; }
+        .btn-edit-step:hover { background: #ecf0f1; color: #2c3e50; border-color: #bdc3c7; }
+
+        /* 編集フォーム内のアクションボタン */
+        .edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .btn-save-edit { background: #27ae60; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; flex: 1; }
+        .btn-cancel-edit { background: #95a5a6; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; }
 
         /* 復元用選択リストのモーダルデザイン */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; padding: 0; }
@@ -111,9 +120,16 @@
 <body>
 
     <div class="container">
-        <!-- プロジェクトタイトルヘッダー（タイトルのみ表示） -->
+        <!-- 画面左上の容量確認テキストリンク -->
+        <div class="storage-link-wrapper">
+            <span class="storage-link" onclick="checkStorageSize()">ストレージ容量を確認</span>
+        </div>
+
+        <!-- プロジェクトタイトルヘッダー（編集機能なし） -->
         <div id="projectHeader" class="project-header" style="display: none;">
-            <div class="project-title" id="displayTitle"></div>
+            <div class="project-title-area">
+                <div class="project-title" id="displayTitle"></div>
+            </div>
         </div>
 
         <!-- 新規スタート用フォーム -->
@@ -137,11 +153,6 @@
 
         <!-- PDCAカードの表示エリア -->
         <div id="chainList"></div>
-    </div>
-
-    <!-- 画面左下の容量確認テキストリンク -->
-    <div class="storage-link-wrapper">
-        <span class="storage-link" onclick="checkStorageSize()">ストレージ容量を確認</span>
     </div>
 
     <!-- 画面一番下に常時固定するコントロールバー -->
@@ -225,18 +236,15 @@
             loadChain();
         });
 
-        // 🔄 中断（バックグラウンド）から復帰した際にレイアウト崩れを防ぐための処理
         window.addEventListener('pageshow', (event) => {
-            // bfcache（ブラウザの履歴キャッシュ）から復元された場合に再描画
             if (event.persisted) {
                 loadChain(currentCardIndex);
             }
         });
 
-        // ウィンドウサイズ変更時（スマホの向き変更やアドレスバーの伸縮など）にレイアウトを強制再適用
         window.addEventListener('resize', () => {
             document.body.style.display = 'none';
-            document.body.offsetHeight; // 再描画を強制
+            document.body.offsetHeight; 
             document.body.style.display = '';
         });
 
@@ -263,7 +271,6 @@
             document.getElementById('firstPlan').focus();
         }
 
-        // 日付フォーマット関数 (YYYY/MM/DD)
         function formatDate(dateString) {
             if (!dateString) return '';
             const d = new Date(dateString);
@@ -305,19 +312,17 @@
                 return;
             } else {
                 startSection.style.display = 'none';
-                projectHeader.style.display = 'block';
+                projectHeader.style.display = 'flex';
                 paginationNav.style.display = 'flex';
                 displayTitle.textContent = projectTitle;
             }
 
-            // インデックスの範囲調整
             if (targetIndex !== null) {
                 currentCardIndex = Math.max(0, Math.min(targetIndex, chainData.length - 1));
             } else {
                 currentCardIndex = chainData.length - 1;
             }
 
-            // 各世代のカードを生成（該当インデックスのみ表示）
             chainData.forEach((item, index) => {
                 const isLatest = (index === chainData.length - 1);
                 const card = document.createElement('div');
@@ -333,24 +338,29 @@
                             <span class="cycle-badge">第 ${item.cycle} 世代</span>
                             ${dateStr ? `<span class="cycle-date">📅 ${dateStr}</span>` : ''}
                         </div>
-                        <span class="card-project-title">📌 ${escapeHtml(projectTitle)}</span>
                     </div>
                 `;
 
                 // 1. PLAN
                 html += `
-                    <div class="step-box step-plan">
-                        <div class="step-title" style="color: #27ae60;">P (Plan) - 計画</div>
-                        <div class="text-content">${escapeHtml(item.plan)}</div>
+                    <div class="step-box step-plan" id="planBox-${index}">
+                        <div class="step-title" style="color: #27ae60;">
+                            <span>P (Plan) - 計画</span>
+                            <button class="btn-edit-step" onclick="toggleEdit(${index}, 'plan')">✏️ 編集</button>
+                        </div>
+                        <div class="text-content" id="planText-${index}">${escapeHtml(item.plan)}</div>
                     </div>
                 `;
 
                 // 2. DO
                 if (item.status === 'PLAN_DONE' || !isLatest) {
                     html += `
-                        <div class="step-box step-do">
-                            <div class="step-title" style="color: #2980b9;">D (Do) - 実行</div>
-                            <div class="text-content">${escapeHtml(item.doText)}</div>
+                        <div class="step-box step-do" id="doBox-${index}">
+                            <div class="step-title" style="color: #2980b9;">
+                                <span>D (Do) - 実行</span>
+                                <button class="btn-edit-step" onclick="toggleEdit(${index}, 'do')">✏️ 編集</button>
+                            </div>
+                            <div class="text-content" id="doText-${index}">${escapeHtml(item.doText)}</div>
                         </div>
                     `;
                 } else if (item.status === 'NEED_DO') {
@@ -368,9 +378,12 @@
                 // 3. CHECK
                 if (item.status === 'DO_DONE' || (!isLatest && item.check)) {
                     html += `
-                        <div class="step-box step-check">
-                            <div class="step-title" style="color: #d35400;">C (Check) - 評価・振り返り</div>
-                            <div class="text-content">${escapeHtml(item.check)}</div>
+                        <div class="step-box step-check" id="checkBox-${index}">
+                            <div class="step-title" style="color: #d35400;">
+                                <span>C (Check) - 評価・振り返り</span>
+                                <button class="btn-edit-step" onclick="toggleEdit(${index}, 'check')">✏️ 編集</button>
+                            </div>
+                            <div class="text-content" id="checkText-${index}">${escapeHtml(item.check)}</div>
                         </div>
                     `;
                 } else if (item.status === 'NEED_CHECK') {
@@ -388,19 +401,30 @@
                 // 4. ACT
                 if (!isLatest) {
                     html += `
-                        <div class="step-box step-act">
-                            <div class="step-title" style="color: #c0392b;">A (Act) - 改善策</div>
-                            <div class="text-content">${escapeHtml(item.act)}</div>
+                        <div class="step-box step-act" id="actBox-${index}">
+                            <div class="step-title" style="color: #c0392b;">
+                                <span>A (Act) - 改善策</span>
+                                <button class="btn-edit-step" onclick="toggleEdit(${index}, 'act')">✏️ 編集</button>
+                            </div>
+                            <div class="text-content" id="actText-${index}">${escapeHtml(item.act)}</div>
                         </div>
                     `;
                 } else if (item.status === 'NEED_ACT') {
                     html += `
-                        <div class="step-box step-act">
+                        <div class="step-box step-act" id="actBox-${index}">
                             <div class="step-title" style="color: #c0392b;">
-                                <span>A (Act) - 次回の改善策（次の Plan）</span>
+                                <span>
+                                    A (Act) - 次回の改善策（次の Plan）
+                                    ${item.act ? '<button class="btn-edit-step" style="margin-left: 8px;" onclick="toggleEdit(' + index + ', \'act\')">✏️ 編集</button>' : ''}
+                                </span>
                             </div>
-                            <textarea id="inputAct" rows="3" placeholder="次回どう改善するか？を入力..." onkeydown="handleTextareaEnterKey(event, () => nextLoop(${index}))"></textarea>
-                            <button class="btn-submit" style="background: #e74c3c;" onclick="nextLoop(${index})">🔄 次のサイクルへ連鎖させる！</button>
+                            <div id="actTextView-${index}" style="${item.act ? '' : 'display:none;'}">
+                                <div class="text-content" id="actText-${index}">${escapeHtml(item.act)}</div>
+                            </div>
+                            <div id="actInputArea-${index}" style="${item.act ? 'display:none;' : ''}">
+                                <textarea id="inputAct" rows="3" placeholder="次回どう改善するか？を入力..." onkeydown="handleTextareaEnterKey(event, () => nextLoop(${index}))"></textarea>
+                                <button class="btn-submit" style="background: #e74c3c;" onclick="nextLoop(${index})">🔄 次のサイクルへ連鎖させる！</button>
+                            </div>
                         </div>
                     `;
                 }
@@ -409,13 +433,80 @@
                 chainList.appendChild(card);
             });
 
-            // インジケーターとボタンの状態更新
             pageIndicator.textContent = `${currentCardIndex + 1} / ${chainData.length}`;
             prevBtn.disabled = (currentCardIndex <= 0);
             nextBtn.disabled = (currentCardIndex >= chainData.length - 1);
         }
 
-        // 左右ボタンでカードを切り替える
+        // --- 各ステップのインライン編集機能 ---
+        async function toggleEdit(index, stepType) {
+            let chainData = await dbGet('infinitePdcaData');
+            const item = chainData[index];
+            
+            let boxId, textId, currentVal;
+            if (stepType === 'plan') {
+                boxId = `planBox-${index}`; textId = `planText-${index}`; currentVal = item.plan;
+            } else if (stepType === 'do') {
+                boxId = `doBox-${index}`; textId = `doText-${index}`; currentVal = item.doText;
+            } else if (stepType === 'check') {
+                boxId = `checkBox-${index}`; textId = `checkText-${index}`; currentVal = item.check;
+            } else if (stepType === 'act') {
+                boxId = `actBox-${index}`; textId = `actText-${index}`; currentVal = item.act;
+            }
+
+            const boxElem = document.getElementById(boxId);
+            const textElem = document.getElementById(textId);
+            if (!textElem) return;
+
+            if (boxElem.querySelector('.edit-textarea')) {
+                loadChain(currentCardIndex);
+                return;
+            }
+
+            textElem.innerHTML = `
+                <textarea class="edit-textarea" rows="3" id="editVal-${index}-${stepType}">${escapeHtml(currentVal)}</textarea>
+                <div class="edit-actions">
+                    <button class="btn-save-edit" onclick="saveEdit(${index}, '${stepType}')">保存</button>
+                    <button class="btn-cancel-edit" onclick="loadChain(${currentCardIndex})">キャンセル</button>
+                </div>
+            `;
+            
+            const textarea = document.getElementById(`editVal-${index}-${stepType}`);
+            if (textarea) {
+                textarea.focus();
+                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+            }
+        }
+
+        async function saveEdit(index, stepType) {
+            const textarea = document.getElementById(`editVal-${index}-${stepType}`);
+            if (!textarea) return;
+            const newVal = textarea.value.trim();
+
+            if (!newVal) {
+                alert('空にすることはできません。');
+                return;
+            }
+
+            let chainData = await dbGet('infinitePdcaData');
+            
+            if (stepType === 'plan') {
+                chainData[index].plan = newVal;
+            } else if (stepType === 'do') {
+                chainData[index].doText = newVal;
+            } else if (stepType === 'check') {
+                chainData[index].check = newVal;
+            } else if (stepType === 'act') {
+                chainData[index].act = newVal;
+                if (index + 1 < chainData.length) {
+                    chainData[index + 1].plan = newVal;
+                }
+            }
+
+            await dbPut('infinitePdcaData', chainData);
+            await loadChain(currentCardIndex);
+        }
+
         async function changeCard(direction) {
             let chainData = (await dbGet('infinitePdcaData')) || [];
             const newIndex = currentCardIndex + direction;
@@ -425,7 +516,6 @@
             }
         }
 
-        // 新規作成処理
         async function createNewProject() {
             if (confirm('新しいプロジェクトを作成しますか？')) {
                 await dbDelete('infinitePdcaTitle');
@@ -435,7 +525,6 @@
             }
         }
 
-        // 最初のサイクルを開始
         async function startNewChain() {
             const title = document.getElementById('projectTitle').value.trim();
             const plan = document.getElementById('firstPlan').value.trim();
@@ -459,7 +548,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // ステップを進める
         async function updateStep(index, step) {
             let chainData = await dbGet('infinitePdcaData');
             
@@ -480,7 +568,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // Actを入力して次のPDCA(Plan)を生成する
         async function nextLoop(currentIndex) {
             const actVal = document.getElementById('inputAct').value.trim();
             if (!actVal) return alert('改善策を入力してください。これが次のPlanになります！');
@@ -506,7 +593,6 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 📥 保存処理
         async function saveBackupToDB() {
             const rawTitle = (await dbGet('infinitePdcaTitle'));
             const data = (await dbGet('infinitePdcaData')) || [];
@@ -528,7 +614,6 @@
             alert(`プロジェクト「${rawTitle}」のバックアップをIndexedDBに保存（上書き）しました！`);
         }
 
-        // 📤 復元用選択リスト（モーダル）を表示
         async function showRestoreModal() {
             const backups = (await dbGet('infinitePdcaBackups')) || {};
             const titles = Object.keys(backups);
@@ -612,7 +697,6 @@
             }
         }
 
-        // 📊 IndexedDBのストレージ使用量・上限を確認する関数
         async function checkStorageSize() {
             if (navigator.storage && navigator.storage.estimate) {
                 try {
@@ -647,7 +731,6 @@
             }
         }
 
-        // エスケープ処理
         function escapeHtml(str) {
             if(!str) return '';
             return str.replace(/&/g, '&amp;')
