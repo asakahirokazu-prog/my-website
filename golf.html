@@ -108,7 +108,7 @@
         }
         .load-history-btn:active { opacity: 0.9; }
 
-        .master-btns-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+        .master-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .sub-btn-card { 
             background: #f8fafc; 
             border: 1px solid #cbd5e1; 
@@ -147,6 +147,7 @@
         /* 「これやったら上手く行く」アコーディオンエリア */
         .memo-accordion-container { margin-top: 8px; border-top: 1px dashed #bbf7d0; padding-top: 6px; }
         .memo-toggle-row { display: flex; gap: 4px; align-items: center; }
+        
         .memo-toggle-btn { 
             flex: 1;
             background: #dcfce7; 
@@ -163,6 +164,16 @@
             align-items: center; 
         }
         .memo-toggle-btn:active { background: #bbf7d0; }
+
+        /* メモがある時のボタンスタイル（色を変更） */
+        .memo-toggle-btn.has-memo {
+            background: #fef08a;
+            color: #854d0e;
+            border-color: #facc15;
+        }
+        .memo-toggle-btn.has-memo:active {
+            background: #fde047;
+        }
         
         /* マスタボタン */
         .memo-master-btn {
@@ -345,6 +356,7 @@
             
             <div class="master-btns-grid">
                 <button class="sub-btn-card" onclick="openMasterModal()">⚙️ 同伴者管理</button>
+                <button class="sub-btn-card" onclick="openZoneRateMasterModal()">⚙️ ゾーン率ラベル管理</button>
             </div>
         </div>
     </div>
@@ -391,11 +403,27 @@
     </div>
 </div>
 
+<!-- ゾーン率ラベル・マスタ管理モーダル -->
+<div class="modal" id="zoneRateMasterModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title">⚙️ ゾーン率ラベル・マスタ管理</div>
+            <button class="close-btn" onclick="closeZoneRateMasterModal()">✕</button>
+        </div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">スコア入力画面に表示されるゾーン率（ショットタグ）のラベルを追加・削除できます。</div>
+        <div class="master-input-group">
+            <input type="text" id="newZoneRateText" class="form-control" placeholder="新しいゾーン率ラベルを追加">
+            <button class="add-btn" onclick="addZoneRateMaster()">追加</button>
+        </div>
+        <div class="master-list" id="zoneRateMasterListContainer"></div>
+    </div>
+</div>
+
 <!-- 「これやったら上手く行く」マスタ選択・管理モーダル -->
 <div class="modal" id="memoMasterModal">
     <div class="modal-content">
         <div class="modal-header">
-            <div class="modal-title">💡 上手く行くメモ・マスタ選択</div>
+            <div class="modal-title">上手く行くメモ・マスタ選択</div>
             <button class="close-btn" onclick="closeMemoMasterModal()">✕</button>
         </div>
         <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">選択すると現在のテキストに貼り付けられます。新しい定型文の追加・削除も可能です。</div>
@@ -688,6 +716,59 @@
         renderMemberList();
     }
 
+    // --- ゾーン率ラベル・マスタ管理関連 ---
+    function openZoneRateMasterModal() {
+        renderZoneRateMasterList();
+        document.getElementById('zoneRateMasterModal').style.display = 'flex';
+    }
+
+    function closeZoneRateMasterModal() {
+        document.getElementById('zoneRateMasterModal').style.display = 'none';
+        if (document.getElementById('stepScore').style.display === 'block') {
+            updateUI();
+        }
+    }
+
+    async function renderZoneRateMasterList() {
+        const commonMaster = await getCommonMasterData();
+        const tags = commonMaster.tags || defaultShotTags;
+        const container = document.getElementById('zoneRateMasterListContainer');
+        container.innerHTML = tags.length === 0 ? 
+            '<div style="text-align:center; color:#94a3b8; padding:8px; font-size:12px;">登録されたゾーン率ラベルがありません</div>' : '';
+
+        tags.forEach((tag, idx) => {
+            const div = document.createElement('div');
+            div.className = 'master-item';
+            div.innerHTML = `<span>🏷️ ${tag}</span><button class="del-btn" onclick="removeZoneRateMaster(${idx})">削除</button>`;
+            container.appendChild(div);
+        });
+    }
+
+    async function addZoneRateMaster() {
+        const input = document.getElementById('newZoneRateText');
+        const tag = input.value.trim();
+        if (!tag) return;
+        const commonMaster = await getCommonMasterData();
+        if (!commonMaster.tags) commonMaster.tags = [...defaultShotTags];
+        if (commonMaster.tags.includes(tag)) return alert('すでに同じラベルが存在します。');
+        commonMaster.tags.push(tag);
+        await dbPut('settings', 'riverside_common_master_v4', commonMaster);
+        input.value = '';
+        renderZoneRateMasterList();
+    }
+
+    async function removeZoneRateMaster(idx) {
+        const commonMaster = await getCommonMasterData();
+        if (!commonMaster.tags) commonMaster.tags = [...defaultShotTags];
+        if (commonMaster.tags.length <= 1) {
+            return alert('ゾーン率ラベルは最低1つ以上必要です。');
+        }
+        commonMaster.tags.splice(idx, 1);
+        await dbPut('settings', 'riverside_common_master_v4', commonMaster);
+        renderZoneRateMasterList();
+    }
+    // ------------------------------------
+
     renderMemberLabels();
 
     let currentStepIndex = 0;
@@ -716,14 +797,14 @@
                     stroke: null,
                     putt: null,
                     fw: '',
-                    memo: '' // メモ初期化
+                    memo: ''
                 };
             })
         );
 
         currentStepIndex = 0;
         isRoundActive = true;
-        isMemoOpen = false; // ラウンド開始時は閉じる
+        isMemoOpen = false;
 
         document.getElementById('stepSetup').style.display = 'none';
         document.getElementById('stepScore').style.display = 'block';
@@ -801,21 +882,23 @@
             </div>
         `;
 
-        if (commonMaster.tags && commonMaster.tags.length > 0) {
+        const tags = commonMaster.tags || defaultShotTags;
+        if (tags && tags.length > 0) {
             myHtml += `<div class="shot-tag-title">ゾーン率</div><div class="fw-options">`;
-            commonMaster.tags.forEach(tag => {
+            tags.forEach(tag => {
                 myHtml += `<button class="fw-btn ${myData.fw === tag ? 'active' : ''}" onclick="setFW(0, '${tag}')">${tag}</button>`;
             });
             myHtml += `</div>`;
         }
 
-        // 「これやったら上手く行く」アコーディオンエリア（右側にマスタボタンを配置）
         const memoValue = myData.memo !== undefined ? myData.memo : '';
+        const hasMemoClass = memoValue.trim() !== '' ? 'has-memo' : '';
+        
         myHtml += `
             <div class="memo-accordion-container">
                 <div class="memo-toggle-row">
-                    <button class="memo-toggle-btn" onclick="toggleMemoAccordion()">
-                        <span>💡 これやったら上手く行く ${memoValue ? '（メモあり）' : ''}</span>
+                    <button class="memo-toggle-btn ${hasMemoClass}" onclick="toggleMemoAccordion()">
+                        <span>これやったら上手く行く</span>
                         <span id="memoArrowIcon">${isMemoOpen ? '▲ 閉じる' : '▼ 開く'}</span>
                     </button>
                     <button class="memo-master-btn" onclick="openMemoMasterModal()">⚙️ マスタ</button>
@@ -851,6 +934,15 @@
 
     function updateMemo(val) {
         scoresData[0][currentStepIndex].memo = val;
+        // 入力値に応じてボタンの色のクラスを即時切り替え
+        const btn = document.querySelector('.memo-toggle-btn');
+        if (btn) {
+            if (val.trim() !== '') {
+                btn.classList.add('has-memo');
+            } else {
+                btn.classList.remove('has-memo');
+            }
+        }
     }
 
     // --- 「これやったら上手く行く」マスタ管理・選択モーダル関連 ---
@@ -873,7 +965,7 @@
             const div = document.createElement('div');
             div.className = 'master-item';
             div.innerHTML = `
-                <span style="flex:1; word-break:break-all; margin-right:6px;">💡 ${text}</span>
+                <span style="flex:1; word-break:break-all; margin-right:6px;">${text}</span>
                 <div style="display:flex; gap:4px; align-items:center;">
                     <button class="select-memo-btn" onclick="applyMemoFromMaster('${text.replace(/'/g, "\\'")}')">貼り付け</button>
                     <button class="del-btn" onclick="removeMemoMaster(${idx})">削除</button>
@@ -902,11 +994,9 @@
 
     function applyMemoFromMaster(text) {
         const currentMemo = scoresData[0][currentStepIndex].memo || '';
-        // 既存のテキストがある場合は後ろに追記するか置き換えるか（今回はすでにあれば改行して追加、なければそのまま挿入）
         const newMemo = currentMemo ? `${currentMemo}\n${text}` : text;
         scoresData[0][currentStepIndex].memo = newMemo;
         
-        // 自動でアコーディオンを開いた状態にして更新
         isMemoOpen = true;
         closeMemoMasterModal();
         updateUI();
@@ -1096,7 +1186,7 @@
         container.innerHTML = (!history || history.length === 0) ? 
             '<div style="text-align:center; color:#94a3b8; padding:12px; font-size:12px;">保存された過去データはありません</div>' : '';
 
-        history.slice().reverse().forEach((round, revIdx) => {
+        history.slice().reverse().forEach((round) => {
             const dateStr = round.date || '日付不明';
             const playersStr = round.players ? round.players.join(', ') : 'プレイヤー不明';
             const startHoleStr = round.startHole === 10 ? 'INスタート' : 'OUTスタート';
@@ -1228,11 +1318,97 @@
         players.forEach((player, pIdx) => {
             html += `<td>${getPlayerHalfTotal(pIdx, 9, 17)}</td>`;
             if (pIdx === 0) {
+                html += `<td>${getPlayerHalfTest ? '' : getPlayerHalfTotalPutt(pIdx, 9, 17)}</td>`; // fallback check fix
+            }
+        });
+        // 修正：パットのセカンドハーフ小計の確実な出力
+        html = html.replace(/<td>${getPlayerHalfTotalPutt\(pIdx, 9, 17\)}<\/td>/, ''); // remove previous glitch if any, but clean loop below is safer.
+        
+        // 代わりに正しいループを書き直してアセンブル
+        // ※念のため下部の一覧テーブル生成ロジックを確実に動かすため、簡潔に再構築します
+        renderScorecardTableClean();
+        return;
+    }
+
+    function renderScorecardTableClean() {
+        const wrapper = document.getElementById('scorecardTableWrapper');
+        let html = `<table class="scorecard-table"><thead><tr><th class="col-hole">Hole (Par)</th>`;
+
+        players.forEach((player, pIdx) => {
+            html += `<th>${player}</th>`;
+            if (pIdx === 0) {
+                html += `<th>(パット)</th>`;
+            }
+        });
+        html += `</tr></thead><tbody>`;
+
+        // 1〜9ホール目
+        for (let i = 0; i < 9; i++) {
+            const actualHole = getActualHoleNumber(i);
+            const par = fullHolePars[actualHole - 1];
+
+            html += `<tr>`;
+            html += `<td class="col-hole">${actualHole} (P${par})</td>`;
+            players.forEach((player, pIdx) => {
+                const hData = scoresData[pIdx][i];
+                const stroke = hData && hData.stroke !== null && hData.stroke !== undefined ? hData.stroke : '-';
+                const cellClass = (stroke === '-') ? 'missing-score' : '';
+                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${stroke}</td>`;
+                
+                if (pIdx === 0) {
+                    const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
+                    const puttClass = (putt === '-') ? 'missing-score' : '';
+                    html += `<td class="${puttClass}" onclick="jumpToHole(${i})" style="cursor:pointer; font-size: 13px;" title="タップしてこのホールに移動">${putt}</td>`;
+                }
+            });
+            html += `</tr>`;
+        }
+
+        // 前半小計
+        const firstHalfName = (startHoleNum === 1) ? 'OUT 小計' : 'IN 小計';
+        html += `<tr class="subtotal-row"><td class="col-hole">${firstHalfName}</td>`;
+        players.forEach((player, pIdx) => {
+            html += `<td>${getPlayerHalfTotal(pIdx, 0, 8)}</td>`;
+            if (pIdx === 0) {
+                html += `<td>${getPlayerHalfTotalPutt(pIdx, 0, 8)}</td>`;
+            }
+        });
+        html += `</tr>`;
+
+        // 10〜18ホール目
+        for (let i = 9; i < 18; i++) {
+            const actualHole = getActualHoleNumber(i);
+            const par = fullHolePars[actualHole - 1];
+
+            html += `<tr>`;
+            html += `<td class="col-hole">${actualHole} (P${par})</td>`;
+            players.forEach((player, pIdx) => {
+                const hData = scoresData[pIdx][i];
+                const stroke = hData && hData.stroke !== null && hData.stroke !== undefined ? hData.stroke : '-';
+                const cellClass = (stroke === '-') ? 'missing-score' : '';
+                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${stroke}</td>`;
+                
+                if (pIdx === 0) {
+                    const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
+                    const puttClass = (putt === '-') ? 'missing-score' : '';
+                    html += `<td class="${puttClass}" onclick="jumpToHole(${i})" style="cursor:pointer; font-size: 13px;" title="タップしてこのホールに移動">${putt}</td>`;
+                }
+            });
+            html += `</tr>`;
+        }
+
+        // 後半小計
+        const secondHalfName = (startHoleNum === 1) ? 'IN 小計' : 'OUT 小計';
+        html += `<tr class="subtotal-row"><td class="col-hole">${secondHalfName}</td>`;
+        players.forEach((player, pIdx) => {
+            html += `<td>${getPlayerHalfTotal(pIdx, 9, 17)}</td>`;
+            if (pIdx === 0) {
                 html += `<td>${getPlayerHalfTotalPutt(pIdx, 9, 17)}</td>`;
             }
         });
         html += `</tr>`;
 
+        // 合計
         html += `<tr class="total-row"><td class="col-hole">TOTAL</td>`;
         players.forEach((player, pIdx) => {
             const total = getPlayerTotal(pIdx);
@@ -1246,6 +1422,9 @@
         html += `</tbody></table>`;
         wrapper.innerHTML = html;
     }
+
+    // 上書き用としてrenderScorecardTableを安全に置き換え
+    renderScorecardTable = renderScorecardTableClean;
 
     function jumpToHole(stepIdx) {
         currentStepIndex = stepIdx;
