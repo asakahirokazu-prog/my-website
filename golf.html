@@ -165,7 +165,6 @@
         }
         .memo-toggle-btn:active { background: #bbf7d0; }
 
-        /* メモがある時のボタンスタイル（色を変更） */
         .memo-toggle-btn.has-memo {
             background: #fef08a;
             color: #854d0e;
@@ -175,7 +174,6 @@
             background: #fde047;
         }
         
-        /* マスタボタン */
         .memo-master-btn {
             background: #15803d;
             color: white;
@@ -189,13 +187,8 @@
         }
         .memo-master-btn:active { background: #14532d; }
 
-        .memo-content-box { 
-            display: none; 
-            margin-top: 4px; 
-        }
-        .memo-content-box.open { 
-            display: block; 
-        }
+        .memo-content-box { display: none; margin-top: 4px; }
+        .memo-content-box.open { display: block; }
         .memo-textarea { 
             width: 100%; 
             height: 60px; 
@@ -217,11 +210,11 @@
 
         .companions-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; position: relative; }
         
-        .companion-card { 
+        .companion-card, .memo-master-item { 
             background: #f8fafc; 
             border: 1px solid #cbd5e1; 
             border-radius: 6px; 
-            padding: 4px 8px; 
+            padding: 6px 8px; 
             user-select: none;
             -webkit-user-select: none;
             position: relative;
@@ -230,15 +223,18 @@
             justify-content: space-between;
             transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease, border-color 0.2s ease;
         }
+        
+        .memo-master-item { cursor: pointer; }
+        .memo-master-item:active { background: #e2e8f0; }
 
-        .companion-card.reorder-active {
+        .companion-card.reorder-active, .memo-master-item.reorder-active {
             cursor: grab;
             touch-action: none;
             border: 1px dashed #0284c7;
             background: #f0f9ff;
         }
 
-        .companion-card.dragging-placeholder { opacity: 0.15; transform: scale(0.98); }
+        .companion-card.dragging-placeholder, .memo-master-item.dragging-placeholder { opacity: 0.15; transform: scale(0.98); }
 
         .drag-clone {
             position: fixed;
@@ -250,7 +246,7 @@
             background: #ffffff;
             border: 1.5px solid #0284c7;
             border-radius: 6px;
-            padding: 4px 8px;
+            padding: 6px 8px;
             box-sizing: border-box;
             display: flex;
             align-items: center;
@@ -263,7 +259,7 @@
         .for90-badge-comp { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1px 4px; font-size: 10px; font-weight: 900; }
         .companion-total { font-size: 10px; font-weight: bold; color: #64748b; }
         .drag-handle { background: #e2e8f0; color: #64748b; border-radius: 3px; padding: 0px 4px; font-size: 10px; font-weight: bold; opacity: 0.4; }
-        .companion-card.reorder-active .drag-handle { background: #0284c7; color: white; opacity: 1; }
+        .companion-card.reorder-active .drag-handle, .memo-master-item.reorder-active .drag-handle { background: #0284c7; color: white; opacity: 1; }
         
         .counter-inline-sm { display: flex; align-items: center; gap: 4px; }
         .btn-cnt-sm { width: 30px; height: 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 4px; background: #64748b; color: white; cursor: pointer; touch-action: manipulation; }
@@ -285,11 +281,10 @@
         .modal-title { font-weight: bold; font-size: 13px; color: #1e293b; }
         .close-btn { background: none; border: none; font-size: 16px; cursor: pointer; color: #64748b; }
         .master-input-group { display: flex; gap: 4px; margin-bottom: 6px; }
-        .master-list { overflow-y: auto; flex-grow: 1; max-height: 200px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; }
+        .master-list { overflow-y: auto; flex-grow: 1; max-height: 200px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; display: flex; flex-direction: column; gap: 4px; }
         .master-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
         .del-btn { background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
         .add-btn { background: #2e7d32; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap; }
-        .select-memo-btn { background: #0284c7; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
 
         /* 履歴アイテム専用スタイル */
         .history-item { padding: 8px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
@@ -300,7 +295,7 @@
         .view-history-btn { background: #0284c7; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .del-history-btn { background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        /* 行＝ホール、列＝名前のスコア表スタイル（数値を拡大） */
+        /* 行＝ホール、列＝名前のスコア表スタイル */
         .scorecard-table-wrapper { overflow-x: auto; overflow-y: auto; flex-grow: 1; max-height: 60vh; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 8px; }
         .scorecard-table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; text-align: center; white-space: nowrap; }
         .scorecard-table th { background: #1e3a8a; color: white; padding: 8px 6px; font-weight: bold; font-size: 13px; position: sticky; top: 0; z-index: 2; }
@@ -311,7 +306,6 @@
         .scorecard-table tr.total-row td { background: #f1f5f9; font-weight: 900; color: #0f172a; font-size: 16px; border-top: 2px solid #cbd5e1; position: sticky; bottom: 0; z-index: 2; }
         .scorecard-table tr.total-row td.col-hole { z-index: 3; background: #e2e8f0; }
 
-        /* 未入力ハイライト用 */
         .missing-score { color: #dc2626 !important; background: #fee2e2; }
     </style>
 </head>
@@ -349,7 +343,6 @@
             <div class="member-labels" id="memberLabelsContainer"></div>
         </div>
 
-        <!-- 整理されたボタンエリア -->
         <div class="btn-section">
             <button class="start-round-btn" onclick="startRound()">🚀 ラウンド開始 (18H)</button>
             <button class="load-history-btn" onclick="openHistoryModal()">📂 過去のスコアデータ呼出</button>
@@ -365,15 +358,13 @@
     <div id="stepScore" style="display: none;">
         <div class="header">
             <button class="top-scorecard-btn" onclick="openScorecardModal()">一覧</button>
-            <button class="top-cancel-btn" onclick="abortRound()">中断</button>
+            <button class="top-cancel-btn" onclick="abortRound()">破棄</button>
             <div class="club-title">⛳ リバーサイドフェニックス GC</div>
             <div class="hole-info" id="holeTitle">Hole 1 (Par 4)</div>
         </div>
 
-        <!-- 自分（主役エリア） -->
         <div class="my-score-card" id="myScoreContainer"></div>
         
-        <!-- 同伴者（スリムエリア） -->
         <div class="reorder-control-bar">
             <span class="drag-instruction" id="dragInstructionText">🔒 並び替え固定中</span>
             <button class="lock-toggle-btn" id="lockToggleBtn" onclick="toggleReorderMode()">並び替えモード</button>
@@ -426,7 +417,11 @@
             <div class="modal-title">上手く行くメモ・マスタ選択</div>
             <button class="close-btn" onclick="closeMemoMasterModal()">✕</button>
         </div>
-        <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">選択すると現在のテキストに貼り付けられます。新しい定型文の追加・削除も可能です。</div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">項目をタップすると入力欄に反映されます（ドラッグで順序変更も可）。</div>
+        <div class="reorder-control-bar" style="margin-bottom: 6px;">
+            <span class="drag-instruction" id="memoDragInstructionText">🔒 並び替え固定中</span>
+            <button class="lock-toggle-btn" id="memoLockToggleBtn" onclick="toggleMemoReorderMode()">並び替えモード</button>
+        </div>
         <div class="master-input-group">
             <input type="text" id="newMemoMasterText" class="form-control" placeholder="新しいコツ・定型文を追加">
             <button class="add-btn" onclick="addMemoMaster()">追加</button>
@@ -469,7 +464,6 @@
 
     const defaultShotTags = ["👌60点", "👌80点", "👌100点", "ひっかけ", "どスライス", "トップ", "ダフリ"];
     
-    // 「これやったら上手く行く」の初期マスタ一覧
     const defaultMemoMasters = [
         "右肩を下げずにしっかり振り抜く",
         "テークバックをゆっくり慌てない",
@@ -481,8 +475,9 @@
     let selectedCompanions = [];
     let isRoundActive = false;
     let isReorderEnabled = false;
+    let isMemoReorderEnabled = false;
     let startHoleNum = 1;
-    let isMemoOpen = false; // メモアコーディオンの開閉状態
+    let isMemoOpen = false;
 
     // --- IndexedDB の初期化とラッパー関数 ---
     let db = null;
@@ -571,7 +566,6 @@
             request.onerror = () => reject(request.error);
         });
     }
-    // ------------------------------------------
 
     window.addEventListener('beforeunload', (e) => {
         if (isRoundActive) {
@@ -595,6 +589,23 @@
             text.textContent = '🔒 並び替え固定中';
         }
         renderCompanions();
+    }
+
+    function toggleMemoReorderMode() {
+        isMemoReorderEnabled = !isMemoReorderEnabled;
+        const btn = document.getElementById('memoLockToggleBtn');
+        const text = document.getElementById('memoDragInstructionText');
+        
+        if (isMemoReorderEnabled) {
+            btn.classList.add('active');
+            btn.textContent = '完了 (固定)';
+            text.textContent = '🔓 ドラッグで順番を入れ替え';
+        } else {
+            btn.classList.remove('active');
+            btn.textContent = '並び替えモード';
+            text.textContent = '🔒 並び替え固定中';
+        }
+        renderMemoMasterList();
     }
 
     function selectStartCourse(hole) {
@@ -633,7 +644,11 @@
         return defaultData;
     }
 
-    document.getElementById('playDate').valueAsDate = new Date();
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    document.getElementById('playDate').value = `${year}-${month}-${day}`;
 
     async function renderMemberLabels() {
         const members = await getMembers();
@@ -716,7 +731,6 @@
         renderMemberList();
     }
 
-    // --- ゾーン率ラベル・マスタ管理関連 ---
     function openZoneRateMasterModal() {
         renderZoneRateMasterList();
         document.getElementById('zoneRateMasterModal').style.display = 'flex';
@@ -767,7 +781,6 @@
         await dbPut('settings', 'riverside_common_master_v4', commonMaster);
         renderZoneRateMasterList();
     }
-    // ------------------------------------
 
     renderMemberLabels();
 
@@ -934,7 +947,6 @@
 
     function updateMemo(val) {
         scoresData[0][currentStepIndex].memo = val;
-        // 入力値に応じてボタンの色のクラスを即時切り替え
         const btn = document.querySelector('.memo-toggle-btn');
         if (btn) {
             if (val.trim() !== '') {
@@ -945,9 +957,16 @@
         }
     }
 
-    // --- 「これやったら上手く行く」マスタ管理・選択モーダル関連 ---
     async function openMemoMasterModal() {
-        renderMemoMasterList();
+        isMemoReorderEnabled = false;
+        const btn = document.getElementById('memoLockToggleBtn');
+        const text = document.getElementById('memoDragInstructionText');
+        if(btn) {
+            btn.classList.remove('active');
+            btn.textContent = '並び替えモード';
+            text.textContent = '🔒 並び替え固定中';
+        }
+        await renderMemoMasterList();
         document.getElementById('memoMasterModal').style.display = 'flex';
     }
 
@@ -963,13 +982,22 @@
 
         masters.forEach((text, idx) => {
             const div = document.createElement('div');
-            div.className = 'master-item';
+            div.className = `memo-master-item ${isMemoReorderEnabled ? 'reorder-active' : ''}`;
+            div.dataset.index = idx;
             div.innerHTML = `
-                <span style="flex:1; word-break:break-all; margin-right:6px;">${text}</span>
+                <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:0;">
+                    <span class="drag-handle">☰</span>
+                    <span style="flex:1; word-break:break-all; font-size:12px; font-weight:700; color:#1e293b;">${text}</span>
+                </div>
                 <div style="display:flex; gap:4px; align-items:center;">
-                    <button class="select-memo-btn" onclick="applyMemoFromMaster('${text.replace(/'/g, "\\'")}')">貼り付け</button>
-                    <button class="del-btn" onclick="removeMemoMaster(${idx})">削除</button>
+                    <button class="del-btn" onclick="event.stopPropagation(); removeMemoMaster(${idx})">削除</button>
                 </div>`;
+            
+            if (isMemoReorderEnabled) {
+                attachMemoPointerDragEvents(div);
+            } else {
+                div.onclick = () => applyMemoFromMaster(text);
+            }
             container.appendChild(div);
         });
     }
@@ -992,6 +1020,81 @@
         renderMemoMasterList();
     }
 
+    async function swapMemoMasters(fromIdx, toIdx) {
+        if (fromIdx === toIdx) return;
+        const masters = await getMemoMasters();
+        [masters[fromIdx], masters[toIdx]] = [masters[toIdx], masters[fromIdx]];
+        await saveMemoMasters(masters);
+        renderMemoMasterList();
+    }
+
+    function attachMemoPointerDragEvents(el) {
+        let clone = null, offsetX = 0, offsetY = 0, isDragging = false, draggedIdx = null, animationFrameId = null;
+
+        const onPointerDown = (e) => {
+            if (!isMemoReorderEnabled || e.target.tagName === 'BUTTON') return;
+
+            if (navigator.vibrate) navigator.vibrate(40);
+            draggedIdx = parseInt(el.dataset.index);
+            const rect = el.getBoundingClientRect();
+
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            isDragging = true;
+            clone = el.cloneNode(true);
+            clone.classList.add('drag-clone');
+            clone.style.width = `${rect.width}px`;
+            clone.style.left = `${e.clientX - offsetX}px`;
+            clone.style.top = `${e.clientY - offsetY}px`;
+            document.body.appendChild(clone);
+
+            el.classList.add('dragging-placeholder');
+
+            window.addEventListener('pointermove', onPointerMove, { passive: false });
+            window.addEventListener('pointerup', onPointerUp);
+            window.addEventListener('pointercancel', onPointerUp);
+        };
+
+        const onPointerMove = (e) => {
+            if (!isDragging || !clone) return;
+            e.preventDefault();
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(async () => {
+                if (!clone) return;
+                clone.style.left = `${e.clientX - offsetX}px`;
+                clone.style.top = `${e.clientY - offsetY}px`;
+
+                const items = document.querySelectorAll('.memo-master-item:not(.dragging-placeholder)');
+                items.forEach(item => {
+                    const cRect = item.getBoundingClientRect();
+                    const centerY = cRect.top + cRect.height / 2;
+                    if (Math.abs(e.clientY - centerY) < cRect.height / 2 && e.clientX >= cRect.left && e.clientX <= cRect.right) {
+                        const targetIdx = parseInt(item.dataset.index);
+                        if (targetIdx !== draggedIdx) {
+                            onPointerUp();
+                            swapMemoMasters(draggedIdx, targetIdx);
+                        }
+                    }
+                });
+            });
+        };
+
+        const onPointerUp = () => {
+            isDragging = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (clone) { clone.remove(); clone = null; }
+            el.classList.remove('dragging-placeholder');
+
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('pointercancel', onPointerUp);
+        };
+
+        el.addEventListener('pointerdown', onPointerDown);
+    }
+
     function applyMemoFromMaster(text) {
         const currentMemo = scoresData[0][currentStepIndex].memo || '';
         const newMemo = currentMemo ? `${currentMemo}\n${text}` : text;
@@ -1001,7 +1104,6 @@
         closeMemoMasterModal();
         updateUI();
     }
-    // ----------------------------------------------------
 
     function renderCompanions() {
         const companionsContainer = document.getElementById('companionsContainer');
@@ -1188,15 +1290,21 @@
 
         history.slice().reverse().forEach((round) => {
             const dateStr = round.date || '日付不明';
-            const playersStr = round.players ? round.players.join(', ') : 'プレイヤー不明';
             const startHoleStr = round.startHole === 10 ? 'INスタート' : 'OUTスタート';
+
+            // 各プレイヤーの名前と合計スコアを結合した文字列を作成
+            const playersSummaryStr = round.players.map((pName, pIdx) => {
+                const pTotal = round.scores && round.scores[pIdx] ? 
+                    round.scores[pIdx].reduce((sum, h) => sum + (h.stroke !== null ? h.stroke : 0), 0) : 0;
+                return `${pName} (${pTotal}打)`;
+            }).join(', ');
 
             const div = document.createElement('div');
             div.className = 'history-item';
             div.innerHTML = `
                 <div class="history-info">
                     <span class="history-date">📅 ${dateStr} (${startHoleStr})</span>
-                    <span class="history-players">👤 ${playersStr}</span>
+                    <span class="history-players">👤 ${playersSummaryStr}</span>
                 </div>
                 <div class="history-actions">
                     <button class="view-history-btn" onclick="viewHistoryScorecard(${round.id})">表示</button>
@@ -1229,9 +1337,16 @@
             startHoleNum = round.startHole || 1;
 
             closeHistoryModal();
-            document.getElementById('scorecardModalTitle').innerText = `📋 過去スコア (${round.date || ''})`;
-            document.getElementById('scorecardCheckMsg').style.display = 'none';
-            openScorecardModal();
+            
+            // 過去データの閲覧であっても、その後に編集や画面遷移・並び替えを行えるように状態を適切に初期化する
+            currentStepIndex = 0;
+            isRoundActive = true;
+            isReorderEnabled = false;
+            isMemoOpen = false;
+
+            document.getElementById('stepSetup').style.display = 'none';
+            document.getElementById('stepScore').style.display = 'block';
+            updateUI();
         };
     }
 
@@ -1249,87 +1364,6 @@
         }
     }
 
-    function renderScorecardTable() {
-        const wrapper = document.getElementById('scorecardTableWrapper');
-        let html = `<table class="scorecard-table"><thead><tr><th class="col-hole">Hole (Par)</th>`;
-
-        players.forEach((player, pIdx) => {
-            html += `<th>${player}</th>`;
-            if (pIdx === 0) {
-                html += `<th>(パット)</th>`;
-            }
-        });
-        html += `</tr></thead><tbody>`;
-
-        for (let i = 0; i < 9; i++) {
-            const actualHole = getActualHoleNumber(i);
-            const par = fullHolePars[actualHole - 1];
-
-            html += `<tr>`;
-            html += `<td class="col-hole">${actualHole} (P${par})</td>`;
-            players.forEach((player, pIdx) => {
-                const hData = scoresData[pIdx][i];
-                const stroke = hData && hData.stroke !== null && hData.stroke !== undefined ? hData.stroke : '-';
-                const cellClass = (stroke === '-') ? 'missing-score' : '';
-                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${stroke}</td>`;
-                
-                if (pIdx === 0) {
-                    const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
-                    const puttClass = (putt === '-') ? 'missing-score' : '';
-                    html += `<td class="${puttClass}" onclick="jumpToHole(${i})" style="cursor:pointer; font-size: 13px;" title="タップしてこのホールに移動">${putt}</td>`;
-                }
-            });
-            html += `</tr>`;
-        }
-
-        const firstHalfName = (startHoleNum === 1) ? 'OUT 小計' : 'IN 小計';
-        html += `<tr class="subtotal-row"><td class="col-hole">${firstHalfName}</td>`;
-        players.forEach((player, pIdx) => {
-            html += `<td>${getPlayerHalfTotal(pIdx, 0, 8)}</td>`;
-            if (pIdx === 0) {
-                html += `<td>${getPlayerHalfTotalPutt(pIdx, 0, 8)}</td>`;
-            }
-        });
-        html += `</tr>`;
-
-        for (let i = 9; i < 18; i++) {
-            const actualHole = getActualHoleNumber(i);
-            const par = fullHolePars[actualHole - 1];
-
-            html += `<tr>`;
-            html += `<td class="col-hole">${actualHole} (P${par})</td>`;
-            players.forEach((player, pIdx) => {
-                const hData = scoresData[pIdx][i];
-                const stroke = hData && hData.stroke !== null && hData.stroke !== undefined ? hData.stroke : '-';
-                const cellClass = (stroke === '-') ? 'missing-score' : '';
-                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${stroke}</td>`;
-                
-                if (pIdx === 0) {
-                    const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
-                    const puttClass = (putt === '-') ? 'missing-score' : '';
-                    html += `<td class="${puttClass}" onclick="jumpToHole(${i})" style="cursor:pointer; font-size: 13px;" title="タップしてこのホールに移動">${putt}</td>`;
-                }
-            });
-            html += `</tr>`;
-        }
-
-        const secondHalfName = (startHoleNum === 1) ? 'IN 小計' : 'OUT 小計';
-        html += `<tr class="subtotal-row"><td class="col-hole">${secondHalfName}</td>`;
-        players.forEach((player, pIdx) => {
-            html += `<td>${getPlayerHalfTotal(pIdx, 9, 17)}</td>`;
-            if (pIdx === 0) {
-                html += `<td>${getPlayerHalfTest ? '' : getPlayerHalfTotalPutt(pIdx, 9, 17)}</td>`; // fallback check fix
-            }
-        });
-        // 修正：パットのセカンドハーフ小計の確実な出力
-        html = html.replace(/<td>${getPlayerHalfTotalPutt\(pIdx, 9, 17\)}<\/td>/, ''); // remove previous glitch if any, but clean loop below is safer.
-        
-        // 代わりに正しいループを書き直してアセンブル
-        // ※念のため下部の一覧テーブル生成ロジックを確実に動かすため、簡潔に再構築します
-        renderScorecardTableClean();
-        return;
-    }
-
     function renderScorecardTableClean() {
         const wrapper = document.getElementById('scorecardTableWrapper');
         let html = `<table class="scorecard-table"><thead><tr><th class="col-hole">Hole (Par)</th>`;
@@ -1342,7 +1376,6 @@
         });
         html += `</tr></thead><tbody>`;
 
-        // 1〜9ホール目
         for (let i = 0; i < 9; i++) {
             const actualHole = getActualHoleNumber(i);
             const par = fullHolePars[actualHole - 1];
@@ -1364,7 +1397,6 @@
             html += `</tr>`;
         }
 
-        // 前半小計
         const firstHalfName = (startHoleNum === 1) ? 'OUT 小計' : 'IN 小計';
         html += `<tr class="subtotal-row"><td class="col-hole">${firstHalfName}</td>`;
         players.forEach((player, pIdx) => {
@@ -1375,7 +1407,6 @@
         });
         html += `</tr>`;
 
-        // 10〜18ホール目
         for (let i = 9; i < 18; i++) {
             const actualHole = getActualHoleNumber(i);
             const par = fullHolePars[actualHole - 1];
@@ -1397,7 +1428,6 @@
             html += `</tr>`;
         }
 
-        // 後半小計
         const secondHalfName = (startHoleNum === 1) ? 'IN 小計' : 'OUT 小計';
         html += `<tr class="subtotal-row"><td class="col-hole">${secondHalfName}</td>`;
         players.forEach((player, pIdx) => {
@@ -1408,7 +1438,6 @@
         });
         html += `</tr>`;
 
-        // 合計
         html += `<tr class="total-row"><td class="col-hole">TOTAL</td>`;
         players.forEach((player, pIdx) => {
             const total = getPlayerTotal(pIdx);
@@ -1423,8 +1452,7 @@
         wrapper.innerHTML = html;
     }
 
-    // 上書き用としてrenderScorecardTableを安全に置き換え
-    renderScorecardTable = renderScorecardTableClean;
+    let renderScorecardTable = renderScorecardTableClean;
 
     function jumpToHole(stepIdx) {
         currentStepIndex = stepIdx;
