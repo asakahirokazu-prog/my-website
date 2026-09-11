@@ -221,7 +221,10 @@
 
         // --- アプリケーションロジック ---
 
-        document.addEventListener('DOMContentLoaded', loadChain);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadChain();
+            window.scrollTo({ top: 0, behavior: 'auto' });
+        });
 
         function handleTextareaEnterKey(event, callback) {
             if (event.key === 'Enter' && !event.shiftKey) {
@@ -415,6 +418,7 @@
             const newIndex = currentCardIndex + direction;
             if (newIndex >= 0 && newIndex < chainData.length) {
                 loadChain(newIndex);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -449,6 +453,7 @@
             await dbPut('infinitePdcaTitle', title);
             await dbPut('infinitePdcaData', chainData);
             loadChain();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // ステップを進める
@@ -469,6 +474,7 @@
 
             await dbPut('infinitePdcaData', chainData);
             loadChain(index);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // Actを入力して次のPDCA(Plan)を生成する
@@ -580,6 +586,7 @@
                 await dbPut('infinitePdcaData', backup.chainData);
                 closeRestoreModal();
                 loadChain();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
                 alert('データを正常に復元しました！');
             }
         }
