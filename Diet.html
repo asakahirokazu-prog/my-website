@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>シンプル体重・カロリートラッカー</title>
-    <!-- PWA Web App Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/manifest+json,{
         "name": "体重・カロリー管理",
         "short_name": "ダイエット管理",
@@ -80,11 +79,11 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col antialiased overflow-hidden">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased overflow-y-auto">
 
-    <!-- ヘッダー -->
-    <header class="bg-white border-b border-slate-200 shrink-0 z-30">
-        <div class="max-w-7xl mx-auto px-4 py-2.5 flex justify-between items-center">
+    <!-- ヘッダー（固定解除：通常のスクロールに追従） -->
+    <header class="bg-white border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-2">
                 <div class="bg-emerald-500 text-white p-1.5 rounded-xl shadow-sm">
                     <i data-lucide="flame" class="w-5 h-5"></i>
@@ -104,7 +103,7 @@
     </header>
 
     <!-- メインコンテンツ -->
-    <main class="max-w-3xl w-full mx-auto p-3 sm:p-4 flex-1 flex flex-col gap-3 overflow-y-auto justify-start">
+    <main class="max-w-3xl w-full mx-auto p-3 sm:p-4 flex-1 flex flex-col gap-3 justify-start">
         
         <!-- 上部サマリー（体重 ＆ カロリー） -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
@@ -156,7 +155,7 @@
         </div>
 
         <!-- 回避策の表示エリア -->
-        <div id="strategy-container" class="space-y-2">
+        <div id="strategy-container" class="space-y-2 pb-6">
             <!-- 動的にカードが追加されます -->
         </div>
 
@@ -665,7 +664,6 @@
         function renderWeightChart() {
             const ctx = document.getElementById('weightChart').getContext('2d');
             
-            // 日付の昇順に並べ替え
             const sortedRecords = [...weightRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
             const labels = sortedRecords.map(r => r.date);
             const data = sortedRecords.map(r => r.weight);
@@ -766,15 +764,11 @@
                     renderWeightApp();
                     renderStrategies();
                     closeGoalModal();
-                    alertBox("データを正常に復元しました！");
+                    alert("データを正常に復元しました！");
                 } catch (err) {
-                    alertBox("ファイルの読み込みに失敗しました。正しいJSONファイルかご確認ください。");
+                    alert("ファイルの読み込みに失敗しました。正しいJSONファイルかご確認ください。");
                 }
             };
-        }
-
-        function alertBox(msg) {
-            alert(msg); // シンプルな通知（※要望に応じたカスタム通知モーダルにも拡張可能）
         }
 
         function openSuccessModal() {
