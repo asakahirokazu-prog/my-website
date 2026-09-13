@@ -3,56 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>リバーサイドフェニックス GC スコア登録</title>
+    <title>ゴルフ スコア登録</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: #eef2f5; padding: 6px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; touch-action: manipulation; }
-        .card { background: white; width: 100%; max-width: 400px; border-radius: 12px; padding: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        body { background: #eef2f5; padding: 2px 4px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; touch-action: manipulation; }
+        .card { background: white; width: 100%; max-width: 400px; border-radius: 12px; padding: 8px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
         
-        /* スコア入力時にヘッダーを上部固定 */
         .header { 
             position: sticky; 
-            top: 0; 
+            top: -8px; 
             background: white; 
             z-index: 10; 
-            border-bottom: 2px solid #e2e8f0; 
-            padding-bottom: 6px; 
-            margin-bottom: 8px; 
+            border-bottom: 1.5px solid #e2e8f0; 
+            padding: 4px 0 4px 0; 
+            margin: -8px -10px 4px -10px; 
             text-align: center; 
+            width: calc(100% + 20px);
         }
-        .club-title { font-size: 13px; font-weight: bold; color: #2e7d32; }
-        .hole-info { font-size: 20px; font-weight: 800; color: #1a365d; }
+        .hole-info { font-size: 13px; font-weight: 800; color: #1a365d; white-space: nowrap; }
         
-        /* 中断・一覧ボタン（左上に統一・配置） */
+        .header-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 6px;
+            gap: 4px;
+        }
+
         .top-cancel-btn { 
-            position: absolute; 
-            top: 0; 
-            right: 0; 
             background: #ec4899; 
             color: white; 
             border: none; 
             border-radius: 4px; 
-            padding: 3px 10px; 
+            padding: 4px 8px; 
             font-size: 11px; 
             font-weight: bold; 
             cursor: pointer; 
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        .top-suspend-btn { 
+            background: #d97706; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            padding: 4px 8px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            flex-shrink: 0;
         }
         .top-scorecard-btn {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
             background: #0284c7; 
             color: white; 
             border: none; 
             border-radius: 4px; 
-            padding: 3px 10px; 
+            padding: 4px 8px; 
             font-size: 11px; 
             font-weight: bold; 
             cursor: pointer; 
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            flex-shrink: 0;
         }
-        .top-cancel-btn:active, .top-scorecard-btn:active { opacity: 0.8; }
+        .top-cancel-btn:active, .top-scorecard-btn:active, .top-suspend-btn:active { opacity: 0.8; }
 
         .form-row { margin-bottom: 10px; }
         .form-row label { display: block; font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 3px; }
@@ -78,7 +92,6 @@
         .member-label { display: inline-flex; align-items: center; padding: 8px 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 16px; font-size: 14px; font-weight: bold; color: #334155; cursor: pointer; }
         .member-label.selected { background: #2e7d32; color: white; border-color: #2e7d32; }
 
-        /* ボタンレイアウト整理 */
         .btn-section { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
         .start-round-btn { 
             background: #2e7d32; 
@@ -108,104 +121,134 @@
         }
         .load-history-btn:active { opacity: 0.9; }
 
-        .master-btns-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .master-btns-grid { display: flex; justify-content: center; }
         .sub-btn-card { 
             background: #f8fafc; 
             border: 1px solid #cbd5e1; 
             color: #334155; 
-            padding: 10px 4px; 
+            padding: 10px 16px; 
             font-size: 12px; 
             font-weight: bold; 
             border-radius: 6px; 
             cursor: pointer; 
             text-align: center;
+            width: 100%;
         }
         .sub-btn-card:active { background: #e2e8f0; }
 
-        /* 自分専用メインスコアエリア */
-        .my-score-card { background: #f0fdf4; border: 2px solid #2e7d32; border-radius: 10px; padding: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(46,125,50,0.12); }
-        .my-score-header { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 800; color: #14532d; margin-bottom: 6px; }
+        .my-score-card { background: #f0fdf4; border: 2px solid #2e7d32; border-radius: 10px; padding: 6px 8px; margin-bottom: 4px; box-shadow: 0 2px 6px rgba(46,125,50,0.12); }
+        .my-score-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; color: #14532d; margin-bottom: 4px; }
         .my-score-stats { font-size: 11px; font-weight: 700; color: #15803d; display: flex; gap: 6px; align-items: center; }
-        .for90-badge-my { background: #dcfce7; color: #166534; border: 1px solid #86efac; border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: 950; }
+        .for90-badge-my { background: #dcfce7; color: #166534; border: 1px solid #86efac; border-radius: 4px; padding: 1px 4px; font-size: 10px; font-weight: 950; }
 
-        .counter-group-main { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
-        .counter-box { background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 6px; text-align: center; }
-        .counter-title { font-size: 11px; font-weight: 800; color: #166534; margin-bottom: 4px; }
+        .counter-group-main { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
+        .counter-box { background: white; border: 1px solid #bbf7d0; border-radius: 6px; padding: 4px 6px; text-align: center; }
+        .counter-title { font-size: 10px; font-weight: 800; color: #166534; margin-bottom: 2px; }
         .counter-control { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
-        .btn-cnt-lg { flex: 1; height: 48px; font-size: 24px; font-weight: 800; border: none; border-radius: 8px; background: #2e7d32; color: white; cursor: pointer; touch-action: manipulation; max-width: 50px; }
+        .btn-cnt-lg { flex: 1; height: 40px; font-size: 22px; font-weight: 800; border: none; border-radius: 6px; background: #2e7d32; color: white; cursor: pointer; touch-action: manipulation; max-width: 44px; }
         .btn-cnt-lg.putt { background: #475569; }
         .btn-cnt-lg:active { opacity: 0.8; }
-        .val-lg { font-size: 26px; font-weight: 900; color: #0f172a; flex: 1; text-align: center; }
+        .val-lg { font-size: 22px; font-weight: 900; color: #0f172a; flex: 1; text-align: center; }
         .val-lg.unset { color: #dc2626; font-weight: 700; }
 
-        /* ホール別打球傾向エリア */
-        .shot-tag-title { font-size: 10px; font-weight: bold; color: #166534; margin-top: 6px; margin-bottom: 3px; }
-        .fw-options { display: flex; flex-wrap: wrap; gap: 4px; }
-        .fw-btn { flex: 1 0 calc(25% - 4px); min-width: 60px; padding: 6px 2px; border: 1px solid #cbd5e1; background: white; border-radius: 6px; font-size: 11px; font-weight: bold; color: #475569; cursor: pointer; text-align: center; }
-        .fw-btn.active { background: #2e7d32; color: white; border-color: #2e7d32; font-weight: 800; }
-
-        /* 「これやったら上手く行く」アコーディオンエリア */
-        .memo-accordion-container { margin-top: 8px; border-top: 1px dashed #bbf7d0; padding-top: 6px; }
-        .memo-toggle-row { display: flex; gap: 4px; align-items: center; }
+        .memo-action-container { margin-top: 4px; border-top: 1px dashed #bbf7d0; padding-top: 4px; display: flex; flex-direction: column; gap: 4px; }
         
-        .memo-toggle-btn { 
-            flex: 1;
-            background: #dcfce7; 
-            color: #166534; 
-            border: 1px solid #86efac; 
-            border-radius: 6px; 
-            padding: 6px; 
-            font-size: 11px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            text-align: left; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .memo-toggle-btn:active { background: #bbf7d0; }
-
-        .memo-toggle-btn.has-memo {
-            background: #fef08a;
-            color: #854d0e;
-            border-color: #facc15;
-        }
-        .memo-toggle-btn.has-memo:active {
-            background: #fde047;
-        }
-        
-        .memo-master-btn {
-            background: #15803d;
+        .theme-action-row { display: flex; gap: 6px; align-items: center; }
+        .theme-register-btn {
+            background: #0284c7;
             color: white;
-            border: 1px solid #166534;
+            border: 1px solid #0369a1;
             border-radius: 6px;
-            padding: 6px 10px;
+            padding: 5px 8px;
             font-size: 11px;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
+            flex-shrink: 0;
         }
-        .memo-master-btn:active { background: #14532d; }
+        .theme-register-btn:active { background: #0369a1; }
 
-        .memo-content-box { display: none; margin-top: 4px; }
-        .memo-content-box.open { display: block; }
-        .memo-textarea { 
-            width: 100%; 
-            height: 60px; 
-            padding: 6px; 
-            font-size: 12px; 
-            border: 1px solid #86efac; 
-            border-radius: 6px; 
-            resize: vertical; 
-            background: white; 
-            color: #166534; 
+        .selected-theme-display {
+            background: #e0f2fe;
+            border: 1px solid #7dd3fc;
+            color: #0369a1;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-grow: 1;
+            min-width: 0;
         }
-        .memo-textarea:focus { outline: none; border-color: #2e7d32; }
+        .selected-theme-display span {
+            overflow: hidden;
+            word-break: break-all;
+            white-space: normal;
+        }
+        .selected-theme-clear {
+            background: none;
+            border: none;
+            color: #0284c7;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+            padding-left: 6px;
+            flex-shrink: 0;
+        }
 
-        /* 同伴者エリア & ドラッグコントロール */
-        .reorder-control-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 2px 4px; background: #f1f5f9; border-radius: 6px; }
+        .selected-memos-row { display: flex; gap: 6px; align-items: center; }
+        .selected-memos-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+            background: #fefce8;
+            border: 1px solid #fef08a;
+            padding: 4px 8px;
+            border-radius: 6px;
+            flex-grow: 1;
+            min-height: 28px;
+            min-width: 0;
+        }
+        .memo-chip {
+            background: #fef08a;
+            border: 1px solid #facc15;
+            color: #854d0e;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .memo-chip-del {
+            background: none;
+            border: none;
+            color: #a16207;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .memo-add-action-btn {
+            background: #15803d;
+            color: white;
+            border: 1px solid #166534;
+            border-radius: 6px;
+            padding: 5px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .memo-add-action-btn:active { background: #14532d; }
+
+        .reorder-control-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; padding: 2px 4px; background: #f1f5f9; border-radius: 6px; }
         .drag-instruction { font-size: 10px; color: #64748b; font-weight: bold; }
-        .lock-toggle-btn { padding: 3px 8px; font-size: 10px; font-weight: bold; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; cursor: pointer; }
+        .lock-toggle-btn { padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 4px; border: 1px solid #cbd5e1; background: white; color: #475569; cursor: pointer; }
         .lock-toggle-btn.active { background: #0284c7; color: white; border-color: #0284c7; }
 
         .companions-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; position: relative; }
@@ -221,11 +264,13 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 8px;
             transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease, border-color 0.2s ease;
         }
         
-        .memo-master-item { cursor: pointer; }
+        .memo-master-item { cursor: pointer; padding: 8px 10px; text-align: left; }
         .memo-master-item:active { background: #e2e8f0; }
+        .memo-master-item.selected-theme { border-color: #0284c7; background: #f0f9ff; }
 
         .companion-card.reorder-active, .memo-master-item.reorder-active {
             cursor: grab;
@@ -251,30 +296,29 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 8px;
             will-change: transform, top, left;
         }
 
         .companion-info { display: flex; align-items: center; gap: 6px; pointer-events: none; }
         .companion-name { font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px; }
-        .for90-badge-comp { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 3px; padding: 1px 4px; font-size: 10px; font-weight: 900; }
         .companion-total { font-size: 10px; font-weight: bold; color: #64748b; }
         .drag-handle { background: #e2e8f0; color: #64748b; border-radius: 3px; padding: 0px 4px; font-size: 10px; font-weight: bold; opacity: 0.4; }
         .companion-card.reorder-active .drag-handle, .memo-master-item.reorder-active .drag-handle { background: #0284c7; color: white; opacity: 1; }
         
         .counter-inline-sm { display: flex; align-items: center; gap: 4px; }
-        .btn-cnt-sm { width: 30px; height: 30px; font-size: 16px; font-weight: bold; border: none; border-radius: 4px; background: #64748b; color: white; cursor: pointer; touch-action: manipulation; }
+        .btn-cnt-sm { width: 32px; height: 32px; font-size: 16px; font-weight: bold; border: none; border-radius: 4px; background: #64748b; color: white; cursor: pointer; touch-action: manipulation; }
         .btn-cnt-sm:active { opacity: 0.7; }
-        .val-sm { font-size: 15px; font-weight: 800; color: #0f172a; text-align: center; min-width: 20px; pointer-events: none; }
+        .val-sm { font-size: 16px; font-weight: 800; color: #0f172a; text-align: center; min-width: 24px; pointer-events: none; }
         .val-sm.unset { color: #dc2626; font-weight: 700; }
 
-        .nav-btns { display: flex; gap: 6px; margin-top: 4px; }
-        .nav-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+        .nav-btns { display: flex; gap: 6px; margin-top: 2px; }
+        .nav-btn { flex: 1; padding: 8px; font-size: 13px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
         .prev { background: #e2e8f0; color: #334155; }
         .next { background: #1e40af; color: white; }
         
-        .submit-btn { background: #2e7d32; color: white; width: 100%; padding: 10px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 4px; display: none; }
+        .submit-btn { background: #2e7d32; color: white; width: 100%; padding: 8px; font-size: 13px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin-top: 3px; display: none; }
 
-        /* モーダル共通 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: white; width: 90%; max-width: 360px; border-radius: 10px; padding: 12px; max-height: 85vh; display: flex; flex-direction: column; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
@@ -282,11 +326,36 @@
         .close-btn { background: none; border: none; font-size: 16px; cursor: pointer; color: #64748b; }
         .master-input-group { display: flex; gap: 4px; margin-bottom: 6px; }
         .master-list { overflow-y: auto; flex-grow: 1; max-height: 200px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; display: flex; flex-direction: column; gap: 4px; }
-        .master-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
-        .del-btn { background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
-        .add-btn { background: #2e7d32; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap; }
+        
+        .master-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 8px; 
+            padding: 6px 8px; 
+            border-bottom: 1px solid #f1f5f9; 
+            font-size: 12px; 
+            background: #f8fafc;
+            border-radius: 4px;
+        }
+        .del-btn { 
+            background: #ef4444; 
+            color: white; 
+            border: none; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 10px; 
+            cursor: pointer; 
+            flex-shrink: 0; 
+        }
+        .master-item span, .memo-master-item .memo-text-area-wrap {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-        /* 履歴アイテム専用スタイル */
+        .add-btn { background: #2e7d32; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+
         .history-item { padding: 8px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
         .history-info { display: flex; flex-direction: column; gap: 2px; }
         .history-date { font-weight: bold; color: #1e3a8a; font-size: 13px; }
@@ -295,15 +364,14 @@
         .view-history-btn { background: #0284c7; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
         .del-history-btn { background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
 
-        /* 行＝ホール、列＝名前のスコア表スタイル */
         .scorecard-table-wrapper { overflow-x: auto; overflow-y: auto; flex-grow: 1; max-height: 60vh; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 8px; }
-        .scorecard-table { width: 100%; border-collapse: collapse; font-size: 14px; background: white; text-align: center; white-space: nowrap; }
-        .scorecard-table th { background: #1e3a8a; color: white; padding: 8px 6px; font-weight: bold; font-size: 13px; position: sticky; top: 0; z-index: 2; }
+        .scorecard-table { width: 100%; border-collapse: collapse; font-size: 12px; background: white; text-align: center; white-space: nowrap; }
+        .scorecard-table th { background: #1e3a8a; color: white; padding: 8px 6px; font-weight: bold; font-size: 12px; position: sticky; top: 0; z-index: 2; }
         .scorecard-table th.col-hole { position: sticky; left: 0; z-index: 3; background: #1e3a8a; }
-        .scorecard-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 8px 6px; font-weight: 700; color: #1e293b; }
-        .scorecard-table td.col-hole { position: sticky; left: 0; background: #f8fafc; font-weight: bold; color: #1e3a8a; border-right: 2px solid #cbd5e1; z-index: 1; font-size: 13px; }
-        .scorecard-table tr.subtotal-row td { background: #e0f2fe; font-weight: 800; color: #0369a1; font-size: 15px; border-top: 1.5px solid #0284c7; border-bottom: 1.5px solid #0284c7; }
-        .scorecard-table tr.total-row td { background: #f1f5f9; font-weight: 900; color: #0f172a; font-size: 16px; border-top: 2px solid #cbd5e1; position: sticky; bottom: 0; z-index: 2; }
+        .scorecard-table td { border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 6px 4px; font-weight: 700; color: #1e293b; }
+        .scorecard-table td.col-hole { position: sticky; left: 0; background: #f8fafc; font-weight: bold; color: #1e3a8a; border-right: 2px solid #cbd5e1; z-index: 1; font-size: 12px; }
+        .scorecard-table tr.subtotal-row td { background: #e0f2fe; font-weight: 800; color: #0369a1; font-size: 13px; border-top: 1.5px solid #0284c7; border-bottom: 1.5px solid #0284c7; }
+        .scorecard-table tr.total-row td { background: #f1f5f9; font-weight: 900; color: #0f172a; font-size: 14px; border-top: 2px solid #cbd5e1; position: sticky; bottom: 0; z-index: 2; }
         .scorecard-table tr.total-row td.col-hole { z-index: 3; background: #e2e8f0; }
 
         .missing-score { color: #dc2626 !important; background: #fee2e2; }
@@ -312,13 +380,8 @@
 <body>
 
 <div class="card">
-    <!-- 設定画面 -->
     <div id="stepSetup">
-        <div class="header">
-            <div class="club-title">⛳ リバーサイドフェニックス GC</div>
-        </div>
-        
-        <div class="grid-2 form-row">
+        <div class="grid-2 form-row" style="margin-top: 4px;">
             <div>
                 <label>プレー日</label>
                 <input type="date" id="playDate" class="form-control">
@@ -338,7 +401,7 @@
         </div>
 
         <div class="form-row">
-            <label>同伴者を選択 (最大3名)</label>
+            <label>同伴者を選択 (複数選択可)</label>
             <div class="selected-summary" id="selectedSummary">選択中: なし</div>
             <div class="member-labels" id="memberLabelsContainer"></div>
         </div>
@@ -349,18 +412,20 @@
             
             <div class="master-btns-grid">
                 <button class="sub-btn-card" onclick="openMasterModal()">⚙️ 同伴者管理</button>
-                <button class="sub-btn-card" onclick="openZoneRateMasterModal()">⚙️ ゾーン率ラベル管理</button>
             </div>
         </div>
     </div>
 
-    <!-- スコア入力画面 -->
     <div id="stepScore" style="display: none;">
         <div class="header">
-            <button class="top-scorecard-btn" onclick="openScorecardModal()">一覧</button>
-            <button class="top-cancel-btn" onclick="abortRound()">破棄</button>
-            <div class="club-title">⛳ リバーサイドフェニックス GC</div>
-            <div class="hole-info" id="holeTitle">Hole 1 (Par 4)</div>
+            <div class="header-top-row">
+                <button class="top-scorecard-btn" onclick="openScorecardModal()">一覧</button>
+                <div class="hole-info" id="holeTitle">Hole 1 (Par 4)</div>
+                <div style="display: flex; gap: 4px;">
+                    <button class="top-suspend-btn" onclick="suspendRound()">中断</button>
+                    <button class="top-cancel-btn" onclick="abortRound()">破棄</button>
+                </div>
+            </div>
         </div>
 
         <div class="my-score-card" id="myScoreContainer"></div>
@@ -379,7 +444,6 @@
     </div>
 </div>
 
-<!-- モーダル各種 -->
 <div class="modal" id="masterModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -394,30 +458,32 @@
     </div>
 </div>
 
-<!-- ゾーン率ラベル・マスタ管理モーダル -->
-<div class="modal" id="zoneRateMasterModal">
+<div class="modal" id="themeMasterModal">
     <div class="modal-content">
         <div class="modal-header">
-            <div class="modal-title">⚙️ ゾーン率ラベル・マスタ管理</div>
-            <button class="close-btn" onclick="closeZoneRateMasterModal()">✕</button>
+            <div class="modal-title">⚙️ テーママスタ管理</div>
+            <button class="close-btn" onclick="closeThemeMasterModal()">✕</button>
         </div>
-        <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">スコア入力画面に表示されるゾーン率（ショットタグ）のラベルを追加・削除できます。</div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">月ごとの部会テーマや練習テーマを1つ選択します（タップで選択）。</div>
+        <div class="reorder-control-bar" style="margin-bottom: 6px;">
+            <span class="drag-instruction" id="themeDragInstructionText">🔒 並び替え固定中</span>
+            <button class="lock-toggle-btn" id="themeLockToggleBtn" onclick="toggleThemeReorderMode()">並び替えモード</button>
+        </div>
         <div class="master-input-group">
-            <input type="text" id="newZoneRateText" class="form-control" placeholder="新しいゾーン率ラベルを追加">
-            <button class="add-btn" onclick="addZoneRateMaster()">追加</button>
+            <input type="text" id="newThemeMasterText" class="form-control" placeholder="新しいテーマを追加">
+            <button class="add-btn" onclick="addThemeMaster()">追加</button>
         </div>
-        <div class="master-list" id="zoneRateMasterListContainer"></div>
+        <div class="master-list" id="themeMasterListContainer"></div>
     </div>
 </div>
 
-<!-- 「これやったら上手く行く」マスタ選択・管理モーダル -->
 <div class="modal" id="memoMasterModal">
     <div class="modal-content">
         <div class="modal-header">
-            <div class="modal-title">上手く行くメモ・マスタ選択</div>
+            <div class="modal-title">上手く行くコツ・マスタ選択</div>
             <button class="close-btn" onclick="closeMemoMasterModal()">✕</button>
         </div>
-        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">項目をタップすると入力欄に反映されます（ドラッグで順序変更も可）。</div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">項目にチェックを入れて「選択項目を追加」をタップしてください。</div>
         <div class="reorder-control-bar" style="margin-bottom: 6px;">
             <span class="drag-instruction" id="memoDragInstructionText">🔒 並び替え固定中</span>
             <button class="lock-toggle-btn" id="memoLockToggleBtn" onclick="toggleMemoReorderMode()">並び替えモード</button>
@@ -427,10 +493,10 @@
             <button class="add-btn" onclick="addMemoMaster()">追加</button>
         </div>
         <div class="master-list" id="memoMasterListContainer"></div>
+        <button class="start-round-btn" style="margin-top: 8px; padding: 8px; font-size: 14px;" onclick="applySelectedMemoMasters()">✅ 選択項目を追加する</button>
     </div>
 </div>
 
-<!-- 過去履歴一覧表示モーダル -->
 <div class="modal" id="historyModal">
     <div class="modal-content" style="max-width: 95%; width: 380px;">
         <div class="modal-header">
@@ -441,45 +507,41 @@
     </div>
 </div>
 
-<!-- スコア一覧表示用モーダル -->
 <div class="modal" id="scorecardModal">
     <div class="modal-content" style="max-width: 95%; width: 380px; max-height: 85vh;">
         <div class="modal-header">
             <div class="modal-title" id="scorecardModalTitle">📋 スコア一覧</div>
             <button class="close-btn" onclick="closeScorecardModal()">✕</button>
         </div>
-        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;" id="scorecardCheckMsg">赤字の箇所は未入力です。タップして直接修正も可能です。</div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;" id="scorecardCheckMsg">赤字の箇所は未入力です。タップして直接修正も可能です。（表示: スコア(記号) パター数）</div>
         <div class="scorecard-table-wrapper" id="scorecardTableWrapper"></div>
         <button class="submit-btn" style="display: block;" onclick="closeScorecardModal()">入力に戻る</button>
     </div>
 </div>
 
 <script>
-    const defaultMembers = ["佐藤", "鈴木", "高橋", "田中", "伊藤", "渡辺", "山本", "中村"];
+    const defaultMembers = [];
     
     const fullHolePars = [
-        4, 5, 4, 3, 4, 5, 4, 3, 4, // 1〜9番 (OUT)
-        5, 4, 4, 3, 4, 3, 4, 4, 5  // 10〜18番 (IN)
+        4, 5, 4, 3, 4, 5, 4, 3, 4, 
+        5, 4, 4, 3, 4, 3, 4, 4, 5  
     ];
 
-    const defaultShotTags = ["👌60点", "👌80点", "👌100点", "ひっかけ", "どスライス", "トップ", "ダフリ"];
-    
     const defaultMemoMasters = [
-        "右肩を下げずにしっかり振り抜く",
-        "テークバックをゆっくり慌てない",
-        "アドレスで足元をしっかり安定させる",
-        "インパクト後にしっかりターゲットを見る",
-        "力みを抜いて7割のイメージで振る"
+        "ティーショットで右肩を下げずに振り抜く",
+        "アプローチはハンドファーストをキープ",
+        "パットはヘッドを真っ直ぐ引いて出す",
+        "力みを抜いて脱力アドレス"
     ];
+    const defaultThemeMasters = ["注意報プラグ", "リズムよくテンポ重視"];
 
     let selectedCompanions = [];
     let isRoundActive = false;
     let isReorderEnabled = false;
     let isMemoReorderEnabled = false;
+    let isThemeReorderEnabled = false;
     let startHoleNum = 1;
-    let isMemoOpen = false;
 
-    // --- IndexedDB の初期化とラッパー関数 ---
     let db = null;
 
     function initDB() {
@@ -488,7 +550,7 @@
                 resolve(db);
                 return;
             }
-            const request = indexedDB.open('RiversideGolfDB', 1);
+            const request = indexedDB.open('RiversideGolfDB', 3);
             
             request.onerror = (event) => {
                 console.error("IndexedDB open error:", event.target.error);
@@ -580,13 +642,11 @@
         const text = document.getElementById('dragInstructionText');
         
         if (isReorderEnabled) {
-            btn.classList.add('active');
-            btn.textContent = '完了 (固定)';
-            text.textContent = '🔓 ドラッグで順番を入れ替え';
+            if(btn) { btn.classList.add('active'); btn.textContent = '完了 (固定)'; }
+            if(text) { text.textContent = '🔓 ドラッグで順番を入れ替え'; }
         } else {
-            btn.classList.remove('active');
-            btn.textContent = '並び替えモード';
-            text.textContent = '🔒 並び替え固定中';
+            if(btn) { btn.classList.remove('active'); btn.textContent = '並び替えモード'; }
+            if(text) { text.textContent = '🔒 並び替え固定中'; }
         }
         renderCompanions();
     }
@@ -597,15 +657,28 @@
         const text = document.getElementById('memoDragInstructionText');
         
         if (isMemoReorderEnabled) {
-            btn.classList.add('active');
-            btn.textContent = '完了 (固定)';
-            text.textContent = '🔓 ドラッグで順番を入れ替え';
+            if(btn) { btn.classList.add('active'); btn.textContent = '完了 (固定)'; }
+            if(text) { text.textContent = '🔓 ドラッグで順番を入れ替え'; }
         } else {
-            btn.classList.remove('active');
-            btn.textContent = '並び替えモード';
-            text.textContent = '🔒 並び替え固定中';
+            if(btn) { btn.classList.remove('active'); btn.textContent = '並び替えモード'; }
+            if(text) { text.textContent = '🔒 並び替え固定中'; }
         }
         renderMemoMasterList();
+    }
+
+    function toggleThemeReorderMode() {
+        isThemeReorderEnabled = !isThemeReorderEnabled;
+        const btn = document.getElementById('themeLockToggleBtn');
+        const text = document.getElementById('themeDragInstructionText');
+        
+        if (isThemeReorderEnabled) {
+            if(btn) { btn.classList.add('active'); btn.textContent = '完了 (固定)'; }
+            if(text) { text.textContent = '🔓 ドラッグで順番を入れ替え'; }
+        } else {
+            if(btn) { btn.classList.remove('active'); btn.textContent = '並び替えモード'; }
+            if(text) { text.textContent = '🔒 並び替え固定中'; }
+        }
+        renderThemeMasterList();
     }
 
     function selectStartCourse(hole) {
@@ -632,16 +705,13 @@
         await dbPut('settings', 'riverside_memo_masters', masters);
     }
 
-    async function getCommonMasterData() {
-        const stored = await dbGet('settings', 'riverside_common_master_v4');
-        if (stored) {
-            return stored;
-        }
-        const defaultData = {
-            tags: [...defaultShotTags]
-        };
-        await dbPut('settings', 'riverside_common_master_v4', defaultData);
-        return defaultData;
+    async function getThemeMasters() {
+        const stored = await dbGet('settings', 'riverside_theme_masters');
+        return stored ? stored : defaultThemeMasters;
+    }
+
+    async function saveThemeMasters(masters) {
+        await dbPut('settings', 'riverside_theme_masters', masters);
     }
 
     const today = new Date();
@@ -653,7 +723,7 @@
     async function renderMemberLabels() {
         const members = await getMembers();
         const container = document.getElementById('memberLabelsContainer');
-        container.innerHTML = '';
+        container.innerHTML = members.length === 0 ? '<div style="font-size:12px; color:#64748b; padding:4px;">登録メンバーがいません。「同伴者管理」から追加してください。</div>' : '';
 
         members.forEach(name => {
             const isSelected = selectedCompanions.includes(name);
@@ -671,10 +741,6 @@
         if (idx > -1) {
             selectedCompanions.splice(idx, 1);
         } else {
-            if (selectedCompanions.length >= 3) {
-                alert('同伴者は最大3名まで選択可能です。');
-                return;
-            }
             selectedCompanions.push(name);
         }
         renderMemberLabels();
@@ -683,7 +749,7 @@
     function updateSelectedSummary() {
         const summary = document.getElementById('selectedSummary');
         summary.textContent = selectedCompanions.length === 0 ? 
-            '選択中: なし' : `選択中 (${selectedCompanions.length}/3名): ${selectedCompanions.join(', ')}`;
+            '選択中: なし' : `選択中 (${selectedCompanions.length}名): ${selectedCompanions.join(', ')}`;
     }
 
     function openMasterModal() {
@@ -707,7 +773,10 @@
         members.forEach((name, idx) => {
             const div = document.createElement('div');
             div.className = 'master-item';
-            div.innerHTML = `<span>👤 ${name}</span><button class="del-btn" onclick="removeMember(${idx})">削除</button>`;
+            div.innerHTML = `
+                <button class="del-btn" onclick="removeMember(${idx})">削除</button>
+                <span style="flex:1; text-align:left;">👤 ${name}</span>
+            `;
             container.appendChild(div);
         });
     }
@@ -726,60 +795,11 @@
 
     async function removeMember(idx) {
         const members = await getMembers();
-        members.splice(idx, 1);
-        await saveMembers(members);
-        renderMemberList();
-    }
-
-    function openZoneRateMasterModal() {
-        renderZoneRateMasterList();
-        document.getElementById('zoneRateMasterModal').style.display = 'flex';
-    }
-
-    function closeZoneRateMasterModal() {
-        document.getElementById('zoneRateMasterModal').style.display = 'none';
-        if (document.getElementById('stepScore').style.display === 'block') {
-            updateUI();
+        if (confirm(`「${members[idx]}」をマスターから削除しますか？`)) {
+            members.splice(idx, 1);
+            await saveMembers(members);
+            renderMemberList();
         }
-    }
-
-    async function renderZoneRateMasterList() {
-        const commonMaster = await getCommonMasterData();
-        const tags = commonMaster.tags || defaultShotTags;
-        const container = document.getElementById('zoneRateMasterListContainer');
-        container.innerHTML = tags.length === 0 ? 
-            '<div style="text-align:center; color:#94a3b8; padding:8px; font-size:12px;">登録されたゾーン率ラベルがありません</div>' : '';
-
-        tags.forEach((tag, idx) => {
-            const div = document.createElement('div');
-            div.className = 'master-item';
-            div.innerHTML = `<span>🏷️ ${tag}</span><button class="del-btn" onclick="removeZoneRateMaster(${idx})">削除</button>`;
-            container.appendChild(div);
-        });
-    }
-
-    async function addZoneRateMaster() {
-        const input = document.getElementById('newZoneRateText');
-        const tag = input.value.trim();
-        if (!tag) return;
-        const commonMaster = await getCommonMasterData();
-        if (!commonMaster.tags) commonMaster.tags = [...defaultShotTags];
-        if (commonMaster.tags.includes(tag)) return alert('すでに同じラベルが存在します。');
-        commonMaster.tags.push(tag);
-        await dbPut('settings', 'riverside_common_master_v4', commonMaster);
-        input.value = '';
-        renderZoneRateMasterList();
-    }
-
-    async function removeZoneRateMaster(idx) {
-        const commonMaster = await getCommonMasterData();
-        if (!commonMaster.tags) commonMaster.tags = [...defaultShotTags];
-        if (commonMaster.tags.length <= 1) {
-            return alert('ゾーン率ラベルは最低1つ以上必要です。');
-        }
-        commonMaster.tags.splice(idx, 1);
-        await dbPut('settings', 'riverside_common_master_v4', commonMaster);
-        renderZoneRateMasterList();
     }
 
     renderMemberLabels();
@@ -809,18 +829,18 @@
                     par: par,
                     stroke: null,
                     putt: null,
-                    fw: '',
-                    memo: ''
+                    memos: [], 
+                    theme: ''
                 };
             })
         );
 
         currentStepIndex = 0;
         isRoundActive = true;
-        isMemoOpen = false;
 
         document.getElementById('stepSetup').style.display = 'none';
         document.getElementById('stepScore').style.display = 'block';
+        window.scrollTo(0, 0);
         updateUI();
     }
 
@@ -829,6 +849,30 @@
             isRoundActive = false;
             document.getElementById('stepScore').style.display = 'none';
             document.getElementById('stepSetup').style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+    }
+
+    async function suspendRound() {
+        const currentHoleNum = getActualHoleNumber(currentStepIndex);
+        if (confirm(`ラウンドを中断しますか？\n（現在の${currentHoleNum}ホール目までの入力内容を中断データとして保存し、トップ画面に戻ります）`)) {
+            isRoundActive = false;
+            const date = document.getElementById('playDate').value;
+            
+            const roundData = {
+                date: date + ' (中断)',
+                startHole: startHoleNum,
+                players: players,
+                scores: scoresData,
+                createdAt: new Date().toISOString()
+            };
+
+            await dbAdd('scores', roundData);
+
+            alert('中断データを保存しました。');
+            document.getElementById('stepScore').style.display = 'none';
+            document.getElementById('stepSetup').style.display = 'block';
+            window.scrollTo(0, 0);
         }
     }
 
@@ -852,7 +896,6 @@
 
         const myData = scoresData[0][currentStepIndex];
         const myContainer = document.getElementById('myScoreContainer');
-        const commonMaster = await getCommonMasterData();
         
         const strokeDisplay = myData.stroke !== null ? myData.stroke : '-';
         const puttDisplay = myData.putt !== null ? myData.putt : '-';
@@ -895,29 +938,44 @@
             </div>
         `;
 
-        const tags = commonMaster.tags || defaultShotTags;
-        if (tags && tags.length > 0) {
-            myHtml += `<div class="shot-tag-title">ゾーン率</div><div class="fw-options">`;
-            tags.forEach(tag => {
-                myHtml += `<button class="fw-btn ${myData.fw === tag ? 'active' : ''}" onclick="setFW(0, '${tag}')">${tag}</button>`;
+        const currentTheme = myData.theme || '';
+        let themeDisplayHtml = currentTheme ? `
+            <div class="selected-theme-display">
+                <span>🎯 ${currentTheme}</span>
+                <button class="selected-theme-clear" onclick="clearSelectedTheme()" title="テーマの選択を解除">✕</button>
+            </div>
+        ` : `
+            <div class="selected-theme-display" style="background:#f1f5f9; border-color:#cbd5e1; color:#64748b;">
+                <span>🎯 テーマ未選択</span>
+            </div>
+        `;
+
+        const memos = myData.memos || [];
+        let memosChipsHtml = '';
+        if (memos.length === 0) {
+            memosChipsHtml = `<span style="font-size:11px; color:#64748b;">コツ: 未選択</span>`;
+        } else {
+            memos.forEach((memoText, mIdx) => {
+                memosChipsHtml += `
+                    <div class="memo-chip">
+                        <span>✨ ${memoText}</span>
+                        <button class="memo-chip-del" onclick="removeSelectedMemo(${mIdx})">✕</button>
+                    </div>
+                `;
             });
-            myHtml += `</div>`;
         }
 
-        const memoValue = myData.memo !== undefined ? myData.memo : '';
-        const hasMemoClass = memoValue.trim() !== '' ? 'has-memo' : '';
-        
         myHtml += `
-            <div class="memo-accordion-container">
-                <div class="memo-toggle-row">
-                    <button class="memo-toggle-btn ${hasMemoClass}" onclick="toggleMemoAccordion()">
-                        <span>これやったら上手く行く</span>
-                        <span id="memoArrowIcon">${isMemoOpen ? '▲ 閉じる' : '▼ 開く'}</span>
-                    </button>
-                    <button class="memo-master-btn" onclick="openMemoMasterModal()">⚙️ マスタ</button>
+            <div class="memo-action-container">
+                <div class="theme-action-row">
+                    ${themeDisplayHtml}
+                    <button class="theme-register-btn" onclick="openThemeMasterModal()">⚙️ テーマ</button>
                 </div>
-                <div class="memo-content-box ${isMemoOpen ? 'open' : ''}" id="memoContentBox">
-                    <textarea id="memoTextarea" class="memo-textarea" placeholder="例: ティーショットで右肩を下げずに振り抜く、など" oninput="updateMemo(this.value)">${memoValue}</textarea>
+                <div class="selected-memos-row">
+                    <div class="selected-memos-container">
+                        ${memosChipsHtml}
+                    </div>
+                    <button class="memo-add-action-btn" onclick="openMemoMasterModal()">✨ コツ</button>
                 </div>
             </div>
         `;
@@ -930,31 +988,173 @@
         const isLastHole = (currentStepIndex === 17);
         document.getElementById('nextBtn').innerText = isLastHole ? '18H完了' : '次ホール';
         document.getElementById('finishBtn').style.display = isLastHole ? 'block' : 'none';
+        window.scrollTo(0, 0);
     }
 
-    function toggleMemoAccordion() {
-        isMemoOpen = !isMemoOpen;
-        const box = document.getElementById('memoContentBox');
-        const arrow = document.getElementById('memoArrowIcon');
-        if (isMemoOpen) {
-            box.classList.add('open');
-            arrow.textContent = '▲ 閉じる';
-        } else {
-            box.classList.remove('open');
-            arrow.textContent = '▼ 開く';
+    function removeSelectedMemo(mIdx) {
+        const memos = scoresData[0][currentStepIndex].memos || [];
+        memos.splice(mIdx, 1);
+        updateUI();
+    }
+
+    async function openThemeMasterModal() {
+        isThemeReorderEnabled = false;
+        const btn = document.getElementById('themeLockToggleBtn');
+        const text = document.getElementById('themeDragInstructionText');
+        if(btn) {
+            btn.classList.remove('active');
+            btn.textContent = '並び替えモード';
         }
+        if(text) {
+            text.textContent = '🔒 並び替え固定中';
+        }
+        await renderThemeMasterList();
+        document.getElementById('themeMasterModal').style.display = 'flex';
     }
 
-    function updateMemo(val) {
-        scoresData[0][currentStepIndex].memo = val;
-        const btn = document.querySelector('.memo-toggle-btn');
-        if (btn) {
-            if (val.trim() !== '') {
-                btn.classList.add('has-memo');
+    function closeThemeMasterModal() {
+        document.getElementById('themeMasterModal').style.display = 'none';
+    }
+
+    async function renderThemeMasterList() {
+        const masters = await getThemeMasters();
+        const container = document.getElementById('themeMasterListContainer');
+        container.innerHTML = masters.length === 0 ? 
+            '<div style="text-align:center; color:#94a3b8; padding:8px; font-size:12px;">登録されたテーマがありません。上の入力欄から追加してください。</div>' : '';
+
+        const currentTheme = scoresData[0][currentStepIndex].theme || '';
+
+        masters.forEach((text, idx) => {
+            const isSelected = (currentTheme === text);
+            const div = document.createElement('div');
+            div.className = `memo-master-item ${isSelected ? 'selected-theme' : ''} ${isThemeReorderEnabled ? 'reorder-active' : ''}`;
+            div.dataset.index = idx;
+            div.innerHTML = `
+                <button class="del-btn" onclick="event.stopPropagation(); removeThemeMaster(${idx})">削除</button>
+                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0; justify-content:space-between;">
+                    <span style="flex:1; word-break:break-all; font-size:13px; font-weight:700; color:#1e293b; line-height:1.4; text-align:left; min-width:0;">${isSelected ? '✅ ' : ''}${text}</span>
+                    ${isThemeReorderEnabled ? '<span class="drag-handle" style="font-size:14px; padding:2px 6px; flex-shrink:0;">☰</span>' : ''}
+                </div>`;
+            
+            if (isThemeReorderEnabled) {
+                attachThemePointerDragEvents(div);
             } else {
-                btn.classList.remove('has-memo');
+                div.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') {
+                        selectTheme(text);
+                    }
+                };
             }
+            container.appendChild(div);
+        });
+    }
+
+    function selectTheme(text) {
+        scoresData[0][currentStepIndex].theme = text;
+        closeThemeMasterModal();
+        if (isRoundActive) {
+            updateUI();
         }
+    }
+
+    function clearSelectedTheme() {
+        scoresData[0][currentStepIndex].theme = "";
+        updateUI();
+    }
+
+    async function addThemeMaster() {
+        const input = document.getElementById('newThemeMasterText');
+        const text = input.value.trim();
+        if (!text) return;
+        const masters = await getThemeMasters();
+        masters.push(text);
+        await saveThemeMasters(masters);
+        input.value = '';
+        renderThemeMasterList();
+    }
+
+    async function removeThemeMaster(idx) {
+        const masters = await getThemeMasters();
+        if (confirm(`このテーマを削除しますか？`)) {
+            masters.splice(idx, 1);
+            await saveThemeMasters(masters);
+            renderThemeMasterList();
+        }
+    }
+
+    async function swapThemeMasters(fromIdx, toIdx) {
+        if (fromIdx === toIdx) return;
+        const masters = await getThemeMasters();
+        [masters[fromIdx], masters[toIdx]] = [masters[toIdx], masters[fromIdx]];
+        await saveThemeMasters(masters);
+        renderThemeMasterList();
+    }
+
+    function attachThemePointerDragEvents(el) {
+        let clone = null, offsetX = 0, offsetY = 0, isDragging = false, draggedIdx = null, animationFrameId = null;
+
+        const onPointerDown = (e) => {
+            if (!isThemeReorderEnabled || e.target.tagName === 'BUTTON') return;
+
+            if (navigator.vibrate) navigator.vibrate(40);
+            draggedIdx = parseInt(el.dataset.index);
+            const rect = el.getBoundingClientRect();
+
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+
+            isDragging = true;
+            clone = el.cloneNode(true);
+            clone.classList.add('drag-clone');
+            clone.style.width = `${rect.width}px`;
+            clone.style.left = `${e.clientX - offsetX}px`;
+            clone.style.top = `${e.clientY - offsetY}px`;
+            document.body.appendChild(clone);
+
+            el.classList.add('dragging-placeholder');
+
+            window.addEventListener('pointermove', onPointerMove, { passive: false });
+            window.addEventListener('pointerup', onPointerUp);
+            window.addEventListener('pointercancel', onPointerUp);
+        };
+
+        const onPointerMove = (e) => {
+            if (!isDragging || !clone) return;
+            e.preventDefault();
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(async () => {
+                if (!clone) return;
+                clone.style.left = `${e.clientX - offsetX}px`;
+                clone.style.top = `${e.clientY - offsetY}px`;
+
+                const items = document.querySelectorAll('.memo-master-item:not(.dragging-placeholder)');
+                items.forEach(async (item) => {
+                    const cRect = item.getBoundingClientRect();
+                    const centerY = cRect.top + cRect.height / 2;
+                    if (Math.abs(e.clientY - centerY) < cRect.height / 2 && e.clientX >= cRect.left && e.clientX <= cRect.right) {
+                        const targetIdx = parseInt(item.dataset.index);
+                        if (targetIdx !== draggedIdx) {
+                            onPointerUp();
+                            await swapThemeMasters(draggedIdx, targetIdx);
+                        }
+                    }
+                });
+            });
+        };
+
+        const onPointerUp = () => {
+            isDragging = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (clone) { clone.remove(); clone = null; }
+            el.classList.remove('dragging-placeholder');
+
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('pointercancel', onPointerUp);
+        };
+
+        el.addEventListener('pointerdown', onPointerDown);
     }
 
     async function openMemoMasterModal() {
@@ -964,6 +1164,8 @@
         if(btn) {
             btn.classList.remove('active');
             btn.textContent = '並び替えモード';
+        }
+        if(text) {
             text.textContent = '🔒 並び替え固定中';
         }
         await renderMemoMasterList();
@@ -976,27 +1178,32 @@
 
     async function renderMemoMasterList() {
         const masters = await getMemoMasters();
+        const currentMemos = scoresData[0][currentStepIndex].memos || [];
         const container = document.getElementById('memoMasterListContainer');
         container.innerHTML = masters.length === 0 ? 
-            '<div style="text-align:center; color:#94a3b8; padding:8px; font-size:12px;">登録されたマスタがありません</div>' : '';
+            '<div style="text-align:center; color:#94a3b8; padding:8px; font-size:12px;">登録されたコツがありません。上の入力欄から追加してください。</div>' : '';
 
         masters.forEach((text, idx) => {
+            const isAlreadySelected = currentMemos.includes(text);
             const div = document.createElement('div');
             div.className = `memo-master-item ${isMemoReorderEnabled ? 'reorder-active' : ''}`;
             div.dataset.index = idx;
             div.innerHTML = `
-                <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:0;">
-                    <span class="drag-handle">☰</span>
-                    <span style="flex:1; word-break:break-all; font-size:12px; font-weight:700; color:#1e293b;">${text}</span>
-                </div>
-                <div style="display:flex; gap:4px; align-items:center;">
-                    <button class="del-btn" onclick="event.stopPropagation(); removeMemoMaster(${idx})">削除</button>
+                <button class="del-btn" onclick="event.stopPropagation(); removeMemoMaster(${idx})">削除</button>
+                <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0; justify-content:space-between;">
+                    <span style="flex:1; word-break:break-all; font-size:13px; font-weight:700; color:#1e293b; line-height:1.4; text-align:left; min-width:0;">${text}</span>
+                    ${isMemoReorderEnabled ? '<span class="drag-handle" style="font-size:14px; padding:2px 6px; flex-shrink:0;">☰</span>' : `<input type="checkbox" class="memo-chk" value="${text.replace(/"/g, '&quot;')}" ${isAlreadySelected ? 'checked' : ''} style="width:16px; height:16px; cursor:pointer; flex-shrink:0;">`}
                 </div>`;
             
             if (isMemoReorderEnabled) {
                 attachMemoPointerDragEvents(div);
             } else {
-                div.onclick = () => applyMemoFromMaster(text);
+                div.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+                        const chk = div.querySelector('input[type="checkbox"]');
+                        if (chk) chk.checked = !chk.checked;
+                    }
+                };
             }
             container.appendChild(div);
         });
@@ -1015,9 +1222,11 @@
 
     async function removeMemoMaster(idx) {
         const masters = await getMemoMasters();
-        masters.splice(idx, 1);
-        await saveMemoMasters(masters);
-        renderMemoMasterList();
+        if (confirm(`この項目を削除しますか？`)) {
+            masters.splice(idx, 1);
+            await saveMemoMasters(masters);
+            renderMemoMasterList();
+        }
     }
 
     async function swapMemoMasters(fromIdx, toIdx) {
@@ -1067,14 +1276,14 @@
                 clone.style.top = `${e.clientY - offsetY}px`;
 
                 const items = document.querySelectorAll('.memo-master-item:not(.dragging-placeholder)');
-                items.forEach(item => {
+                items.forEach(async (item) => {
                     const cRect = item.getBoundingClientRect();
                     const centerY = cRect.top + cRect.height / 2;
                     if (Math.abs(e.clientY - centerY) < cRect.height / 2 && e.clientX >= cRect.left && e.clientX <= cRect.right) {
                         const targetIdx = parseInt(item.dataset.index);
                         if (targetIdx !== draggedIdx) {
                             onPointerUp();
-                            swapMemoMasters(draggedIdx, targetIdx);
+                            await swapMemoMasters(draggedIdx, targetIdx);
                         }
                     }
                 });
@@ -1095,12 +1304,11 @@
         el.addEventListener('pointerdown', onPointerDown);
     }
 
-    function applyMemoFromMaster(text) {
-        const currentMemo = scoresData[0][currentStepIndex].memo || '';
-        const newMemo = currentMemo ? `${currentMemo}\n${text}` : text;
-        scoresData[0][currentStepIndex].memo = newMemo;
+    function applySelectedMemoMasters() {
+        const checkboxes = document.querySelectorAll('#memoMasterListContainer input.memo-chk:checked');
+        const selectedTexts = Array.from(checkboxes).map(chk => chk.value);
         
-        isMemoOpen = true;
+        scoresData[0][currentStepIndex].memos = selectedTexts;
         closeMemoMasterModal();
         updateUI();
     }
@@ -1118,17 +1326,13 @@
             const strokeDisplay = hData.stroke !== null ? hData.stroke : '-';
             const strokeClass = hData.stroke !== null ? '' : 'unset';
 
-            const compFor90Val = getPlayerFor90Cumulative(pIdx, currentStepIndex);
-            const compFor90Str = compFor90Val > 0 ? `+${compFor90Val}` : `${compFor90Val}`;
-
             compCard.innerHTML = `
-                <div class="companion-info">
-                    <span class="drag-handle">☰</span>
-                    <span class="for90-badge-comp">for90: ${compFor90Str}</span>
-                    <span class="companion-name">${players[pIdx]}</span>
-                    <span class="companion-total">(${getPlayerTotal(pIdx)}打)</span>
+                <div class="companion-info" style="min-width:0; flex:1;">
+                    <span class="drag-handle" style="flex-shrink:0;">☰</span>
+                    <span class="companion-name" style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${players[pIdx]}</span>
+                    <span class="companion-total" style="flex-shrink:0;">(${getPlayerTotal(pIdx)}打)</span>
                 </div>
-                <div class="counter-inline-sm">
+                <div class="counter-inline-sm" style="flex-shrink:0;">
                     <button class="btn-cnt-sm" onclick="changeVal(${pIdx}, 'stroke', -1)">-</button>
                     <span class="val-sm ${strokeClass}">${strokeDisplay}</span>
                     <button class="btn-cnt-sm" onclick="changeVal(${pIdx}, 'stroke', 1)">+</button>
@@ -1231,17 +1435,8 @@
         updateUI();
     }
 
-    function setFW(pIdx, val) {
-        scoresData[pIdx][currentStepIndex].fw = (scoresData[pIdx][currentStepIndex].fw === val) ? '' : val;
-        updateUI();
-    }
-
     function getPlayerTotal(pIdx) {
         return scoresData[pIdx].reduce((sum, h) => sum + (h.stroke !== null ? h.stroke : 0), 0);
-    }
-
-    function getPlayerTotalPutt(pIdx) {
-        return scoresData[pIdx].reduce((sum, h) => sum + (h.putt !== null ? h.putt : 0), 0);
     }
 
     function getPlayerHalfTotal(pIdx, startIdx, endIdx) {
@@ -1253,21 +1448,27 @@
         return sum;
     }
 
-    function getPlayerHalfTotalPutt(pIdx, startIdx, endIdx) {
-        let sum = 0;
-        for (let i = startIdx; i <= endIdx; i++) {
-            const val = scoresData[pIdx][i].putt;
-            if (val !== null) sum += val;
-        }
-        return sum;
-    }
-
     function moveHole(dir) {
         const nextIdx = currentStepIndex + dir;
         if (nextIdx > 17) {
             openScorecardModal();
             return;
         }
+        
+        if (dir > 0 && nextIdx < 18) {
+            const currentTheme = scoresData[0][currentStepIndex].theme || '';
+            const nextTheme = scoresData[0][nextIdx].theme || '';
+            if (currentTheme && !nextTheme) {
+                scoresData[0][nextIdx].theme = currentTheme;
+            }
+
+            const currentMemos = scoresData[0][currentStepIndex].memos || [];
+            const nextMemos = scoresData[0][nextIdx].memos || [];
+            if (currentMemos.length > 0 && nextMemos.length === 0) {
+                scoresData[0][nextIdx].memos = [...currentMemos];
+            }
+        }
+
         currentStepIndex = nextIdx;
         updateUI();
     }
@@ -1292,7 +1493,6 @@
             const dateStr = round.date || '日付不明';
             const startHoleStr = round.startHole === 10 ? 'INスタート' : 'OUTスタート';
 
-            // 各プレイヤーの名前と合計スコアを結合した文字列を作成
             const playersSummaryStr = round.players.map((pName, pIdx) => {
                 const pTotal = round.scores && round.scores[pIdx] ? 
                     round.scores[pIdx].reduce((sum, h) => sum + (h.stroke !== null ? h.stroke : 0), 0) : 0;
@@ -1334,18 +1534,25 @@
 
             players = round.players;
             scoresData = round.scores;
+            scoresData.forEach(pScores => {
+                pScores.forEach(h => {
+                    if (!h.memos) {
+                        h.memos = h.memo ? [h.memo] : [];
+                    }
+                });
+            });
+
             startHoleNum = round.startHole || 1;
 
             closeHistoryModal();
             
-            // 過去データの閲覧であっても、その後に編集や画面遷移・並び替えを行えるように状態を適切に初期化する
             currentStepIndex = 0;
             isRoundActive = true;
             isReorderEnabled = false;
-            isMemoOpen = false;
 
             document.getElementById('stepSetup').style.display = 'none';
             document.getElementById('stepScore').style.display = 'block';
+            window.scrollTo(0, 0);
             updateUI();
         };
     }
@@ -1364,15 +1571,25 @@
         }
     }
 
+    function getScoreSymbol(stroke, par) {
+        if (stroke === null || stroke === undefined) return '';
+        const diff = stroke - par;
+        if (stroke === 1) return '◯';
+        if (diff === -2) return '◎';
+        if (diff === -1) return '⚪︎';
+        if (diff === 0) return 'ー';
+        if (diff === 1) return '△';
+        if (diff === 2) return '□';
+        if (diff >= 3) return `+${diff}`;
+        return '';
+    }
+
     function renderScorecardTableClean() {
         const wrapper = document.getElementById('scorecardTableWrapper');
         let html = `<table class="scorecard-table"><thead><tr><th class="col-hole">Hole (Par)</th>`;
 
-        players.forEach((player, pIdx) => {
+        players.forEach((player) => {
             html += `<th>${player}</th>`;
-            if (pIdx === 0) {
-                html += `<th>(パット)</th>`;
-            }
         });
         html += `</tr></thead><tbody>`;
 
@@ -1385,14 +1602,20 @@
             players.forEach((player, pIdx) => {
                 const hData = scoresData[pIdx][i];
                 const stroke = hData && hData.stroke !== null && hData.stroke !== undefined ? hData.stroke : '-';
+                const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
                 const cellClass = (stroke === '-') ? 'missing-score' : '';
-                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${stroke}</td>`;
                 
-                if (pIdx === 0) {
-                    const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
-                    const puttClass = (putt === '-') ? 'missing-score' : '';
-                    html += `<td class="${puttClass}" onclick="jumpToHole(${i})" style="cursor:pointer; font-size: 13px;" title="タップしてこのホールに移動">${putt}</td>`;
+                let displayHtml = stroke;
+                if (stroke !== '-') {
+                    const symbol = getScoreSymbol(stroke, par);
+                    if (pIdx === 0) {
+                        displayHtml = `${stroke}<span style="font-size:10px; color:#555;">(${symbol})</span> <span style="font-size:11px; color:#0284c7; font-weight:bold;">${putt}pt</span>`;
+                    } else {
+                        displayHtml = `${stroke}<span style="font-size:10px; color:#555;">(${symbol})</span>`;
+                    }
                 }
+
+                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${displayHtml}</td>`;
             });
             html += `</tr>`;
         }
@@ -1401,9 +1624,6 @@
         html += `<tr class="subtotal-row"><td class="col-hole">${firstHalfName}</td>`;
         players.forEach((player, pIdx) => {
             html += `<td>${getPlayerHalfTotal(pIdx, 0, 8)}</td>`;
-            if (pIdx === 0) {
-                html += `<td>${getPlayerHalfTotalPutt(pIdx, 0, 8)}</td>`;
-            }
         });
         html += `</tr>`;
 
@@ -1416,14 +1636,20 @@
             players.forEach((player, pIdx) => {
                 const hData = scoresData[pIdx][i];
                 const stroke = hData && hData.stroke !== null && hData.stroke !== undefined ? hData.stroke : '-';
+                const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
                 const cellClass = (stroke === '-') ? 'missing-score' : '';
-                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${stroke}</td>`;
                 
-                if (pIdx === 0) {
-                    const putt = hData && hData.putt !== null && hData.putt !== undefined ? hData.putt : '-';
-                    const puttClass = (putt === '-') ? 'missing-score' : '';
-                    html += `<td class="${puttClass}" onclick="jumpToHole(${i})" style="cursor:pointer; font-size: 13px;" title="タップしてこのホールに移動">${putt}</td>`;
+                let displayHtml = stroke;
+                if (stroke !== '-') {
+                    const symbol = getScoreSymbol(stroke, par);
+                    if (pIdx === 0) {
+                        displayHtml = `${stroke}<span style="font-size:10px; color:#555;">(${symbol})</span> <span style="font-size:11px; color:#0284c7; font-weight:bold;">${putt}pt</span>`;
+                    } else {
+                        displayHtml = `${stroke}<span style="font-size:10px; color:#555;">(${symbol})</span>`;
+                    }
                 }
+
+                html += `<td class="${cellClass}" onclick="jumpToHole(${i})" style="cursor:pointer;" title="タップしてこのホールに移動">${displayHtml}</td>`;
             });
             html += `</tr>`;
         }
@@ -1432,9 +1658,6 @@
         html += `<tr class="subtotal-row"><td class="col-hole">${secondHalfName}</td>`;
         players.forEach((player, pIdx) => {
             html += `<td>${getPlayerHalfTotal(pIdx, 9, 17)}</td>`;
-            if (pIdx === 0) {
-                html += `<td>${getPlayerHalfTotalPutt(pIdx, 9, 17)}</td>`;
-            }
         });
         html += `</tr>`;
 
@@ -1442,9 +1665,6 @@
         players.forEach((player, pIdx) => {
             const total = getPlayerTotal(pIdx);
             html += `<td>${total}</td>`;
-            if (pIdx === 0) {
-                html += `<td>${getPlayerTotalPutt(pIdx)}</td>`;
-            }
         });
         html += `</tr>`;
 
@@ -1493,7 +1713,6 @@
         }).join('\n');
 
         const roundData = {
-            club: 'リバーサイドフェニックスゴルフクラブ',
             date: date,
             startHole: startHoleNum,
             players: players,
@@ -1507,6 +1726,7 @@
         
         document.getElementById('stepScore').style.display = 'none';
         document.getElementById('stepSetup').style.display = 'block';
+        window.scrollTo(0, 0);
     }
 </script>
 
