@@ -229,26 +229,13 @@
             <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">項目名 / 食品名</label>
-                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、ランニング等" 
+                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" 
                         class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">カロリー (kcal)</label>
-                        <input type="number" id="item-calorie" required min="0" placeholder="例: 350" 
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">カテゴリ</label>
-                        <select id="item-category" 
-                            class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <option value="朝食">朝食 (摂取)</option>
-                            <option value="昼食">昼食 (摂取)</option>
-                            <option value="夕食">夕食 (摂取)</option>
-                            <option value="間食">間食 (摂取)</option>
-                            <option value="運動">運動 (消費)</option>
-                        </select>
-                    </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">カロリー (kcal)</label>
+                    <input type="number" id="item-calorie" required min="0" placeholder="例: 350" 
+                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div class="flex items-center gap-2 pt-2">
                     <button type="submit" id="submit-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
@@ -448,6 +435,7 @@
         let weightChartInstance = null;
 
         window.addEventListener('DOMContentLoaded', () => {
+            checkAndResetDailyData();
             updateDateDisplay();
             initDrumPickers();
             document.getElementById('weight-date').value = new Date().toISOString().split('T')[0];
@@ -456,6 +444,17 @@
             renderStrategies();
             lucide.createIcons();
         });
+
+        function checkAndResetDailyData() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const lastDate = localStorage.getItem('last_recorded_date');
+
+            if (lastDate !== todayStr) {
+                records = [];
+                localStorage.setItem('calorie_records', JSON.stringify(records));
+                localStorage.setItem('last_recorded_date', todayStr);
+            }
+        }
 
         function updateDateDisplay() {
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
@@ -555,17 +554,11 @@
 
             let html = '';
             records.forEach(item => {
-                const isExercise = item.category === '運動';
-                const badgeBg = isExercise ? 'bg-sky-50 text-sky-600 border-sky-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200';
-                
                 html += `
                     <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs">
-                        <div class="flex items-center gap-2.5">
-                            <span class="px-2 py-0.5 rounded-md font-bold border ${badgeBg}">${item.category}</span>
-                            <div>
-                                <p class="font-bold text-slate-800">${escapeHtml(item.name)}</p>
-                                <p class="text-[10px] text-slate-400">${isExercise ? '-' : '+'}${item.calorie.toLocaleString()} kcal</p>
-                            </div>
+                        <div>
+                            <p class="font-bold text-slate-800">${escapeHtml(item.name)}</p>
+                            <p class="text-[10px] text-slate-400">+${item.calorie.toLocaleString()} kcal</p>
                         </div>
                         <button onclick="deleteCalorieRecord('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg transition" title="削除">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -819,10 +812,9 @@
             e.preventDefault();
             const name = document.getElementById('item-name').value.trim();
             const calorie = parseInt(document.getElementById('item-calorie').value);
-            const category = document.getElementById('item-category').value;
             if (!name || isNaN(calorie)) return;
 
-            records.unshift({ id: Date.now().toString(), name, calorie, category, timestamp: new Date().toISOString() });
+            records.unshift({ id: Date.now().toString(), name, calorie, timestamp: new Date().toISOString() });
             localStorage.setItem('calorie_records', JSON.stringify(records));
             closeCalorieModal();
             renderApp();
@@ -844,16 +836,15 @@
         }
 
         function renderApp() {
-            let intake = 0, burn = 0;
-            records.forEach(i => { if (i.category === '運動') burn += i.calorie; else intake += i.calorie; });
-            const net = intake - burn;
-            const remaining = dailyGoal - net;
+            let totalIntake = 0;
+            records.forEach(i => { totalIntake += i.calorie; });
+            const remaining = dailyGoal - totalIntake;
 
-            document.getElementById('balance-amount').innerHTML = `${net.toLocaleString()} <span class="text-sm font-normal">kcal</span>`;
+            document.getElementById('balance-amount').innerHTML = `${totalIntake.toLocaleString()} <span class="text-sm font-normal">kcal</span>`;
             document.getElementById('remaining-calorie').textContent = remaining.toLocaleString();
 
             const statusEl = document.getElementById('balance-status');
-            if (net <= dailyGoal) {
+            if (totalIntake <= dailyGoal) {
                 statusEl.textContent = '順調';
                 statusEl.className = 'px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] text-white';
             } else {
