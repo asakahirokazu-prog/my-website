@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自動貼り付けリスト</title>
+  <!-- ワンソース管理用ファビコン（クリップボード絵文字SVG） -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      max-width: 650px;
+      margin: 0 auto;
+      padding: 16px;
+      background-color: #f4f7f6;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+      font-size: 1.5rem;
+      margin-top: 10px;
+      margin-bottom: 16px;
+    }
+
+    /* 一括操作エリア */
+    .toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 12px;
+    }
+
+    .clear-all-btn {
+      padding: 8px 14px;
+      font-size: 13px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .clear-all-btn:active {
+      background-color: #bd2130;
+    }
+
+    .list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .list-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background-color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    @media (min-width: 480px) {
+      .list-item {
+        flex-direction: row;
+        align-items: center;
+        padding: 8px;
+      }
+    }
+
+    .list-input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px; /* スマホでフォームズームが起きない最小サイズ16px */
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: #e9ecef;
+      color: #495057;
+      cursor: not-allowed;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      font-size: 13px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    @media (min-width: 480px) {
+      .btn {
+        flex: initial;
+      }
+    }
+
+    .paste-btn {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .paste-btn:active {
+      background-color: #0056b3;
+    }
+
+    .copy-btn {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .copy-btn:active {
+      background-color: #1e7e34;
+    }
+
+    /* コピー完了時の表示 */
+    .copy-btn.copied {
+      background-color: #17a2b8;
+    }
+
+    .clear-btn {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .clear-btn:active {
+      background-color: #545b62;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>自動貼り付けリスト</h1>
+
+  <!-- まとめてクリアボタン -->
+  <div class="toolbar">
+    <button class="clear-all-btn" id="clearAllBtn">すべてクリア</button>
+  </div>
+
+  <div class="list-container" id="listContainer">
+    <!-- リスト項目 1 -->
+    <div class="list-item">
+      <input type="text" class="list-input" readonly placeholder="空きスロット 1">
+      <div class="button-group">
+        <button class="btn paste-btn">貼り付け</button>
+        <button class="btn copy-btn">コピー</button>
+        <button class="btn clear-btn">クリア</button>
+      </div>
+    </div>
+    <!-- リスト項目 2 -->
+    <div class="list-item">
+      <input type="text" class="list-input" readonly placeholder="空きスロット 2">
+      <div class="button-group">
+        <button class="btn paste-btn">貼り付け</button>
+        <button class="btn copy-btn">コピー</button>
+        <button class="btn clear-btn">クリア</button>
+      </div>
+    </div>
+    <!-- リスト項目 3 -->
+    <div class="list-item">
+      <input type="text" class="list-input" readonly placeholder="空きスロット 3">
+      <div class="button-group">
+        <button class="btn paste-btn">貼り付け</button>
+        <button class="btn copy-btn">コピー</button>
+        <button class="btn clear-btn">クリア</button>
+      </div>
+    </div>
+    <!-- リスト項目 4 -->
+    <div class="list-item">
+      <input type="text" class="list-input" readonly placeholder="空きスロット 4">
+      <div class="button-group">
+        <button class="btn paste-btn">貼り付け</button>
+        <button class="btn copy-btn">コピー</button>
+        <button class="btn clear-btn">クリア</button>
+      </div>
+    </div>
+    <!-- リスト項目 5 -->
+    <div class="list-item">
+      <input type="text" class="list-input" readonly placeholder="空きスロット 5">
+      <div class="button-group">
+        <button class="btn paste-btn">貼り付け</button>
+        <button class="btn copy-btn">コピー</button>
+        <button class="btn clear-btn">クリア</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 共通のテキスト挿入処理
+    function insertToFirstEmpty(pastedText) {
+      if (!pastedText) return false;
+      const inputs = document.querySelectorAll('.list-input');
+      for (const input of inputs) {
+        if (input.value === '') {
+          input.value = pastedText;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // ページ全体での貼り付け（Paste）イベントを監視
+    document.addEventListener('paste', (event) => {
+      const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+      if (!pastedText) return;
+
+      const filled = insertToFirstEmpty(pastedText);
+      if (!filled) {
+        alert('空いているリストがありません！');
+      }
+    });
+
+    // リスト内のボタン（貼り付け・コピー・各クリア）の処理
+    const listContainer = document.getElementById('listContainer');
+    
+    listContainer.addEventListener('click', async (event) => {
+      const target = event.target;
+      const listItem = target.closest('.list-item');
+      if (!listItem) return;
+
+      const input = listItem.querySelector('.list-input');
+
+      // 「貼り付け」ボタンが押された場合
+      if (target.classList.contains('paste-btn')) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.readText) {
+            const text = await navigator.clipboard.readText();
+            if (!text) {
+              alert('クリップボードにテキストがありません。');
+              return;
+            }
+            if (input.value === '') {
+              input.value = text;
+            } else {
+              const filled = insertToFirstEmpty(text);
+              if (!filled) {
+                alert('空いているリストがありません！');
+              }
+            }
+          } else {
+            alert('お使いのブラウザではボタンからの直接読み取りがサポートされていません。');
+          }
+        } catch (err) {
+          alert('クリップボードの読み取りが許可されていないか、失敗しました: ' + err);
+        }
+      }
+
+      // 「コピー」ボタンが押された場合
+      if (target.classList.contains('copy-btn')) {
+        if (input && input.value) {
+          navigator.clipboard.writeText(input.value).then(() => {
+            const originalText = target.textContent;
+            target.textContent = '完了!';
+            target.classList.add('copied');
+
+            setTimeout(() => {
+              target.textContent = originalText;
+              target.classList.remove('copied');
+            }, 1200);
+          }).catch(err => {
+            alert('コピーに失敗しました: ' + err);
+          });
+        }
+      }
+
+      // 各行の「クリア」ボタンが押された場合
+      if (target.classList.contains('clear-btn')) {
+        input.value = '';
+      }
+    });
+
+    // 「すべてクリア」ボタンの処理
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    clearAllBtn.addEventListener('click', () => {
+      if (confirm('すべてのリストをクリアしてもよろしいですか？')) {
+        const inputs = document.querySelectorAll('.list-input');
+        inputs.forEach(input => input.value = '');
+      }
+    });
+  </script>
+
+</body>
+</html>
