@@ -121,12 +121,12 @@
         }
         .load-history-btn:active { opacity: 0.9; }
 
-        .master-btns-grid { display: flex; justify-content: center; }
+        .master-btns-grid { display: flex; gap: 6px; }
         .sub-btn-card { 
             background: #f8fafc; 
             border: 1px solid #cbd5e1; 
             color: #334155; 
-            padding: 10px 16px; 
+            padding: 10px 12px; 
             font-size: 12px; 
             font-weight: bold; 
             border-radius: 6px; 
@@ -375,6 +375,12 @@
         .scorecard-table tr.total-row td.col-hole { z-index: 3; background: #e2e8f0; }
 
         .missing-score { color: #dc2626 !important; background: #fee2e2; }
+
+        /* Par設定モーダル用スタイル */
+        .par-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
+        .par-table th, .par-table td { border: 1px solid #cbd5e1; padding: 4px; text-align: center; }
+        .par-table th { background: #f1f5f9; color: #334155; }
+        .par-select { width: 100%; padding: 4px; font-size: 13px; font-weight: bold; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; background: white; }
     </style>
 </head>
 <body>
@@ -411,6 +417,7 @@
             <button class="load-history-btn" onclick="openHistoryModal()">📂 過去のスコアデータ呼出</button>
             
             <div class="master-btns-grid">
+                <button class="sub-btn-card" onclick="openParSettingModal()">⛳ パー(Par)設定</button>
                 <button class="sub-btn-card" onclick="openMasterModal()">⚙️ 同伴者管理</button>
             </div>
         </div>
@@ -441,6 +448,31 @@
             <button class="nav-btn next" id="nextBtn" onclick="moveHole(1)">次ホール</button>
         </div>
         <button class="submit-btn" id="finishBtn" onclick="tryFinishRound()">ラウンド完了・スコア保存</button>
+    </div>
+</div>
+
+<!-- Par設定モーダル -->
+<div class="modal" id="parSettingModal">
+    <div class="modal-content" style="max-width: 95%; width: 360px;">
+        <div class="modal-header">
+            <div class="modal-title">⛳ ホールごとのPar設定</div>
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <button class="top-scorecard-btn" style="padding: 3px 6px; font-size: 10px; background: #0284c7;" onclick="resetParSettingsToDefault()">デフォルト</button>
+                <button class="close-btn" onclick="closeParSettingModal()">✕</button>
+            </div>
+        </div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Out（1〜9H）およびIn（10〜18H）のパーを設定できます。</div>
+        <div class="scorecard-table-wrapper" style="max-height: 50vh;">
+            <table class="par-table">
+                <thead>
+                    <tr><th>Hole</th><th>Par</th><th>Hole</th><th>Par</th></tr>
+                </thead>
+                <tbody id="parSettingTableBody">
+                    <!-- JSで動的生成 -->
+                </tbody>
+            </table>
+        </div>
+        <button class="start-round-btn" style="margin-top: 8px; padding: 8px; font-size: 14px;" onclick="closeParSettingModal()">設定を保存して閉じる</button>
     </div>
 </div>
 
@@ -522,10 +554,12 @@
 <script>
     const defaultMembers = [];
     
-    const fullHolePars = [
+    const defaultHolePars = [
         4, 5, 4, 3, 4, 5, 4, 3, 4, 
         5, 4, 4, 3, 4, 3, 4, 4, 5  
     ];
+
+    let fullHolePars = [...defaultHolePars];
 
     const defaultMemoMasters = [
         "ティーショットで右肩を下げずに振り抜く",
@@ -635,6 +669,73 @@
             e.returnValue = '';
         }
     });
+
+    async function loadParSettings() {
+        const stored = await dbGet('settings', 'riverside_hole_pars');
+        if (stored && Array.isArray(stored) && stored.length === 18) {
+            fullHolePars = stored;
+        }
+    }
+
+    async function saveParSettings() {
+        for (let i = 0; i < 18; i++) {
+            const sel = document.getElementById(`parInput_${i + 1}`);
+            if (sel) {
+                fullHolePars[i] = parseInt(sel.value, 10);
+            }
+        }
+        await dbPut('settings', 'riverside_hole_pars', fullHolePars);
+    }
+
+    async function resetParSettingsToDefault() {
+        if (confirm('パー設定を初期のデフォルト値に戻しますか？')) {
+            fullHolePars = [...defaultHolePars];
+            await dbPut('settings', 'riverside_hole_pars', fullHolePars);
+            openParSettingModal(); // 画面を再描画
+        }
+    }
+
+    async function openParSettingModal() {
+        await loadParSettings();
+        const tbody = document.getElementById('parSettingTableBody');
+        tbody.innerHTML = '';
+
+        for (let i = 0; i < 9; i++) {
+            const outHole = i + 1;
+            const inHole = i + 10;
+            const outPar = fullHolePars[i];
+            const inPar = fullHolePars[i + 9];
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-weight:bold; background:#f8fafc;">H${outHole}</td>
+                <td>
+                    <select id="parInput_${outHole}" class="par-select" onchange="saveParSettings()">
+                        <option value="3" ${outPar === 3 ? 'selected' : ''}>3</option>
+                        <option value="4" ${outPar === 4 ? 'selected' : ''}>4</option>
+                        <option value="5" ${outPar === 5 ? 'selected' : ''}>5</option>
+                    </select>
+                </td>
+                <td style="font-weight:bold; background:#f8fafc;">H${inHole}</td>
+                <td>
+                    <select id="parInput_${inHole}" class="par-select" onchange="saveParSettings()">
+                        <option value="3" ${inPar === 3 ? 'selected' : ''}>3</option>
+                        <option value="4" ${inPar === 4 ? 'selected' : ''}>4</option>
+                        <option value="5" ${inPar === 5 ? 'selected' : ''}>5</option>
+                    </select>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+        document.getElementById('parSettingModal').style.display = 'flex';
+    }
+
+    function closeParSettingModal() {
+        saveParSettings();
+        document.getElementById('parSettingModal').style.display = 'none';
+    }
+
+    loadParSettings();
 
     function toggleReorderMode() {
         isReorderEnabled = !isReorderEnabled;
@@ -816,7 +917,8 @@
         }
     }
 
-    function startRound() {
+    async function startRound() {
+        await loadParSettings();
         const myName = document.getElementById('p0').value.trim() || '自分';
         players = [myName, ...selectedCompanions];
 
@@ -881,7 +983,9 @@
         for (let i = 0; i <= upToStepIdx; i++) {
             const hData = scoresData[pIdx][i];
             if (hData.stroke !== null) {
-                const bogeyVal = hData.par + 1;
+                const actualHole = getActualHoleNumber(i);
+                const par = fullHolePars[actualHole - 1];
+                const bogeyVal = par + 1;
                 const diff = hData.stroke - bogeyVal;
                 totalDiff += diff;
             }
@@ -892,6 +996,12 @@
     async function updateUI() {
         const actualHole = getActualHoleNumber(currentStepIndex);
         const par = fullHolePars[actualHole - 1];
+        scoresData.forEach(pScores => {
+            if (pScores[currentStepIndex]) {
+                pScores[currentStepIndex].par = par;
+            }
+        });
+
         document.getElementById('holeTitle').innerText = `Hole ${actualHole} (Par ${par})`;
 
         const myData = scoresData[0][currentStepIndex];
