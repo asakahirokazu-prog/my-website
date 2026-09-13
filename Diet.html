@@ -81,7 +81,7 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased overflow-y-auto">
 
-    <!-- ヘッダー（固定解除：通常のスクロールに追従） -->
+    <!-- ヘッダー -->
     <header class="bg-white border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-2">
@@ -144,6 +144,27 @@
             </div>
         </div>
 
+        <!-- 未達日数の連続記録 & フリーズ表示カード -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="bg-teal-50 text-teal-600 p-2.5 rounded-xl">
+                    <i data-lucide="flame" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">目標未達（下回り）の連続日数</p>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <p class="text-sm font-bold text-slate-800"><span id="deficit-count-display" class="text-lg text-teal-600">0</span> 日連続</p>
+                        <span id="freeze-badge" class="hidden text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <i data-lucide="shield" class="w-3 h-3"></i> フリーズ <span id="freeze-count-display">0</span>個
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <button onclick="resetDeficitCount()" class="text-slate-400 hover:text-rose-500 text-[11px] px-2.5 py-1 rounded-lg border border-slate-100 hover:border-rose-100 transition">
+                リセット
+            </button>
+        </div>
+
         <!-- アクションボタン -->
         <div class="grid grid-cols-2 gap-2 shrink-0">
             <button onclick="openCalorieModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5">
@@ -161,7 +182,7 @@
 
     </main>
 
-    <!-- 体重の履歴モーダル -->
+    <!-- 各種モーダル -->
     <div id="weight-history-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[80vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -175,18 +196,13 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            
             <div id="weight-history-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
-
             <div class="pt-2 border-t border-slate-100 shrink-0">
-                <button type="button" onclick="closeWeightHistoryModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">
-                    閉じる
-                </button>
+                <button type="button" onclick="closeWeightHistoryModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">閉じる</button>
             </div>
         </div>
     </div>
 
-    <!-- 今日の履歴モーダル -->
     <div id="history-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[80vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -200,18 +216,13 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            
             <div id="history-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
-
             <div class="pt-2 border-t border-slate-100 shrink-0">
-                <button type="button" onclick="closeHistoryModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">
-                    閉じる
-                </button>
+                <button type="button" onclick="closeHistoryModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">閉じる</button>
             </div>
         </div>
     </div>
 
-    <!-- カロリー追加モーダル -->
     <div id="calorie-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -225,31 +236,25 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            
             <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">項目名 / 食品名</label>
-                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" 
-                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">カロリー (kcal)</label>
-                    <input type="number" id="item-calorie" required min="0" placeholder="例: 350" 
-                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <input type="number" id="item-calorie" required min="0" placeholder="例: 350" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div class="flex items-center gap-2 pt-2">
                     <button type="submit" id="submit-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
                         <i data-lucide="check" class="w-4 h-4"></i> <span>追加する</span>
                     </button>
-                    <button type="button" onclick="closeCalorieModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">
-                        キャンセル
-                    </button>
+                    <button type="button" onclick="closeCalorieModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">キャンセル</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- 体重追加モーダル (ドラムロール付き) -->
     <div id="weight-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -263,20 +268,16 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-
             <form id="weight-form" onsubmit="handleWeightFormSubmit(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">日付</label>
-                    <input type="date" id="weight-date" required 
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="date" id="weight-date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block font-semibold text-slate-600 uppercase text-[10px]">体重 (kg)</label>
                         <span id="live-weight-preview" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">-- kg</span>
                     </div>
-                    
                     <div class="bg-slate-900 text-white rounded-2xl p-3 shadow-inner flex items-center justify-center relative overflow-hidden">
                         <div class="absolute inset-x-3 top-1/2 -translate-y-1/2 h-10 bg-white/10 rounded-xl pointer-events-none border border-white/20"></div>
                         <div class="w-full relative text-center">
@@ -285,20 +286,16 @@
                     </div>
                     <input type="hidden" id="weight-value" required>
                 </div>
-
                 <div class="flex items-center gap-2 pt-2">
                     <button type="submit" id="weight-submit-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
                         <i data-lucide="check" class="w-4 h-4"></i> <span>記録する</span>
                     </button>
-                    <button type="button" onclick="closeWeightModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">
-                        キャンセル
-                    </button>
+                    <button type="button" onclick="closeWeightModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">キャンセル</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- グラフ表示モーダル -->
     <div id="graph-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -312,20 +309,15 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            
             <div class="relative w-full h-64 sm:h-72 flex-1">
                 <canvas id="weightChart"></canvas>
             </div>
-
             <div class="pt-2 border-t border-slate-100 shrink-0">
-                <button type="button" onclick="closeGraphModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">
-                    閉じる
-                </button>
+                <button type="button" onclick="closeGraphModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">閉じる</button>
             </div>
         </div>
     </div>
 
-    <!-- 目標設定・データ管理モーダル -->
     <div id="goal-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
@@ -339,25 +331,18 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-
             <form onsubmit="handleGoalSubmit(event)" class="space-y-3 text-xs border-b border-slate-100 pb-4">
                 <h4 class="font-bold text-slate-700 uppercase text-[10px] tracking-wider">目標の設定</h4>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">1日の目標摂取カロリー (kcal)</label>
-                    <input type="number" id="goal-input" required min="500" max="10000" 
-                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <input type="number" id="goal-input" required min="500" max="10000" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">目標体重 (kg)</label>
-                    <input type="number" id="goal-weight-input" required step="0.1" min="20" max="300" 
-                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="number" id="goal-weight-input" required step="0.1" min="20" max="300" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">
-                    目標を保存する
-                </button>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">目標を保存する</button>
             </form>
-
-            <!-- データバックアップ・復元セクション -->
             <div class="space-y-3 pt-2 text-xs">
                 <h4 class="font-bold text-slate-700 uppercase text-[10px] tracking-wider">データのバックアップ・復元 (JSON)</h4>
                 <div class="grid grid-cols-2 gap-2">
@@ -369,12 +354,10 @@
                         <input type="file" id="import-file" accept=".json" onchange="importData(event)" class="hidden">
                     </label>
                 </div>
-                <p class="text-[10px] text-slate-400">機種変更時やデータの安全な保存にバックアップファイルをご活用いただけます。</p>
             </div>
         </div>
     </div>
 
-    <!-- 工夫ログモーダル -->
     <div id="success-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-4">
             <div class="flex justify-between items-center mb-2">
@@ -388,18 +371,15 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            
             <form id="success-form" onsubmit="handleSuccessSubmit(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="strategy-edit-id" value="">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">今の気持ち / 状況</label>
-                    <textarea id="strategy-feeling" required rows="2" placeholder="例: お腹が空いて甘いものが食べたい" 
-                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
+                    <textarea id="strategy-feeling" required rows="2" placeholder="例: お腹が空いて甘いものが食べたい" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">回避策 / 対策</label>
-                    <textarea id="strategy-workaround" required rows="2" placeholder="例: 炭酸水をガブ飲みする、15分散歩する" 
-                        class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
+                    <textarea id="strategy-workaround" required rows="2" placeholder="例: 炭酸水をガブ飲みする、15分散歩する" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">結果</label>
@@ -415,12 +395,8 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 pt-2">
-                    <button type="submit" id="strategy-submit-btn" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition">
-                        記録する
-                    </button>
-                    <button type="button" onclick="closeSuccessModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">
-                        キャンセル
-                    </button>
+                    <button type="submit" id="strategy-submit-btn" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition">記録する</button>
+                    <button type="button" onclick="closeSuccessModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">キャンセル</button>
                 </div>
             </form>
         </div>
@@ -432,6 +408,8 @@
         let strategies = JSON.parse(localStorage.getItem('success_strategies')) || [];
         let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
         let goalWeight = parseFloat(localStorage.getItem('goal_weight')) || 60.0;
+        let deficitCount = parseInt(localStorage.getItem('calorie_deficit_count')) || 0;
+        let freezeCount = parseInt(localStorage.getItem('calorie_freeze_count')) || 0;
         let weightChartInstance = null;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -449,10 +427,47 @@
             const todayStr = new Date().toISOString().split('T')[0];
             const lastDate = localStorage.getItem('last_recorded_date');
 
-            if (lastDate !== todayStr) {
+            if (lastDate && lastDate !== todayStr) {
+                let previousTotal = 0;
+                records.forEach(i => { previousTotal += i.calorie; });
+
+                if (previousTotal < dailyGoal) {
+                    // 目標未達を達成した場合
+                    deficitCount += 1;
+                    
+                    // 【新機能】3日連続するごとにボーナスフリーズを1個付与
+                    if (deficitCount > 0 && deficitCount % 3 === 0) {
+                        freezeCount += 1;
+                        alert(`🎉 おめでとうございます！3日連続未達を達成したため、「ボーナスフリーズ（1日分のミスガード）」を1個獲得しました！`);
+                    }
+                } else {
+                    // 目標を上回ってしまった場合
+                    if (freezeCount > 0) {
+                        // フリーズを1個消費して連続記録を守る
+                        freezeCount -= 1;
+                        alert(`🛡️ フリーズ発動！ 目標をオーバーしましたが、保持していたフリーズ（1個）を消費したため、連続記録（${deficitCount}日）は維持されました！`);
+                    } else {
+                        // フリーズがない場合は連続記録が0にリセット
+                        deficitCount = 0;
+                    }
+                }
+                localStorage.setItem('calorie_deficit_count', deficitCount);
+                localStorage.setItem('calorie_freeze_count', freezeCount);
+
                 records = [];
                 localStorage.setItem('calorie_records', JSON.stringify(records));
-                localStorage.setItem('last_recorded_date', todayStr);
+            }
+            
+            localStorage.setItem('last_recorded_date', todayStr);
+        }
+
+        function resetDeficitCount() {
+            if (confirm("未達の連続日数とフリーズ数をリセットしますか？")) {
+                deficitCount = 0;
+                freezeCount = 0;
+                localStorage.setItem('calorie_deficit_count', deficitCount);
+                localStorage.setItem('calorie_freeze_count', freezeCount);
+                renderApp();
             }
         }
 
@@ -461,16 +476,13 @@
             document.getElementById('current-date').textContent = new Date().toLocaleDateString('ja-JP', options);
         }
 
-        // --- 一体型ドラムピッカー初期化・制御（30.0kg 〜 150.0kg） ---
         function initDrumPickers() {
             const container = document.getElementById('drum-unified');
             let html = '<div class="h-12 pointer-events-none"></div>';
-            
             for (let i = 300; i <= 1500; i++) {
                 const val = (i / 10).toFixed(1);
                 html += `<div class="h-10 flex items-center justify-center snap-center text-sm font-bold text-slate-300 select-none" data-val="${val}">${val} kg</div>`;
             }
-            
             html += '<div class="h-12 pointer-events-none"></div>';
             container.innerHTML = html;
         }
@@ -508,9 +520,7 @@
             document.getElementById('weight-value').value = selectedVal;
             document.getElementById('live-weight-preview').textContent = `${selectedVal.toFixed(1)} kg`;
         }
-        // ------------------------------------
 
-        // モーダル表示・非表示ヘルパー（アニメーション対応）
         function showModal(id) {
             const modal = document.getElementById(id);
             modal.classList.remove('hidden');
@@ -522,28 +532,21 @@
             modal.classList.add('hidden');
         }
 
-        // カロリーモーダル制御
         function openCalorieModal() {
-            const form = document.getElementById('calorie-form');
-            form.reset();
+            document.getElementById('calorie-form').reset();
             document.getElementById('form-title').textContent = 'カロリー記録を追加';
             document.getElementById('submit-btn').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>追加する</span>';
             showModal('calorie-modal');
         }
 
-        function closeCalorieModal() {
-            hideModal('calorie-modal');
-        }
+        function closeCalorieModal() { hideModal('calorie-modal'); }
 
-        // 今日のカロリー履歴モーダル制御
         function openHistoryModal() {
             renderHistoryList();
             showModal('history-modal');
         }
 
-        function closeHistoryModal() {
-            hideModal('history-modal');
-        }
+        function closeHistoryModal() { hideModal('history-modal'); }
 
         function renderHistoryList() {
             const container = document.getElementById('history-list-container');
@@ -551,7 +554,6 @@
                 container.innerHTML = '<p class="text-center text-xs text-slate-400 py-4">本日の記録はまだありません</p>';
                 return;
             }
-
             let html = '';
             records.forEach(item => {
                 html += `
@@ -577,15 +579,12 @@
             renderHistoryList();
         }
 
-        // 体重履歴モーダル制御
         function openWeightHistoryModal() {
             renderWeightHistoryList();
             showModal('weight-history-modal');
         }
 
-        function closeWeightHistoryModal() {
-            hideModal('weight-history-modal');
-        }
+        function closeWeightHistoryModal() { hideModal('weight-history-modal'); }
 
         function renderWeightHistoryList() {
             const container = document.getElementById('weight-history-list-container');
@@ -593,15 +592,12 @@
                 container.innerHTML = '<p class="text-center text-xs text-slate-400 py-4">体重の記録はまだありません</p>';
                 return;
             }
-
             let html = '';
             weightRecords.forEach(item => {
                 html += `
                     <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs">
                         <div class="flex items-center gap-3">
-                            <div class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg font-medium text-[11px]">
-                                ${escapeHtml(item.date)}
-                            </div>
+                            <div class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg font-medium text-[11px]">${escapeHtml(item.date)}</div>
                             <div>
                                 <p class="font-bold text-slate-800 text-sm">${item.weight.toFixed(1)} <span class="text-xs font-normal text-slate-500">kg</span></p>
                             </div>
@@ -623,47 +619,32 @@
             renderWeightHistoryList();
         }
 
-        // 体重入力モーダル制御
         function openWeightModal() {
-            const form = document.getElementById('weight-form');
-            form.reset();
+            document.getElementById('weight-form').reset();
             document.getElementById('weight-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('weight-form-title').textContent = '体重を記録する';
             document.getElementById('weight-submit-btn').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>記録する</span>';
-
-            let initialVal = 65.0;
-            if (weightRecords.length > 0) {
-                initialVal = weightRecords[0].weight;
-            }
-
+            let initialVal = weightRecords.length > 0 ? weightRecords[0].weight : 65.0;
             showModal('weight-modal');
             setTimeout(() => { setDrumValues(initialVal); }, 50);
         }
 
-        function closeWeightModal() {
-            hideModal('weight-modal');
-        }
+        function closeWeightModal() { hideModal('weight-modal'); }
 
-        // グラフモーダル制御
         function openGraphModal() {
             showModal('graph-modal');
             renderWeightChart();
         }
 
-        function closeGraphModal() {
-            hideModal('graph-modal');
-        }
+        function closeGraphModal() { hideModal('graph-modal'); }
 
         function renderWeightChart() {
             const ctx = document.getElementById('weightChart').getContext('2d');
-            
             const sortedRecords = [...weightRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
             const labels = sortedRecords.map(r => r.date);
             const data = sortedRecords.map(r => r.weight);
 
-            if (weightChartInstance) {
-                weightChartInstance.destroy();
-            }
+            if (weightChartInstance) weightChartInstance.destroy();
 
             weightChartInstance = new Chart(ctx, {
                 type: 'line',
@@ -684,18 +665,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: {
-                            grid: { color: '#f1f5f9' },
-                            ticks: { font: { size: 10 } }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 10 } }
-                        }
+                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
                     }
                 }
             });
@@ -707,9 +680,7 @@
             showModal('goal-modal');
         }
 
-        function closeGoalModal() {
-            hideModal('goal-modal');
-        }
+        function closeGoalModal() { hideModal('goal-modal'); }
 
         function handleGoalSubmit(e) {
             e.preventDefault();
@@ -722,14 +693,15 @@
             renderWeightApp();
         }
 
-        // データのインポート・エクスポート機能
         function exportData() {
             const data = {
                 calorie_records: records,
                 weight_records: weightRecords,
                 success_strategies: strategies,
                 calorie_goal: dailyGoal,
-                goal_weight: goalWeight
+                goal_weight: goalWeight,
+                calorie_deficit_count: deficitCount,
+                calorie_freeze_count: freezeCount
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const downloadAnchor = document.createElement('a');
@@ -752,6 +724,8 @@
                     if (imported.success_strategies) { strategies = imported.success_strategies; localStorage.setItem('success_strategies', JSON.stringify(strategies)); }
                     if (imported.calorie_goal) { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
                     if (imported.goal_weight) { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
+                    if (typeof imported.calorie_deficit_count === 'number') { deficitCount = imported.calorie_deficit_count; localStorage.setItem('calorie_deficit_count', deficitCount); }
+                    if (typeof imported.calorie_freeze_count === 'number') { freezeCount = imported.calorie_freeze_count; localStorage.setItem('calorie_freeze_count', freezeCount); }
                     
                     renderApp();
                     renderWeightApp();
@@ -765,16 +739,13 @@
         }
 
         function openSuccessModal() {
-            const form = document.getElementById('success-form');
-            form.reset();
+            document.getElementById('success-form').reset();
             document.getElementById('strategy-modal-title').textContent = 'これやったら上手く行く💡';
             document.getElementById('strategy-submit-btn').textContent = '記録する';
             showModal('success-modal');
         }
 
-        function closeSuccessModal() {
-            hideModal('success-modal');
-        }
+        function closeSuccessModal() { hideModal('success-modal'); }
 
         function handleSuccessSubmit(e) {
             e.preventDefault();
@@ -822,7 +793,6 @@
 
         function renderWeightApp() {
             document.getElementById('goal-weight-display').textContent = `${goalWeight}kg`;
-
             if (weightRecords.length > 0) {
                 const latest = weightRecords[0];
                 document.getElementById('latest-weight-display').innerHTML = `${latest.weight.toFixed(1)} <span class="text-sm font-normal">kg</span>`;
@@ -842,6 +812,17 @@
 
             document.getElementById('balance-amount').innerHTML = `${totalIntake.toLocaleString()} <span class="text-sm font-normal">kcal</span>`;
             document.getElementById('remaining-calorie').textContent = remaining.toLocaleString();
+            document.getElementById('deficit-count-display').textContent = deficitCount;
+
+            // フリーズ保有数の表示制御
+            const freezeBadge = document.getElementById('freeze-badge');
+            const freezeCountDisplay = document.getElementById('freeze-count-display');
+            if (freezeCount > 0) {
+                freezeBadge.classList.remove('hidden');
+                freezeCountDisplay.textContent = freezeCount;
+            } else {
+                freezeBadge.classList.add('hidden');
+            }
 
             const statusEl = document.getElementById('balance-status');
             if (totalIntake <= dailyGoal) {
@@ -859,7 +840,6 @@
                 container.innerHTML = '';
                 return;
             }
-
             let html = '';
             strategies.forEach(item => {
                 const isSuccess = item.result === 'できた';
@@ -873,9 +853,7 @@
                                 <i data-lucide="sparkles" class="w-3 h-3"></i> 気持ち: ${escapeHtml(item.feeling)}
                             </span>
                             <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}">
-                                    ${badgeText}
-                                </span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}">${badgeText}</span>
                                 <button onclick="deleteStrategy('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition" title="削除">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
