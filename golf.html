@@ -456,13 +456,15 @@
     <div class="modal-content" style="max-width: 95%; width: 360px;">
         <div class="modal-header">
             <div class="modal-title">⛳ ホールごとのPar設定</div>
-            <div style="display: flex; gap: 4px; align-items: center;">
-                <button class="top-scorecard-btn" style="padding: 3px 6px; font-size: 10px; background: #0284c7;" onclick="resetParSettingsToDefault()">デフォルト</button>
-                <button class="close-btn" onclick="closeParSettingModal()">✕</button>
-            </div>
+            <button class="close-btn" onclick="closeParSettingModal()">✕</button>
+        </div>
+        <div style="display: flex; gap: 4px; margin-bottom: 6px;">
+            <button class="top-scorecard-btn" style="flex:1; padding: 4px; font-size: 11px; background: #0284c7;" onclick="resetParSettingsToDefault()">デフォルト</button>
+            <button class="top-scorecard-btn" style="flex:1; padding: 4px; font-size: 11px; background: #16a34a;" onclick="promptSaveCurrentCoursePar()">今の状態を保存</button>
+            <button class="top-scorecard-btn" style="flex:1; padding: 4px; font-size: 11px; background: #d97706;" onclick="openCourseListModal()">保存コース読出</button>
         </div>
         <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Out（1〜9H）およびIn（10〜18H）のパーを設定できます。</div>
-        <div class="scorecard-table-wrapper" style="max-height: 50vh;">
+        <div class="scorecard-table-wrapper" style="max-height: 46vh;">
             <table class="par-table">
                 <thead>
                     <tr><th>Hole</th><th>Par</th><th>Hole</th><th>Par</th></tr>
@@ -473,6 +475,18 @@
             </table>
         </div>
         <button class="start-round-btn" style="margin-top: 8px; padding: 8px; font-size: 14px;" onclick="closeParSettingModal()">設定を保存して閉じる</button>
+    </div>
+</div>
+
+<!-- 保存済みコース選択モーダル -->
+<div class="modal" id="courseListModal">
+    <div class="modal-content" style="max-width: 95%; width: 360px;">
+        <div class="modal-header">
+            <div class="modal-title">📂 保存済みコースの読出</div>
+            <button class="close-btn" onclick="closeCourseListModal()">✕</button>
+        </div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">保存したコースのPar設定を呼び出します。</div>
+        <div class="master-list" id="savedCourseListContainer" style="max-height: 50vh;"></div>
     </div>
 </div>
 
@@ -691,9 +705,101 @@
         if (confirm('パー設定を初期のデフォルト値に戻しますか？')) {
             fullHolePars = [...defaultHolePars];
             await dbPut('settings', 'riverside_hole_pars', fullHolePars);
-            openParSettingModal(); // 画面を再描画
+            openParSettingModal(); 
         }
     }
+
+    // --- コース別Par設定の保存・読出機能追加 ---
+    async function getSavedCourses() {
+        const stored = await dbGet('settings', 'saved_courses');
+        return stored ? stored : [];
+    }
+
+    async function saveSavedCourses(courses) {
+        await dbPut('settings', 'saved_courses', courses);
+    }
+
+    async function promptSaveCurrentCoursePar() {
+        saveParSettings(); // 現在の入力値を反映
+        const courseName = prompt("保存するコース名を入力してください:", "リバーサイドフェニックスCC");
+        if (!courseName || !courseName.trim()) return;
+
+        const trimmedName = courseName.trim();
+        let courses = await getSavedCourses();
+
+        // 既存の名前があれば上確認するか別名にするか、今回は上書きまたは追加
+        const existingIdx = courses.findIndex(c => c.name === trimmedName);
+        const courseData = {
+            name: trimmedName,
+            pars: [...fullHolePars],
+            updatedAt: new Date().toISOString()
+        };
+
+        if (existingIdx > -1) {
+            if (confirm(`「${trimmedName}」は既に存在します。上書き保存しますか？`)) {
+                courses[existingIdx] = courseData;
+            } else {
+                return;
+            }
+        } else {
+            courses.push(courseData);
+        }
+
+        await saveSavedCourses(courses);
+        alert(`コース「${trimmedName}」のPar設定を保存しました！`);
+    }
+
+    async function openCourseListModal() {
+        saveParSettings();
+        const container = document.getElementById('savedCourseListContainer');
+        const courses = await getSavedCourses();
+
+        container.innerHTML = courses.length === 0 ? 
+            '<div style="text-align:center; color:#94a3b8; padding:12px; font-size:12px;">保存されたコースがありません。「今の状態を保存」から保存してください。</div>' : '';
+
+        courses.forEach((course, idx) => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div class="history-info">
+                    <span class="history-date">⛳ ${course.name}</span>
+                    <span class="history-players">Par合計: ${course.pars.reduce((a,b)=>a+b, 0)}</span>
+                </div>
+                <div class="history-actions">
+                    <button class="view-history-btn" onclick="applySavedCourse(${idx})">適用</button>
+                    <button class="del-history-btn" onclick="deleteSavedCourse(${idx})">削除</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        document.getElementById('courseListModal').style.display = 'flex';
+    }
+
+    function closeCourseListModal() {
+        document.getElementById('courseListModal').style.display = 'none';
+    }
+
+    async function applySavedCourse(idx) {
+        const courses = await getSavedCourses();
+        if (courses[idx]) {
+            fullHolePars = [...courses[idx].pars];
+            await dbPut('settings', 'riverside_hole_pars', fullHolePars);
+            alert(`コース「${courses.name}」のPar設定を適用しました。`);
+            closeCourseListModal();
+            openParSettingModal(); // 再描画
+        }
+    }
+
+    async function deleteSavedCourse(idx) {
+        const courses = await getSavedCourses();
+        if (confirm(`「${courses[idx].name}」の保存設定を削除しますか？`)) {
+            courses.splice(idx, 1);
+            await saveSavedCourses(courses);
+            openCourseListModal();
+        }
+    }
+    // ------------------------------------------
 
     async function openParSettingModal() {
         await loadParSettings();
