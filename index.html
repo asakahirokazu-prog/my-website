@@ -20,6 +20,7 @@
       max-width: 600px;
       margin: 40px auto;
       padding: 0 20px;
+      touch-action: pan-y; /* 縦スクロールを許可しつつタッチ操作を受け付ける */
     }
 
     h1 {
@@ -68,6 +69,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      position: relative;
     }
 
     .link-item {
@@ -78,6 +80,39 @@
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      user-select: none;
+      transition: background-color 0.1s ease;
+    }
+
+    .link-item.dragging {
+      opacity: 0.4;
+      background: #e9ecef;
+    }
+
+    .link-item.drag-over {
+      border-top: 2px solid var(--primary-color);
+    }
+
+    .link-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-grow: 1;
+      overflow: hidden;
+      margin-right: 12px;
+    }
+
+    .drag-handle {
+      color: #aaa;
+      font-size: 20px;
+      cursor: grab;
+      padding: 4px;
+      flex-shrink: 0;
+      touch-action: none; /* ハンドル部分でのブラウザデフォルトのスクロール等を無効化 */
+    }
+
+    .drag-handle:active {
+      cursor: grabbing;
     }
 
     .link-info {
@@ -86,12 +121,10 @@
       gap: 4px;
       overflow: hidden;
       flex-grow: 1;
-      margin-right: 12px;
     }
 
     .link-title {
       font-weight: bold;
-      color: varg(--primary-color);
       color: #007bff;
       text-decoration: none;
       font-size: 16px;
@@ -101,7 +134,6 @@
       text-decoration: underline;
     }
 
-    /* URLを省略せず、折り返してすべて表示する設定 */
     .link-url {
       font-size: 12px;
       color: #777;
@@ -118,6 +150,7 @@
       cursor: pointer;
       font-size: 12px;
       white-space: nowrap;
+      flex-shrink: 0;
     }
   </style>
 </head>
@@ -141,54 +174,98 @@
     const urlInput = document.getElementById('url-input');
     const linkList = document.getElementById('link-list');
 
-    // ローカルストレージからデータ取得
     let links = JSON.parse(localStorage.getItem('my_links')) || [];
+    let draggedIndex = null;
 
-    // 画面描写
     function renderLinks() {
       linkList.innerHTML = '';
       links.forEach((link, index) => {
         const li = document.createElement('li');
         li.className = 'link-item';
+        li.dataset.index = index;
+
         li.innerHTML = `
-          <div class="link-info">
-            <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-title">${escapeHtml(link.title)}</a>
-            <span class="link-url">${escapeHtml(link.url)}</span>
+          <div class="link-left">
+            <span class="drag-handle">⠿</span>
+            <div class="link-info">
+              <a href="${link.url}" target="_blank" rel="noopener noreferrer" class="link-title">${escapeHtml(link.title)}</a>
+              <span class="link-url">${escapeHtml(link.url)}</span>
+            </div>
           </div>
-          <button class="delete-btn" onclick="deleteLink(${index})">削除</button>
+          <button class="delete-btn" onclick="deleteLink(event, ${index})">削除</button>
         `;
+
+        const handle = li.querySelector('.drag-handle');
+
+        // ポインターイベント（マウス・タッチ・ペン共通で安定動作）
+        handle.addEventListener('pointerdown', (e) => {
+          e.preventDefault();
+          draggedIndex = index;
+          li.classList.add('dragging');
+          handle.setPointerCapture(e.pointerId);
+        });
+
+        handle.addEventListener('pointermove', (e) => {
+          if (draggedIndex === null) return;
+          e.preventDefault();
+
+          const targetElement = document.elementFromPoint(e.clientX, e.clientY);
+          const targetLi = targetElement ? targetElement.closest('.link-item') : null;
+
+          document.querySelectorAll('.link-item').forEach(item => item.classList.remove('drag-over'));
+          if (targetLi && targetLi !== li) {
+            targetLi.classList.add('drag-over');
+          }
+        });
+
+        handle.addEventListener('pointerup', (e) => {
+          if (draggedIndex === null) return;
+
+          li.classList.remove('dragging');
+          const targetElement = document.elementFromPoint(e.clientX, e.clientY);
+          const targetLi = targetElement ? targetElement.closest('.link-item') : null;
+
+          document.querySelectorAll('.link-item').forEach(item => item.classList.remove('drag-over'));
+
+          if (targetLi) {
+            const targetIndex = parseInt(targetLi.dataset.index);
+            if (draggedIndex !== targetIndex) {
+              const movedItem = links.splice(draggedIndex, 1)[0];
+              links.splice(targetIndex, 0, movedItem);
+              saveAndRender();
+            }
+          }
+          draggedIndex = null;
+          handle.releasePointerCapture(e.pointerId);
+        });
+
         linkList.appendChild(li);
       });
     }
 
-    // リンク追加
     linkForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const newLink = {
         title: titleInput.value.trim(),
         url: urlInput.value.trim()
       };
-      
       links.push(newLink);
       saveAndRender();
-
       titleInput.value = '';
       urlInput.value = '';
     });
 
-    // リンク削除
-    function deleteLink(index) {
+    function deleteLink(e, index) {
+      e.stopPropagation();
       links.splice(index, 1);
       saveAndRender();
     }
 
-    // 保存＆再描画
     function saveAndRender() {
       localStorage.setItem('my_links', JSON.stringify(links));
       renderLinks();
     }
 
-    // XSS対策の文字エスケープ
     function escapeHtml(str) {
       return str.replace(/[&<>"']/g, (match) => {
         const escapeMap = {
@@ -202,7 +279,6 @@
       });
     }
 
-    // 初期表示
     renderLinks();
   </script>
 </body>
