@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シンプルカロリートラッカー</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font & Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="bg-emerald-500 text-white p-2 rounded-xl shadow-sm">
+                    <i data-lucide="flame" class="w-6 h-6"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">カロリー管理</h1>
+            </div>
+            <div class="flex items-center space-x-2">
+                <!-- Date Display & Goal Settings Button -->
+                <span id="current-date" class="text-xs font-medium bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full hidden sm:inline-block"></span>
+                <button onclick="openGoalModal()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition" title="目標設定">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl w-full mx-auto px-4 py-6 flex-1 space-y-6 pb-24">
+
+        <section class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-3xl p-6 shadow-lg shadow-emerald-500/10">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <p class="text-emerald-100 text-xs font-medium uppercase tracking-wider">本日のカロリー収支</p>
+                    <h2 id="balance-amount" class="text-3xl font-bold tracking-tight mt-1">0 <span class="text-lg font-normal">kcal</span></h2>
+                </div>
+                <div class="text-right">
+                    <span id="balance-status" class="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-medium">順調</span>
+                </div>
+            </div>
+
+            <!-- Detailed breakdown cards -->
+            <div class="grid grid-cols-3 gap-3 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                <div class="text-center">
+                    <p class="text-emerald-100 text-xs mb-1">摂取</p>
+                    <p id="total-intake" class="text-lg font-bold">0</p>
+                    <p class="text-[10px] text-emerald-200">kcal</p>
+                </div>
+                <div class="text-center border-x border-white/20">
+                    <p class="text-emerald-100 text-xs mb-1">消費</p>
+                    <p id="total-burn" class="text-lg font-bold">0</p>
+                    <p class="text-[10px] text-emerald-200">kcal</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-emerald-100 text-xs mb-1">目標残り</p>
+                    <p id="remaining-calorie" class="text-lg font-bold">2,000</p>
+                    <p class="text-[10px] text-emerald-200">kcal</p>
+                </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="mt-4">
+                <div class="flex justify-between text-xs text-emerald-100 mb-1">
+                    <span>目標達成度</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="w-full bg-black/10 rounded-full h-2 overflow-hidden">
+                    <div id="progress-bar" class="bg-white h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button onclick="scrollToForm()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-4 rounded-2xl shadow-sm flex items-center justify-center gap-3 font-semibold transition group">
+                <div class="bg-emerald-100 text-emerald-600 p-2 rounded-xl group-hover:scale-110 transition">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                </div>
+                <span>カロリーを記録する</span>
+            </button>
+            <button onclick="openSuccessModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white p-4 rounded-2xl shadow-md shadow-orange-500/20 flex items-center justify-center gap-3 font-semibold transition group">
+                <div class="bg-white/20 p-2 rounded-xl group-hover:scale-110 transition">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <span>これやったら上手く行く💡</span>
+            </button>
+        </div>
+
+        <section id="calorie-form-section" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <h3 id="form-title" class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-500"></i>
+                <span>記録を追加</span>
+            </h3>
+            
+            <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="edit-id" value="">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">項目名 / 食品名</label>
+                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉のサラダ、ランニング等" 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">カロリー (kcal)</label>
+                        <input type="number" id="item-calorie" required min="0" placeholder="例: 350" 
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">カテゴリ</label>
+                        <select id="item-category" 
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                            <option value="朝食">朝食 (摂取)</option>
+                            <option value="昼食">昼食 (摂取)</option>
+                            <option value="夕食">夕食 (摂取)</option>
+                            <option value="間食">間食 (摂取)</option>
+                            <option value="運動">運動 (消費)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="submit" id="submit-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-xl shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        <span>追加する</span>
+                    </button>
+                    <button type="button" id="cancel-edit-btn" onclick="resetForm()" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-3 px-4 rounded-xl transition">
+                        キャンセル
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="history" class="w-5 h-5 text-emerald-500"></i>
+                    <span>今日の履歴</span>
+                </h3>
+                <span id="history-count" class="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">0件</span>
+            </div>
+
+            <div id="history-list" class="space-y-3">
+                <!-- Dynamic items will be injected here -->
+            </div>
+            
+            <div id="empty-state" class="text-center py-10 hidden">
+                <div class="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="clipboard-list" class="w-6 h-6"></i>
+                </div>
+                <p class="text-slate-500 text-sm">本日の記録はまだありません</p>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="lightbulb" class="w-5 h-5 text-amber-500"></i>
+                    <span>これやったら上手く行くログ</span>
+                </h3>
+                <span id="strategy-count" class="text-xs font-medium text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">0件</span>
+            </div>
+
+            <div id="strategy-list" class="space-y-3">
+                <!-- Dynamic strategy items will be injected here -->
+            </div>
+            
+            <div id="strategy-empty-state" class="text-center py-8 hidden">
+                <div class="w-12 h-12 bg-amber-50 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                </div>
+                <p class="text-slate-500 text-sm">上手く行った工夫や振り返りはまだありません</p>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="goal-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-slate-900">目標カロリー設定</h3>
+                <button onclick="closeGoalModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="handleGoalSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">1日の目標摂取カロリー (kcal)</label>
+                    <input type="number" id="goal-input" required min="500" max="10000" 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition shadow-md shadow-emerald-500/20">
+                    保存する
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="success-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="bg-amber-100 text-amber-600 p-2 rounded-xl">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </div>
+                    <h3 id="strategy-modal-title" class="text-lg font-bold text-slate-900">これやったら上手く行く💡</h3>
+                </div>
+                <button onclick="closeSuccessModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <form id="success-form" onsubmit="handleSuccessSubmit(event)" class="space-y-4">
+                <input type="hidden" id="strategy-edit-id" value="">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">今の気持ち / 状況</label>
+                    <textarea id="strategy-feeling" required rows="2" placeholder="例: お腹が空いて甘いものが食べたくなっている、夜食を我慢したい" 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">回避策 / 対策</label>
+                    <textarea id="strategy-workaround" required rows="2" placeholder="例: 炭酸水をガブ飲みする、15分散歩に出かける、歯を磨く" 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase">結果 (できた・できない)</label>
+                    <div class="grid grid-cols-2 gap-3 mt-1">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="strategy-result" value="できた" checked class="peer sr-only">
+                            <div class="p-3 text-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-semibold peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition flex items-center justify-center gap-2">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                <span>できた✨</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="strategy-result" value="できない" class="peer sr-only">
+                            <div class="p-3 text-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-semibold peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition flex items-center justify-center gap-2">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                <span>できなかった💦</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="submit" id="strategy-submit-btn" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl shadow-md shadow-amber-500/20 transition flex items-center justify-center gap-2">
+                        <i data-lucide="check" class="w-5 h-5"></i>
+                        <span>記録する</span>
+                    </button>
+                    <button type="button" onclick="closeSuccessModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-3 px-4 rounded-xl transition">
+                        キャンセル
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // State management for records, goal, and success strategies
+        let records = JSON.parse(localStorage.getItem('calorie_records')) || [];
+        let strategies = JSON.parse(localStorage.getItem('success_strategies')) || [];
+        let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
+
+        // Initialize App on load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateDateDisplay();
+            renderApp();
+            renderStrategies();
+            lucide.createIcons();
+        });
+
+        function updateDateDisplay() {
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
+            const todayStr = new Date().toLocaleDateString('ja-JP', options);
+            document.getElementById('current-date').textContent = todayStr;
+        }
+
+        function scrollToForm() {
+            document.getElementById('calorie-form-section').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('item-name').focus();
+        }
+
+        function openGoalModal() {
+            document.getElementById('goal-input').value = dailyGoal;
+            document.getElementById('goal-modal').classList.remove('hidden');
+        }
+
+        function closeGoalModal() {
+            document.getElementById('goal-modal').classList.add('hidden');
+        }
+
+        function handleGoalSubmit(e) {
+            e.preventDefault();
+            const val = parseInt(document.getElementById('goal-input').value);
+            if (val > 0) {
+                dailyGoal = val;
+                localStorage.setItem('calorie_goal', dailyGoal);
+                closeGoalModal();
+                renderApp();
+            }
+        }
+
+        // Success Strategy Modal Handlers
+        function openSuccessModal(editId = null) {
+            const form = document.getElementById('success-form');
+            form.reset();
+            document.getElementById('strategy-edit-id').value = '';
+            document.getElementById('strategy-modal-title').textContent = 'これやったら上手く行く💡';
+            document.getElementById('strategy-submit-btn').innerHTML = '<i data-lucide="check" class="w-5 h-5"></i><span>記録する</span>';
+
+            if (editId) {
+                const strategy = strategies.find(s => s.id === editId);
+                if (strategy) {
+                    document.getElementById('strategy-edit-id').value = strategy.id;
+                    document.getElementById('strategy-feeling').value = strategy.feeling;
+                    document.getElementById('strategy-workaround').value = strategy.workaround;
+                    const radios = document.querySelectorAll('input[name="strategy-result"]');
+                    radios.forEach(r => {
+                        if (r.value === strategy.result) r.checked = true;
+                    });
+                    document.getElementById('strategy-modal-title').textContent = '工夫を編集';
+                    document.getElementById('strategy-submit-btn').innerHTML = '<i data-lucide="check" class="w-5 h-5"></i><span>更新する</span>';
+                }
+            }
+            document.getElementById('success-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('success-modal').classList.add('hidden');
+        }
+
+        function handleSuccessSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('strategy-edit-id').value;
+            const feeling = document.getElementById('strategy-feeling').value.trim();
+            const workaround = document.getElementById('strategy-workaround').value.trim();
+            const result = document.querySelector('input[name="strategy-result"]:checked').value;
+
+            if (!feeling || !workaround) return;
+
+            if (editId) {
+                strategies = strategies.map(item => {
+                    if (item.id === editId) {
+                        return { ...item, feeling, workaround, result };
+                    }
+                    return item;
+                });
+            } else {
+                const newStrategy = {
+                    id: Date.now().toString(),
+                    feeling,
+                    workaround,
+                    result,
+                    timestamp: new Date().toISOString()
+                };
+                strategies.unshift(newStrategy);
+            }
+
+            localStorage.setItem('success_strategies', JSON.stringify(strategies));
+            closeSuccessModal();
+            renderStrategies();
+        }
+
+        function deleteStrategy(id) {
+            strategies = strategies.filter(s => s.id !== id);
+            localStorage.setItem('success_strategies', JSON.stringify(strategies));
+            renderStrategies();
+        }
+
+        // Calorie Form Handler
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('edit-id').value;
+            const name = document.getElementById('item-name').value.trim();
+            const calorie = parseInt(document.getElementById('item-calorie').value);
+            const category = document.getElementById('item-category').value;
+
+            if (!name || isNaN(calorie)) return;
+
+            if (editId) {
+                records = records.map(item => {
+                    if (item.id === editId) {
+                        return { ...item, name, calorie, category };
+                    }
+                    return item;
+                });
+            } else {
+                const newRecord = {
+                    id: Date.now().toString(),
+                    name,
+                    calorie,
+                    category,
+                    timestamp: new Date().toISOString()
+                };
+                records.unshift(newRecord);
+            }
+
+            saveAndReset();
+        }
+
+        function saveAndReset() {
+            localStorage.setItem('calorie_records', JSON.stringify(records));
+            resetForm();
+            renderApp();
+        }
+
+        function resetForm() {
+            document.getElementById('calorie-form').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('form-title').innerHTML = '<i data-lucide="plus-circle" class="w-5 h-5 text-emerald-500"></i><span>記録を追加</span>';
+            document.getElementById('submit-btn').innerHTML = '<i data-lucide="check" class="w-5 h-5"></i><span>追加する</span>';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            lucide.createIcons();
+        }
+
+        function editRecord(id) {
+            const record = records.find(r => r.id === id);
+            if (!record) return;
+
+            document.getElementById('edit-id').value = record.id;
+            document.getElementById('item-name').value = record.name;
+            document.getElementById('item-calorie').value = record.calorie;
+            document.getElementById('item-category').value = record.category;
+
+            document.getElementById('form-title').innerHTML = '<i data-lucide="edit-3" class="w-5 h-5 text-amber-500"></i><span>記録を編集</span>';
+            document.getElementById('submit-btn').innerHTML = '<i data-lucide="check" class="w-5 h-5"></i><span>更新する</span>';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            lucide.createIcons();
+
+            window.scrollTo({ top: 200, behavior: 'smooth' });
+        }
+
+        function deleteRecord(id) {
+            records = records.filter(r => r.id !== id);
+            saveAndReset();
+        }
+
+        // Render Strategy List
+        function renderStrategies() {
+            const strategyList = document.getElementById('strategy-list');
+            const emptyState = document.getElementById('strategy-empty-state');
+            const strategyCount = document.getElementById('strategy-count');
+
+            strategyList.innerHTML = '';
+            strategyCount.textContent = `${strategies.length}件`;
+
+            if (strategies.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+
+                strategies.forEach(item => {
+                    const isDone = item.result === 'できた';
+                    const badgeClass = isDone 
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                        : 'bg-rose-50 text-rose-700 border-rose-200';
+                    const iconName = isDone ? 'check-circle-2' : 'x-circle';
+
+                    const card = document.createElement('div');
+                    card.className = 'p-4 bg-slate-50 border border-slate-200/80 rounded-2xl hover:bg-slate-100/60 transition space-y-2';
+                    card.innerHTML = `
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeClass}">
+                                    <i data-lucide="${iconName}" class="w-3.5 h-3.5"></i>
+                                    ${item.result}
+                                </span>
+                                <span class="text-[11px] text-slate-400">${new Date(parseInt(item.id)).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="openSuccessModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition" title="編集">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteStrategy('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition" title="削除">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-sm">
+                            <div class="bg-white p-3 rounded-xl border border-slate-200/60">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">今の気持ち</p>
+                                <p class="text-slate-700">${escapeHtml(item.feeling)}</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-slate-200/60">
+                                <p class="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-0.5">回避策</p>
+                                <p class="text-slate-800 font-medium">${escapeHtml(item.workaround)}</p>
+                            </div>
+                        </div>
+                    `;
+                    strategyList.appendChild(card);
+                });
+            }
+            lucide.createIcons();
+        }
+
+        // Render Calorie App
+        function renderApp() {
+            const historyList = document.getElementById('history-list');
+            const emptyState = document.getElementById('empty-state');
+            const historyCount = document.getElementById('history-count');
+
+            historyList.innerHTML = '';
+            historyCount.textContent = `${records.length}件`;
+
+            if (records.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+
+                records.forEach(item => {
+                    const isExercise = item.category === '運動';
+                    const badgeColor = isExercise 
+                        ? 'bg-sky-50 text-sky-600 border-sky-200' 
+                        : 'bg-emerald-50 text-emerald-600 border-emerald-200';
+                    
+                    const sign = isExercise ? '-' : '+';
+                    const calorieColor = isExercise ? 'text-sky-600' : 'text-slate-800';
+
+                    const card = document.createElement('div');
+                    card.className = 'flex items-center justify-between p-4 bg-slate-50 border border-slate-200/80 rounded-2xl hover:bg-slate-100/60 transition';
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2.5 rounded-xl border ${badgeColor}">
+                                <i data-lucide="${isExercise ? 'activity' : 'utensils'}" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-800">${escapeHtml(item.name)}</h4>
+                                <span class="inline-block text-[10px] font-medium px-2 py-0.5 bg-white border border-slate-200 rounded-full text-slate-500 mt-1">${item.category}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="font-bold text-sm ${calorieColor}">${sign}${item.calorie} <span class="text-xs font-normal text-slate-500">kcal</span></span>
+                            <div class="flex items-center space-x-1 border-l border-slate-200 pl-2">
+                                <button onclick="editRecord('${item.id}')" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition" title="編集">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteRecord('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg transition" title="削除">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    historyList.appendChild(card);
+                });
+            }
+
+            // Calculate totals
+            let totalIntake = 0;
+            let totalBurn = 0;
+
+            records.forEach(item => {
+                if (item.category === '運動') {
+                    totalBurn += item.calorie;
+                } else {
+                    totalIntake += item.calorie;
+                }
+            });
+
+            const netBalance = totalIntake - totalBurn;
+            const remaining = dailyGoal - netBalance;
+
+            document.getElementById('total-intake').textContent = totalIntake.toLocaleString();
+            document.getElementById('total-burn').textContent = totalBurn.toLocaleString();
+            document.getElementById('balance-amount').innerHTML = `${netBalance.toLocaleString()} <span class="text-lg font-normal">kcal</span>`;
+            document.getElementById('remaining-calorie').textContent = remaining.toLocaleString();
+
+            // Progress bar update
+            let percent = Math.round((netBalance / dailyGoal) * 100);
+            if (percent > 100) percent = 100;
+            if (percent < 0) percent = 0;
+            document.getElementById('progress-percent').textContent = `${percent}%`;
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+
+            // Status message
+            const statusEl = document.getElementById('balance-status');
+            if (netBalance <= dailyGoal) {
+                statusEl.textContent = '目標範囲内';
+                statusEl.className = 'inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-medium text-white';
+            } else {
+                statusEl.textContent = '目標超過';
+                statusEl.className = 'inline-block px-3 py-1 bg-rose-500/80 backdrop-blur-md rounded-full text-xs font-medium text-white';
+            }
+
+            lucide.createIcons();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
