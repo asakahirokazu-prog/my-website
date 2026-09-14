@@ -418,10 +418,12 @@
             lucide.createIcons();
         });
 
+        // 0時（日付変更）を境界として、前日分の達成状況を判定し、0時にリセット・更新する処理
         function checkAndResetDailyData() {
             const todayStr = new Date().toISOString().split('T')[0];
             const lastDate = localStorage.getItem('last_recorded_date');
 
+            // 初回起動時や日付が変わっている場合の処理
             if (lastDate && lastDate !== todayStr) {
                 let previousTotal = 0;
                 records.forEach(i => { previousTotal += i.calorie; });
@@ -434,12 +436,12 @@
                             if (daysSinceFreezeUsed >= 3) {
                                 freezeCount = 1;
                                 daysSinceFreezeUsed = 0;
-                                alert(`🎉 フリーズを使ったその日から3日連続達成！「ミスガード用フリーズ」を再獲得しました！`);
+                                alert(`🎉 0時を過ぎました。3日連続達成！「ミスガード用フリーズ」を再獲得しました！`);
                             }
                         } else {
                             if (deficitCount % 3 === 0) {
                                 freezeCount = 1;
-                                alert(`🎉 3日連続達成！「ミスガード用フリーズ」を獲得しました！`);
+                                alert(`🎉 0時を過ぎました。3日連続達成！「ミスガード用フリーズ」を獲得しました！`);
                             }
                         }
                     }
@@ -447,7 +449,7 @@
                     if (freezeCount > 0) {
                         freezeCount = 0;
                         daysSinceFreezeUsed = 1;
-                        alert(`🛡️ フリーズ発動！ 目標オーバーをガードしました。連続記録（${deficitCount}日）は維持されます！次から3日連続達成でフリーズが再付与されます。`);
+                        alert(`🛡️ 0時を過ぎました。フリーズ発動！ 目標オーバーをガードしました。連続記録（${deficitCount}日）は維持されます！次から3日連続達成でフリーズが再付与されます。`);
                     } else {
                         deficitCount = 0;
                         daysSinceFreezeUsed = 0;
@@ -458,10 +460,12 @@
                 localStorage.setItem('calorie_freeze_count', freezeCount);
                 localStorage.setItem('calorie_days_since_freeze_used', daysSinceFreezeUsed);
 
+                // 0時を境に今日のカロリー記録をクリア
                 records = [];
                 localStorage.setItem('calorie_records', JSON.stringify(records));
             }
             
+            // 最後に確認した日付を今日に更新（0時を跨いだ判定の基準）
             localStorage.setItem('last_recorded_date', todayStr);
         }
 
@@ -862,7 +866,6 @@
                 statusEl.className = 'px-2 py-0.5 bg-rose-500/80 backdrop-blur-md rounded-full text-[10px] text-white';
             }
 
-            // カロリー収支の残り日数に応じた背景色の変更ロジック
             const calorieCardBg = document.getElementById('calorie-card-bg');
             calorieCardBg.className = "text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between transition-colors duration-300 ";
             
