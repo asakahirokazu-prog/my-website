@@ -62,7 +62,6 @@
             touch-action: pan-y;
             overscroll-behavior-y: contain;
         }
-        /* モーダル表示のアニメーション */
         .modal-backdrop {
             transition: opacity 0.25s ease;
         }
@@ -126,43 +125,39 @@
             </div>
 
             <!-- カロリー収支サマリー -->
-            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl p-4 shadow-sm">
-                <div class="flex justify-between items-center mb-1">
-                    <p class="text-emerald-100 text-[10px] font-medium uppercase tracking-wider">カロリー収支</p>
-                    <div class="flex items-center gap-1.5">
-                        <button onclick="openHistoryModal()" class="px-2 py-0.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full text-[10px] text-white transition flex items-center gap-1">
-                            <i data-lucide="history" class="w-3 h-3"></i> 今日の履歴
-                        </button>
-                        <span id="balance-status" class="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[10px]">順調</span>
+            <div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <p class="text-emerald-100 text-[10px] font-medium uppercase tracking-wider">カロリー収支</p>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="openHistoryModal()" class="px-2 py-0.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-full text-[10px] text-white transition flex items-center gap-1">
+                                <i data-lucide="history" class="w-3 h-3"></i> 今日の履歴
+                            </button>
+                            <span id="balance-status" class="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[10px]">順調</span>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline justify-between flex-wrap gap-y-1">
+                        <h2 id="balance-amount" class="text-2xl font-bold tracking-tight">0 <span class="text-sm font-normal">kcal</span></h2>
+                        <!-- 連続日数 ＆ フリーズ情報 -->
+                        <div class="flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-xl">
+                            <i data-lucide="flame" class="w-3.5 h-3.5 text-emerald-100"></i>
+                            <span class="text-[10px] text-emerald-100">連続:</span>
+                            <span id="deficit-count-display" class="text-xs font-bold text-white">0</span>
+                            <span class="text-[10px] text-emerald-100">日</span>
+                            <span id="freeze-badge" class="hidden text-[9px] font-bold bg-sky-400/30 text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5 ml-1">
+                                <i data-lucide="shield" class="w-2.5 h-2.5"></i> フリーズ保有
+                            </span>
+                            <button onclick="resetDeficitCount()" class="text-emerald-200 hover:text-white ml-1" title="連続日数をリセット">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <h2 id="balance-amount" class="text-2xl font-bold tracking-tight">0 <span class="text-sm font-normal">kcal</span></h2>
                 <div class="mt-2 text-[11px] text-emerald-100 flex justify-between items-center pt-2 border-t border-white/10">
                     <span>残り: <strong id="remaining-calorie" class="text-white">2000</strong>kcal</span>
                     <button onclick="openCalorieModal()" class="underline hover:text-white">入力</button>
                 </div>
             </div>
-        </div>
-
-        <!-- 目標達成の連続記録 & フリーズ表示カード -->
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-between items-center shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="bg-teal-50 text-teal-600 p-2.5 rounded-xl">
-                    <i data-lucide="flame" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">目標達成（下回り）の連続日数</p>
-                    <div class="flex items-center gap-2 mt-0.5">
-                        <p class="text-sm font-bold text-slate-800"><span id="deficit-count-display" class="text-lg text-teal-600">0</span> 日連続</p>
-                        <span id="freeze-badge" class="hidden text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <i data-lucide="shield" class="w-3 h-3"></i> フリーズ <span id="freeze-count-display">0</span>個
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <button onclick="resetDeficitCount()" class="text-slate-400 hover:text-rose-500 text-[11px] px-2.5 py-1 rounded-lg border border-slate-100 hover:border-rose-100 transition">
-                リセット
-            </button>
         </div>
 
         <!-- アクションボタン -->
@@ -176,9 +171,7 @@
         </div>
 
         <!-- 回避策の表示エリア -->
-        <div id="strategy-container" class="space-y-2 pb-6">
-            <!-- 動的にカードが追加されます -->
-        </div>
+        <div id="strategy-container" class="space-y-2 pb-6"></div>
 
     </main>
 
@@ -409,7 +402,10 @@
         let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
         let goalWeight = parseFloat(localStorage.getItem('goal_weight')) || 60.0;
         let deficitCount = parseInt(localStorage.getItem('calorie_deficit_count')) || 0;
-        let freezeCount = parseInt(localStorage.getItem('calorie_freeze_count')) || 0;
+        
+        // フリーズ状態の管理（freezeCount: 0または1, daysSinceFreezeUsed: フリーズを使ったその日からのカウント用）
+        let freezeCount = Math.min(1, parseInt(localStorage.getItem('calorie_freeze_count')) || 0);
+        let daysSinceFreezeUsed = parseInt(localStorage.getItem('calorie_days_since_freeze_used')) || 0;
         let weightChartInstance = null;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -432,27 +428,44 @@
                 records.forEach(i => { previousTotal += i.calorie; });
 
                 if (previousTotal < dailyGoal) {
-                    // 目標達成した場合
+                    // 目標達成
                     deficitCount += 1;
                     
-                    // 【新機能】3日連続するごとにボーナスフリーズを1個付与
-                    if (deficitCount > 0 && deficitCount % 3 === 0) {
-                        freezeCount += 1;
-                        alert(`🎉 おめでとうございます！3日連続達成を達成したため、「ボーナスフリーズ（1日分のミスガード）」を1個獲得しました！`);
+                    // フリーズを持っていない場合、3日連続達成で付与
+                    // ※「フリーズを使ったその日」から数える場合は daysSinceFreezeUsed が関与
+                    if (freezeCount < 1) {
+                        if (daysSinceFreezeUsed > 0) {
+                            daysSinceFreezeUsed += 1;
+                            if (daysSinceFreezeUsed >= 3) {
+                                freezeCount = 1;
+                                daysSinceFreezeUsed = 0; // リセット
+                                alert(`🎉 フリーズを使ったその日から3日連続達成！「ミスガード用フリーズ」を再獲得しました！`);
+                            }
+                        } else {
+                            // 通常時、3日連続達成でフリーズ獲得
+                            if (deficitCount % 3 === 0) {
+                                freezeCount = 1;
+                                alert(`🎉 3日連続達成！「ミスガード用フリーズ」を獲得しました！`);
+                            }
+                        }
                     }
                 } else {
-                    // 目標を上回ってしまった場合
+                    // 目標未達成（オーバー）
                     if (freezeCount > 0) {
-                        // フリーズを1個消費して連続記録を守る
-                        freezeCount -= 1;
-                        alert(`🛡️ フリーズ発動！ 目標をオーバーしましたが、保持していたフリーズ（1個）を消費したため、連続記録（${deficitCount}日）は維持されました！`);
+                        // フリーズを自動消費して連続をキープ
+                        freezeCount = 0;
+                        daysSinceFreezeUsed = 1; // フリーズを使った日を「1日目」としてカウント開始
+                        alert(`🛡️ フリーズ発動！ 目標オーバーをガードしました。連続記録（${deficitCount}日）は維持されます！次から3日連続達成でフリーズが再付与されます。`);
                     } else {
-                        // フリーズがない場合は連続記録が0にリセット
+                        // フリーズがない場合は連続リセット、かつ通常モードへ
                         deficitCount = 0;
+                        daysSinceFreezeUsed = 0;
                     }
                 }
+                
                 localStorage.setItem('calorie_deficit_count', deficitCount);
                 localStorage.setItem('calorie_freeze_count', freezeCount);
+                localStorage.setItem('calorie_days_since_freeze_used', daysSinceFreezeUsed);
 
                 records = [];
                 localStorage.setItem('calorie_records', JSON.stringify(records));
@@ -462,11 +475,13 @@
         }
 
         function resetDeficitCount() {
-            if (confirm("達成の連続日数とフリーズ数をリセットしますか？")) {
+            if (confirm("達成の連続日数とフリーズをリセットしますか？")) {
                 deficitCount = 0;
                 freezeCount = 0;
+                daysSinceFreezeUsed = 0;
                 localStorage.setItem('calorie_deficit_count', deficitCount);
                 localStorage.setItem('calorie_freeze_count', freezeCount);
+                localStorage.setItem('calorie_days_since_freeze_used', daysSinceFreezeUsed);
                 renderApp();
             }
         }
@@ -701,7 +716,8 @@
                 calorie_goal: dailyGoal,
                 goal_weight: goalWeight,
                 calorie_deficit_count: deficitCount,
-                calorie_freeze_count: freezeCount
+                calorie_freeze_count: freezeCount,
+                calorie_days_since_freeze_used: daysSinceFreezeUsed
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const downloadAnchor = document.createElement('a');
@@ -725,7 +741,14 @@
                     if (imported.calorie_goal) { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
                     if (imported.goal_weight) { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
                     if (typeof imported.calorie_deficit_count === 'number') { deficitCount = imported.calorie_deficit_count; localStorage.setItem('calorie_deficit_count', deficitCount); }
-                    if (typeof imported.calorie_freeze_count === 'number') { freezeCount = imported.calorie_freeze_count; localStorage.setItem('calorie_freeze_count', freezeCount); }
+                    if (typeof imported.calorie_freeze_count === 'number') { 
+                        freezeCount = Math.min(1, imported.calorie_freeze_count); 
+                        localStorage.setItem('calorie_freeze_count', freezeCount); 
+                    }
+                    if (typeof imported.calorie_days_since_freeze_used === 'number') {
+                        daysSinceFreezeUsed = imported.calorie_days_since_freeze_used;
+                        localStorage.setItem('calorie_days_since_freeze_used', daysSinceFreezeUsed);
+                    }
                     
                     renderApp();
                     renderWeightApp();
@@ -814,12 +837,9 @@
             document.getElementById('remaining-calorie').textContent = remaining.toLocaleString();
             document.getElementById('deficit-count-display').textContent = deficitCount;
 
-            // フリーズ保有数の表示制御
             const freezeBadge = document.getElementById('freeze-badge');
-            const freezeCountDisplay = document.getElementById('freeze-count-display');
             if (freezeCount > 0) {
                 freezeBadge.classList.remove('hidden');
-                freezeCountDisplay.textContent = freezeCount;
             } else {
                 freezeBadge.classList.add('hidden');
             }
