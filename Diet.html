@@ -144,14 +144,14 @@
             </div>
         </div>
 
-        <!-- 未達日数の連続記録 & フリーズ表示カード -->
+        <!-- 目標達成の連続記録 & フリーズ表示カード -->
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex justify-between items-center shrink-0">
             <div class="flex items-center gap-3">
                 <div class="bg-teal-50 text-teal-600 p-2.5 rounded-xl">
                     <i data-lucide="flame" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">目標未達（下回り）の連続日数</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">目標達成（下回り）の連続日数</p>
                     <div class="flex items-center gap-2 mt-0.5">
                         <p class="text-sm font-bold text-slate-800"><span id="deficit-count-display" class="text-lg text-teal-600">0</span> 日連続</p>
                         <span id="freeze-badge" class="hidden text-[10px] font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -432,13 +432,13 @@
                 records.forEach(i => { previousTotal += i.calorie; });
 
                 if (previousTotal < dailyGoal) {
-                    // 目標未達を達成した場合
+                    // 目標達成した場合
                     deficitCount += 1;
                     
                     // 【新機能】3日連続するごとにボーナスフリーズを1個付与
                     if (deficitCount > 0 && deficitCount % 3 === 0) {
                         freezeCount += 1;
-                        alert(`🎉 おめでとうございます！3日連続未達を達成したため、「ボーナスフリーズ（1日分のミスガード）」を1個獲得しました！`);
+                        alert(`🎉 おめでとうございます！3日連続達成を達成したため、「ボーナスフリーズ（1日分のミスガード）」を1個獲得しました！`);
                     }
                 } else {
                     // 目標を上回ってしまった場合
@@ -462,7 +462,7 @@
         }
 
         function resetDeficitCount() {
-            if (confirm("未達の連続日数とフリーズ数をリセットしますか？")) {
+            if (confirm("達成の連続日数とフリーズ数をリセットしますか？")) {
                 deficitCount = 0;
                 freezeCount = 0;
                 localStorage.setItem('calorie_deficit_count', deficitCount);
