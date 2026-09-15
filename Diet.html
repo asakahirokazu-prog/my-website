@@ -55,15 +55,6 @@
             background: #cbd5e1;
             border-radius: 3px;
         }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-            touch-action: pan-y;
-            overscroll-behavior-y: contain;
-        }
         .modal-backdrop {
             transition: opacity 0.25s ease;
         }
@@ -184,10 +175,20 @@
 
     </main>
 
+    <!-- 体重減少時のお楽しみイベントポップアップ -->
+    <div id="weight-cheer-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-4">
+        <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 border border-emerald-300">
+            <span id="cheer-emoji" class="text-xl">🎉</span>
+            <div>
+                <p id="cheer-title" class="text-xs font-extrabold uppercase tracking-wider text-emerald-100">ナイス減少！</p>
+                <p id="cheer-message" class="text-sm font-bold">軽い！調子いいですね！</p>
+            </div>
+        </div>
+    </div>
+
     <!-- 5日ごと達成お祝いモーダル -->
     <div id="streak-celebration-modal" class="modal fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-gradient-to-b from-amber-500 via-amber-600 to-orange-600 rounded-3xl max-w-sm w-full p-8 shadow-2xl text-white text-center space-y-6 border-4 border-amber-300 relative overflow-hidden">
-            <!-- 背景装飾用の光エフェクト -->
             <div class="absolute -top-16 -left-16 w-32 h-32 bg-white/20 rounded-full blur-2xl pointer-events-none"></div>
             <div class="absolute -bottom-16 -right-16 w-32 h-32 bg-amber-300/20 rounded-full blur-2xl pointer-events-none"></div>
 
@@ -350,7 +351,7 @@
                 <div id="recommended-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
 
-            <!-- いつもの食品タブコンテンツ（初期は非表示） -->
+            <!-- いつもの食品タブコンテンツ -->
             <div id="tab-content-favorite" class="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-200 hidden">
                 <div id="favorite-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
@@ -385,6 +386,7 @@
         </div>
     </div>
 
+    <!-- 体重入力モーダル（＋／－ 0.1ずつ変更形式） -->
     <div id="weight-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -404,17 +406,18 @@
                     <input type="date" id="weight-date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500">
                 </div>
                 <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block font-semibold text-slate-600 uppercase text-[10px]">体重 (kg)</label>
-                        <span id="live-weight-preview" class="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">-- kg</span>
-                    </div>
-                    <div class="bg-slate-900 text-white rounded-2xl p-3 shadow-inner flex items-center justify-center relative overflow-hidden">
-                        <div class="absolute inset-x-3 top-1/2 -translate-y-1/2 h-10 bg-white/10 rounded-xl pointer-events-none border border-white/20"></div>
-                        <div class="w-full relative text-center">
-                            <div id="drum-unified" class="h-32 overflow-y-auto no-scrollbar snap-y snap-mandatory rounded-xl bg-slate-800/80 divide-y divide-slate-700/50 cursor-pointer" onscroll="handleDrumScroll()"></div>
+                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">体重 (kg)</label>
+                    <!-- メイン数値ディスプレイ＆プラスマイナスボタン -->
+                    <div class="flex items-center gap-2 mt-1">
+                        <button type="button" onclick="adjustWeight(-0.1)" class="w-14 h-14 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-2xl text-2xl font-black transition flex items-center justify-center shadow-xs active:scale-95" title="0.1kg減らす">-</button>
+                        
+                        <div class="flex-1 relative bg-slate-50 border border-slate-200 rounded-2xl py-2 px-3 text-center">
+                            <input type="number" id="weight-value" required step="0.1" min="20" max="300" class="w-full bg-transparent text-center text-slate-900 text-xl font-bold focus:outline-none">
+                            <span class="text-[10px] text-slate-400 font-medium">kg (0.1単位)</span>
                         </div>
+
+                        <button type="button" onclick="adjustWeight(0.1)" class="w-14 h-14 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-2xl text-2xl font-black transition flex items-center justify-center shadow-xs active:scale-95" title="0.1kg増やす">+</button>
                     </div>
-                    <input type="hidden" id="weight-value" required>
                 </div>
                 <div class="flex items-center gap-2 pt-2">
                     <button type="submit" id="weight-submit-btn" class="flex-1 bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
@@ -469,7 +472,7 @@
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">目標体重 (kg)</label>
-                    <input type="number" id="goal-weight-input" required step="0.1" min="20" max="300" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                    <input type="number" id="goal-weight-input" required step="0.1" min="20" max="300" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">目標を保存する</button>
             </form>
@@ -560,9 +563,18 @@
 
         let weightChartInstance = null;
 
+        // マイナスボタン押下時のランダムメッセージリスト
+        const cheerEvents = [
+            { emoji: "🌸", title: "ナイス減少！", msg: "おっ、軽くなりましたね！この調子！" },
+            { emoji: "🌸", title: "素晴らしい！", msg: "素晴らしい！努力の成果が出てますね！" },
+            { emoji: "🌸", title: "身体が軽い！", msg: "お見事！綺麗な桜色が舞い踊ります！" },
+            { emoji: "🌸", title: "好調キープ！", msg: "その調子！理想のボディへ一直線！" },
+            { emoji: "🌸", title: "フワッと軽快！", msg: "身体のキレが良くなってきましたね！" },
+            { emoji: "🌸", title: "お見事です！", msg: "マイナス0.1kg達成！小さな積み重ねが最強！" }
+        ];
+
         window.addEventListener('DOMContentLoaded', () => {
             updateDateDisplay();
-            initDrumPickers();
             document.getElementById('weight-date').value = new Date().toISOString().split('T')[0];
             renderApp();
             renderWeightApp();
@@ -612,7 +624,6 @@
 
             renderApp();
 
-            // 5日ごとに（5, 10, 15...）達成した瞬間に派手なお祝い画面を起動
             if (deficitCount > 0 && deficitCount % 5 === 0) {
                 triggerCelebration(deficitCount);
             } else {
@@ -620,38 +631,18 @@
             }
         }
 
-        // 5日ごと達成のお祝い画面表示＆紙吹雪演出
         function triggerCelebration(days) {
             document.getElementById('celebration-title').textContent = `祝・${days}日連続達成！`;
             document.getElementById('celebration-text').textContent = `すばらしい！見事に${days}日間のカロリー管理を継続できました。この調子で自分のペースを維持していきましょう！`;
 
             showModal('streak-celebration-modal');
             
-            // 紙吹雪（コンフェッティ）を派手に打ち上げる
             if (typeof confetti === 'function') {
                 confetti({
-                    particleCount: 120,
-                    spread: 80,
+                    particleCount: 150,
+                    spread: 100,
                     origin: { y: 0.6 }
                 });
-                
-                // 追加の連続演出
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 80,
-                        angle: 60,
-                        spread: 55,
-                        origin: { x: 0 }
-                    });
-                }, 250);
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 80,
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1 }
-                    });
-                }, 400);
             }
         }
 
@@ -687,14 +678,13 @@
             closeStreakEditModal();
             renderApp();
 
-            // 手動変更で5の倍数になった場合もテスト用に祝えるようにする
             if (deficitCount > 0 && deficitCount % 5 === 0) {
                 triggerCelebration(deficitCount);
             }
         }
 
         function clearStreakData() {
-            if (confirm("「プレ数」「連続記録数」「フリーズ数」をすべてクリア（0にリセット）しますか？")) {
+            if (confirm("ステータスをすべてクリアしますか？")) {
                 playCount = 0;
                 deficitCount = 0;
                 freezeCount = 0;
@@ -710,51 +700,6 @@
         function updateDateDisplay() {
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
             document.getElementById('current-date').textContent = new Date().toLocaleDateString('ja-JP', options);
-        }
-
-        function initDrumPickers() {
-            const container = document.getElementById('drum-unified');
-            let html = '<div class="h-12 pointer-events-none"></div>';
-            for (let i = 300; i <= 1500; i++) {
-                const val = (i / 10).toFixed(1);
-                html += `<div class="h-10 flex items-center justify-center snap-center text-sm font-bold text-slate-300 select-none" data-val="${val}">${val} kg</div>`;
-            }
-            html += '<div class="h-12 pointer-events-none"></div>';
-            container.innerHTML = html;
-        }
-
-        function setDrumValues(weightVal) {
-            const container = document.getElementById('drum-unified');
-            const targetVal = weightVal.toFixed(1);
-            const targetEl = container.querySelector(`[data-val="${targetVal}"]`);
-            if (targetEl) {
-                container.scrollTop = targetEl.offsetTop - 48;
-            }
-            updateDrumSelection();
-        }
-
-        function handleDrumScroll() {
-            updateDrumSelection();
-        }
-
-        function updateDrumSelection() {
-            const container = document.getElementById('drum-unified');
-            const items = container.querySelectorAll('[data-val]');
-            let selectedVal = 60.0;
-
-            items.forEach(item => {
-                const rect = item.getBoundingClientRect();
-                const containerRect = container.getBoundingClientRect();
-                if (rect.top >= containerRect.top + 20 && rect.bottom <= containerRect.bottom - 20) {
-                    selectedVal = parseFloat(item.getAttribute('data-val'));
-                    item.className = "h-10 flex items-center justify-center snap-center text-base font-bold text-slate-200 scale-110 transition-transform select-none";
-                } else {
-                    item.className = "h-10 flex items-center justify-center snap-center text-sm font-bold text-slate-400 select-none";
-                }
-            });
-
-            document.getElementById('weight-value').value = selectedVal;
-            document.getElementById('live-weight-preview').textContent = `${selectedVal.toFixed(1)} kg`;
         }
 
         function showModal(id) {
@@ -1014,12 +959,78 @@
             document.getElementById('weight-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('weight-form-title').textContent = '体重を記録する';
             document.getElementById('weight-submit-btn').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>記録する</span>';
-            let initialVal = weightRecords.length > 0 ? weightRecords[0].weight : 65.0;
+            
+            let initialVal = weightRecords.length > 0 ? weightRecords[0].weight : 60.0;
+            document.getElementById('weight-value').value = initialVal.toFixed(1);
+            
             showModal('weight-modal');
-            setTimeout(() => { setDrumValues(initialVal); }, 50);
         }
 
         function closeWeightModal() { hideModal('weight-modal'); }
+
+        // 体重の増減（0.1単位）およびマイナス押下時の嬉しいイベント演出
+        function adjustWeight(amount) {
+            const input = document.getElementById('weight-value');
+            let currentVal = parseFloat(input.value);
+            if (isNaN(currentVal)) {
+                currentVal = weightRecords.length > 0 ? weightRecords[0].weight : 60.0;
+            }
+            let newVal = Math.max(20, Math.min(300, currentVal + amount));
+            input.value = newVal.toFixed(1);
+
+            // マイナスボタンが押された場合のみ、お楽しみイベント（トースト表示＆大量の花びら演出）を発火
+            if (amount < 0) {
+                triggerWeightCheerEvent();
+            }
+        }
+
+        // マイナスボタン押下時の演出ロジック（花びらを大量に降らせる）
+        function triggerWeightCheerEvent() {
+            const randomEvent = cheerEvents[Math.floor(Math.random() * cheerEvents.length)];
+            
+            document.getElementById('cheer-emoji').textContent = randomEvent.emoji;
+            document.getElementById('cheer-title').textContent = randomEvent.title;
+            document.getElementById('cheer-message').textContent = randomEvent.msg;
+
+            const toast = document.getElementById('weight-cheer-toast');
+            toast.classList.remove('opacity-0', '-translate-y-4');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            // 🌸桜色（ピンク系・白）の花びらをたっぷり舞い散らせる演出
+            if (typeof confetti === 'function') {
+                // 1回目：画面中央から一気にバースト
+                confetti({
+                    particleCount: 80,
+                    spread: 120,
+                    origin: { y: 0.4 },
+                    colors: ['#ffb7c5', '#ffc0cb', '#ffffff', '#ff69b4', '#ff1493']
+                });
+
+                // 2回目：少し遅らせて左右の端から雪崩のように花びらを降らせる
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 50,
+                        angle: 60,
+                        spread: 70,
+                        origin: { x: 0, y: 0.5 },
+                        colors: ['#ffb7c5', '#ffc0cb', '#ffffff']
+                    });
+                    confetti({
+                        particleCount: 50,
+                        angle: 120,
+                        spread: 70,
+                        origin: { x: 1, y: 0.5 },
+                        colors: ['#ffb7c5', '#ffc0cb', '#ffffff']
+                    });
+                }, 200);
+            }
+
+            // 3秒後にトーストを引っ込める
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-4');
+            }, 3000);
+        }
 
         function openGraphModal() {
             showModal('graph-modal');
