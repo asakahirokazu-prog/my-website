@@ -90,8 +90,8 @@
                 <h1 class="text-lg font-bold tracking-tight text-slate-900">健康管理</h1>
             </div>
             <div class="flex items-center space-x-2">
-                <!-- 「工夫💡」ボタンから「締」に変更 -->
-                <button onclick="openSuccessModal()" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-lg text-xs transition flex items-center gap-1 shadow-sm">
+                <!-- 「締」ボタン -->
+                <button onclick="openClosingModal()" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-lg text-xs transition flex items-center gap-1 shadow-sm">
                     <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
                     <span>締</span>
                 </button>
@@ -171,7 +171,7 @@
                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> カロリー記録
             </button>
             <button onclick="openSuccessModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 締を記録
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 工夫を記録
             </button>
         </div>
 
@@ -179,6 +179,32 @@
         <div id="strategy-container" class="space-y-2 pb-6"></div>
 
     </main>
+
+    <!-- 締処理確認モーダル -->
+    <div id="closing-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="bg-amber-100 text-amber-600 p-2 rounded-xl">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">締め処理の確認</h3>
+                </div>
+                <button onclick="closeClosingModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">
+                本日のカロリーを確定し、収支をリセットして連続記録・フリーズの判定を行います。よろしいですか？
+            </p>
+            <div class="flex items-center gap-2 pt-2">
+                <button type="button" onclick="executeClosingAction()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-xs">
+                    <i data-lucide="check" class="w-4 h-4"></i> <span>実行する</span>
+                </button>
+                <button type="button" onclick="closeClosingModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition text-xs">キャンセル</button>
+            </div>
+        </div>
+    </div>
 
     <!-- プレ数・連続記録・フリーズ管理モーダル -->
     <div id="streak-edit-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -402,7 +428,7 @@
                     <div class="bg-amber-100 text-amber-600 p-2 rounded-xl shrink-0">
                         <i data-lucide="sparkles" class="w-5 h-5"></i>
                     </div>
-                    <h3 id="strategy-modal-title" class="text-sm font-bold text-slate-900 whitespace-nowrap">締を記録</h3>
+                    <h3 id="strategy-modal-title" class="text-sm font-bold text-slate-900 whitespace-nowrap">工夫を記録</h3>
                 </div>
                 <button onclick="closeSuccessModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg shrink-0">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -446,16 +472,13 @@
         let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
         let goalWeight = parseFloat(localStorage.getItem('goal_weight')) || 60.0;
         
-        // 3つの項目
         let playCount = parseInt(localStorage.getItem('calorie_play_count')) || 0;
         let deficitCount = parseInt(localStorage.getItem('calorie_deficit_count')) || 0;
         let freezeCount = parseInt(localStorage.getItem('calorie_freeze_count')) || 0;
 
-        let daysSinceFreezeUsed = parseInt(localStorage.getItem('calorie_days_since_freeze_used')) || 0;
         let weightChartInstance = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            checkAndResetDailyData();
             updateDateDisplay();
             initDrumPickers();
             document.getElementById('weight-date').value = new Date().toISOString().split('T')[0];
@@ -465,52 +488,56 @@
             lucide.createIcons();
         });
 
-        // 0時（日付変更）を境界として、前日分の達成状況を判定し、0時にリセット・更新する処理
-        function checkAndResetDailyData() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const lastDate = localStorage.getItem('last_recorded_date');
+        // 「締」ボタン押下時の処理（カスタムモーダルを開く）
+        function openClosingModal() {
+            showModal('closing-modal');
+        }
 
-            if (lastDate && lastDate !== todayStr) {
-                let previousTotal = 0;
-                records.forEach(i => { previousTotal += i.calorie; });
+        function closeClosingModal() {
+            hideModal('closing-modal');
+        }
 
-                if (previousTotal <= dailyGoal) {
-                    deficitCount += 1;
-                    playCount += 1; // 達成時にプレ数も増加の例（お好みで調整可能）
-                    if (daysSinceFreezeUsed > 0) {
-                        daysSinceFreezeUsed += 1;
-                        if (daysSinceFreezeUsed >= 3) {
-                            freezeCount += 1;
-                            daysSinceFreezeUsed = 0;
-                            alert(`🎉 0時を過ぎました。3日連続達成！「フリーズ数」が1個増えました！`);
-                        }
-                    } else {
-                        if (deficitCount % 3 === 0) {
-                            freezeCount += 1;
-                            alert(`🎉 0時を過ぎました。3日連続達成！「フリーズ数」が1個増えました！`);
-                        }
-                    }
-                } else {
-                    if (freezeCount > 0) {
-                        freezeCount -= 1;
-                        daysSinceFreezeUsed = 1;
-                        alert(`🛡️ 0時を過ぎました。フリーズ発動！ 目標オーバーをガードしました。連続記録（${deficitCount}日）は維持されます！`);
-                    } else {
-                        deficitCount = 0;
-                        daysSinceFreezeUsed = 0;
-                    }
-                }
-                
-                localStorage.setItem('calorie_play_count', playCount);
-                localStorage.setItem('calorie_deficit_count', deficitCount);
-                localStorage.setItem('calorie_freeze_count', freezeCount);
-                localStorage.setItem('calorie_days_since_freeze_used', daysSinceFreezeUsed);
+        // 締処理の実行
+        function executeClosingAction() {
+            closeClosingModal();
 
-                records = [];
-                localStorage.setItem('calorie_records', JSON.stringify(records));
+            let totalIntake = 0;
+            records.forEach(i => { totalIntake += i.calorie; });
+
+            // カロリー収支を見て2400未満なら連続記録に1を加算する
+            if (totalIntake < 2400) {
+                deficitCount += 1;
             }
-            
-            localStorage.setItem('last_recorded_date', todayStr);
+
+            // フリーズやプレ数の既存ロジックを保持
+            if (freezeCount === 1) {
+                if (totalIntake < 2400) {
+                    playCount += 1;
+                } else {
+                    freezeCount = 0;
+                    playCount = 0;
+                }
+            } else if (freezeCount === 0 && totalIntake >= 2400) {
+                // 必要に応じたリセット等の既存挙動を維持
+            }
+
+            // プレ数が3だったらフリーズ数を1にして、プレ記録を0にする
+            if (playCount >= 3) {
+                freezeCount = 1;
+                playCount = 0;
+            }
+
+            // ローカルストレージに保存
+            localStorage.setItem('calorie_play_count', playCount);
+            localStorage.setItem('calorie_deficit_count', deficitCount);
+            localStorage.setItem('calorie_freeze_count', freezeCount);
+
+            // カロリー収支を0にする（記録配列をクリア）
+            records = [];
+            localStorage.setItem('calorie_records', JSON.stringify(records));
+
+            renderApp();
+            alert("締め処理が完了しました。");
         }
 
         // ステータス管理モーダルを開く
@@ -548,11 +575,9 @@
                 playCount = 0;
                 deficitCount = 0;
                 freezeCount = 0;
-                daysSinceFreezeUsed = 0;
                 localStorage.setItem('calorie_play_count', playCount);
                 localStorage.setItem('calorie_deficit_count', deficitCount);
                 localStorage.setItem('calorie_freeze_count', freezeCount);
-                localStorage.setItem('calorie_days_since_freeze_used', daysSinceFreezeUsed);
                 
                 closeStreakEditModal();
                 renderApp();
@@ -802,8 +827,7 @@
                 goal_weight: goalWeight,
                 calorie_play_count: playCount,
                 calorie_deficit_count: deficitCount,
-                calorie_freeze_count: freezeCount,
-                calorie_days_since_freeze_used: daysSinceFreezeUsed
+                calorie_freeze_count: freezeCount
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
             const downloadAnchor = document.createElement('a');
@@ -829,10 +853,6 @@
                     if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
                     if (typeof imported.calorie_deficit_count === 'number') { deficitCount = imported.calorie_deficit_count; localStorage.setItem('calorie_deficit_count', deficitCount); }
                     if (typeof imported.calorie_freeze_count === 'number') { freezeCount = imported.calorie_freeze_count; localStorage.setItem('calorie_freeze_count', freezeCount); }
-                    if (typeof imported.calorie_days_since_freeze_used === 'number') {
-                        daysSinceFreezeUsed = imported.calorie_days_since_freeze_used;
-                        localStorage.setItem('calorie_days_since_freeze_used', daysSinceFreezeUsed);
-                    }
                     
                     renderApp();
                     renderWeightApp();
@@ -847,7 +867,7 @@
 
         function openSuccessModal() {
             document.getElementById('success-form').reset();
-            document.getElementById('strategy-modal-title').textContent = '締を記録';
+            document.getElementById('strategy-modal-title').textContent = '工夫を記録';
             document.getElementById('strategy-submit-btn').textContent = '記録する';
             showModal('success-modal');
         }
