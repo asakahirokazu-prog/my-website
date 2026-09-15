@@ -288,8 +288,9 @@
         </div>
     </div>
 
+    <!-- カロリー記録モーダル -->
     <div id="calorie-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <div class="bg-emerald-100 text-emerald-600 p-2 rounded-xl">
@@ -301,13 +302,28 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
+
+            <!-- いつもの食品（クイック選択）エリア -->
+            <div class="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div class="flex justify-between items-center">
+                    <label class="font-semibold text-slate-600 uppercase text-[10px]">いつもの食品から選ぶ</label>
+                    <span class="text-[10px] text-slate-400">クリックで入力</span>
+                </div>
+                <div id="favorite-foods-container" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pt-1"></div>
+            </div>
+
             <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">項目名 / 食品名</label>
                     <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">カロリー (kcal)</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block font-semibold text-slate-600 uppercase text-[10px]">カロリー (kcal)</label>
+                        <button type="button" onclick="saveAsFavorite()" class="text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-0.5">
+                            <i data-lucide="plus" class="w-3 h-3"></i> この内容をいつもの食品に登録
+                        </button>
+                    </div>
                     <input type="number" id="item-calorie" required min="0" placeholder="例: 350" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div class="flex items-center gap-2 pt-2">
@@ -471,6 +487,14 @@
         let records = JSON.parse(localStorage.getItem('calorie_records')) || [];
         let weightRecords = JSON.parse(localStorage.getItem('weight_records')) || [];
         let strategies = JSON.parse(localStorage.getItem('success_strategies')) || [];
+        
+        // いつもの食品リスト（初期サンプル付き）
+        let favoriteFoods = JSON.parse(localStorage.getItem('favorite_foods')) || [
+            { name: 'プロテイン', calorie: 120 },
+            { name: 'ゆで卵', calorie: 90 },
+            { name: 'バナナ', calorie: 80 }
+        ];
+
         let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
         let goalWeight = parseFloat(localStorage.getItem('goal_weight')) || 60.0;
         
@@ -490,7 +514,7 @@
             lucide.createIcons();
         });
 
-        // 「締」ボタン押下時の処理（カスタムモーダルを開く）
+        // 「締」ボタン押下時の処理
         function openClosingModal() {
             showModal('closing-modal');
         }
@@ -499,19 +523,16 @@
             hideModal('closing-modal');
         }
 
-        // 締処理の実行
         function executeClosingAction() {
             closeClosingModal();
 
             let totalIntake = 0;
             records.forEach(i => { totalIntake += i.calorie; });
 
-            // カロリー収支を見て2400未満なら連続記録に1を加算する
             if (totalIntake < 2400) {
                 deficitCount += 1;
             }
 
-            // フリーズやプレ数の既存ロジックを保持
             if (freezeCount === 1) {
                 if (totalIntake < 2400) {
                     playCount += 1;
@@ -519,22 +540,17 @@
                     freezeCount = 0;
                     playCount = 0;
                 }
-            } else if (freezeCount === 0 && totalIntake >= 2400) {
-                // 必要に応じたリセット等の既存挙動を維持
             }
 
-            // プレ数が3だったらフリーズ数を1にして、プレ記録を0にする
             if (playCount >= 3) {
                 freezeCount = 1;
                 playCount = 0;
             }
 
-            // ローカルストレージに保存
             localStorage.setItem('calorie_play_count', playCount);
             localStorage.setItem('calorie_deficit_count', deficitCount);
             localStorage.setItem('calorie_freeze_count', freezeCount);
 
-            // カロリー収支を0にする（記録配列をクリア）
             records = [];
             localStorage.setItem('calorie_records', JSON.stringify(records));
 
@@ -542,7 +558,6 @@
             alert("締め処理が完了しました。");
         }
 
-        // ステータス管理モーダルを開く
         function openStreakEditModal() {
             document.getElementById('edit-play-count').value = playCount;
             document.getElementById('edit-streak-count').value = deficitCount;
@@ -651,10 +666,67 @@
             document.getElementById('calorie-form').reset();
             document.getElementById('form-title').textContent = 'カロリー記録を追加';
             document.getElementById('submit-btn').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>追加する</span>';
+            renderFavoriteFoods();
             showModal('calorie-modal');
         }
 
         function closeCalorieModal() { hideModal('calorie-modal'); }
+
+        // --- いつもの食品関連の関数 ---
+        function renderFavoriteFoods() {
+            const container = document.getElementById('favorite-foods-container');
+            if (!favoriteFoods || favoriteFoods.length === 0) {
+                container.innerHTML = '<span class="text-[10px] text-slate-400 py-1">登録された食品はありません</span>';
+                return;
+            }
+            let html = '';
+            favoriteFoods.forEach((item, index) => {
+                html += `
+                    <div class="inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-emerald-400 px-2.5 py-1 rounded-xl text-xs shadow-xs transition group">
+                        <button type="button" onclick="selectFavoriteFood('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1">
+                            <span>${escapeHtml(item.name)}</span>
+                            <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
+                        </button>
+                        <button type="button" onclick="removeFavoriteFood(${index})" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function selectFavoriteFood(name, calorie) {
+            document.getElementById('item-name').value = name;
+            document.getElementById('item-calorie').value = calorie;
+        }
+
+        function saveAsFavorite() {
+            const name = document.getElementById('item-name').value.trim();
+            const calorie = parseInt(document.getElementById('item-calorie').value);
+
+            if (!name || isNaN(calorie)) {
+                alert("項目名とカロリーを入力してから登録してください。");
+                return;
+            }
+
+            if (!favoriteFoods.some(f => f.name === name)) {
+                favoriteFoods.push({ name, calorie });
+                localStorage.setItem('favorite_foods', JSON.stringify(favoriteFoods));
+                renderFavoriteFoods();
+                alert(`「${name}」をいつもの食品に登録しました！`);
+            } else {
+                alert("この食品はすでに登録されています。");
+            }
+        }
+
+        function removeFavoriteFood(index) {
+            favoriteFoods.splice(index, 1);
+            localStorage.setItem('favorite_foods', JSON.stringify(favoriteFoods));
+            renderFavoriteFoods();
+        }
+        // ------------------------------
 
         function openHistoryModal() {
             renderHistoryList();
@@ -825,6 +897,7 @@
                 calorie_records: records,
                 weight_records: weightRecords,
                 success_strategies: strategies,
+                favorite_foods: favoriteFoods,
                 calorie_goal: dailyGoal,
                 goal_weight: goalWeight,
                 calorie_play_count: playCount,
@@ -850,6 +923,7 @@
                     if (imported.calorie_records) { records = imported.calorie_records; localStorage.setItem('calorie_records', JSON.stringify(records)); }
                     if (imported.weight_records) { weightRecords = imported.weight_records; localStorage.setItem('weight_records', JSON.stringify(weightRecords)); }
                     if (imported.success_strategies) { strategies = imported.success_strategies; localStorage.setItem('success_strategies', JSON.stringify(strategies)); }
+                    if (imported.favorite_foods) { favoriteFoods = imported.favorite_foods; localStorage.setItem('favorite_foods', JSON.stringify(favoriteFoods)); }
                     if (imported.calorie_goal) { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
                     if (imported.goal_weight) { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
                     if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
@@ -948,7 +1022,6 @@
             document.getElementById('balance-amount').innerHTML = `${totalIntake.toLocaleString()} <span class="text-sm font-normal">kcal</span>`;
             document.getElementById('remaining-calorie').textContent = remaining.toLocaleString();
             
-            // 連続記録・フリーズ回数の表示更新
             document.getElementById('deficit-count-display').textContent = deficitCount;
             document.getElementById('freeze-count-display').textContent = freezeCount;
 
