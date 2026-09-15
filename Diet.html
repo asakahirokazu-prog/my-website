@@ -144,7 +144,7 @@
                     </div>
                     <div class="flex items-baseline justify-between flex-wrap gap-y-1">
                         <h2 id="balance-amount" class="text-2xl font-bold tracking-tight">0 <span class="text-sm font-normal">kcal</span></h2>
-                        <!-- 連続記録・フリーズ情報（ステータス管理ボタン付き・強調デザイン） -->
+                        <!-- 連続記録・フリーズ情報 -->
                         <div class="flex items-center gap-1.5 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-inner">
                             <i data-lucide="flame" class="w-4 h-4 text-amber-300 animate-pulse"></i>
                             <span class="text-[11px] font-bold text-amber-200">連続:</span>
@@ -303,12 +303,24 @@
                 </button>
             </div>
 
-            <!-- いつもの食品（クイック選択）エリア -->
-            <div class="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                <div class="flex justify-between items-center">
-                    <label class="font-semibold text-slate-600 uppercase text-[10px]">いつもの食品から選ぶ</label>
-                </div>
-                <div id="favorite-foods-container" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pt-1"></div>
+            <!-- タブ切り替えボタン -->
+            <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                <button type="button" id="tab-btn-recommended" onclick="switchFoodTab('recommended')" class="flex-1 py-2 rounded-lg bg-white text-slate-800 shadow-sm transition flex items-center justify-center gap-1">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> おすすめ
+                </button>
+                <button type="button" id="tab-btn-favorite" onclick="switchFoodTab('favorite')" class="flex-1 py-2 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1">
+                    <i data-lucide="star" class="w-3.5 h-3.5 text-emerald-500"></i> いつもの食品
+                </button>
+            </div>
+
+            <!-- おすすめタブコンテンツ -->
+            <div id="tab-content-recommended" class="space-y-1.5 bg-amber-50/40 p-3 rounded-2xl border border-amber-200/50">
+                <div id="recommended-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
+            </div>
+
+            <!-- いつもの食品タブコンテンツ（初期は非表示） -->
+            <div id="tab-content-favorite" class="space-y-1.5 bg-slate-50 p-3 rounded-2xl border border-slate-200 hidden">
+                <div id="favorite-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
 
             <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs">
@@ -319,9 +331,15 @@
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block font-semibold text-slate-600 uppercase text-[10px]">カロリー (kcal)</label>
-                        <button type="button" onclick="saveAsFavorite()" class="text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-0.5">
-                            <i data-lucide="plus" class="w-3 h-3"></i> この内容をいつもの食品に登録
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="saveAsRecommended()" class="text-[10px] text-amber-600 hover:text-amber-700 font-semibold flex items-center gap-0.5">
+                                <i data-lucide="plus" class="w-3 h-3"></i> おすすめに追加
+                            </button>
+                            <span class="text-slate-300">|</span>
+                            <button type="button" onclick="saveAsFavorite()" class="text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-0.5">
+                                <i data-lucide="plus" class="w-3 h-3"></i> いつものに追加
+                            </button>
+                        </div>
                     </div>
                     <input type="number" id="item-calorie" required min="0" placeholder="例: 350" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
@@ -491,6 +509,15 @@
             { name: 'プロテイン', calorie: 120 },
             { name: 'ゆで卵', calorie: 90 },
             { name: 'バナナ', calorie: 80 }
+        ];
+
+        // おすすめの食品リスト（初期値＋追加保存に対応）
+        let recommendedFoods = JSON.parse(localStorage.getItem('recommended_foods')) || [
+            { name: 'おにぎり（1個）', calorie: 180 },
+            { name: 'サラダチキン', calorie: 135 },
+            { name: '味噌汁', calorie: 45 },
+            { name: 'オートミール（1食）', calorie: 110 },
+            { name: 'ミックスナッツ（1袋）', calorie: 200 }
         ];
 
         let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
@@ -664,11 +691,94 @@
             document.getElementById('calorie-form').reset();
             document.getElementById('form-title').textContent = 'カロリー記録を追加';
             document.getElementById('submit-btn').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>追加する</span>';
+            switchFoodTab('recommended');
+            renderRecommendedFoods();
             renderFavoriteFoods();
             showModal('calorie-modal');
         }
 
         function closeCalorieModal() { hideModal('calorie-modal'); }
+
+        // --- タブ切り替え関数 ---
+        function switchFoodTab(tabName) {
+            const btnRecommended = document.getElementById('tab-btn-recommended');
+            const btnFavorite = document.getElementById('tab-btn-favorite');
+            const contentRecommended = document.getElementById('tab-content-recommended');
+            const contentFavorite = document.getElementById('tab-content-favorite');
+
+            if (tabName === 'recommended') {
+                btnRecommended.className = "flex-1 py-2 rounded-lg bg-white text-slate-800 shadow-sm transition flex items-center justify-center gap-1";
+                btnFavorite.className = "flex-1 py-2 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1";
+                contentRecommended.classList.remove('hidden');
+                contentFavorite.classList.add('hidden');
+            } else {
+                btnFavorite.className = "flex-1 py-2 rounded-lg bg-white text-slate-800 shadow-sm transition flex items-center justify-center gap-1";
+                btnRecommended.className = "flex-1 py-2 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1";
+                contentFavorite.classList.remove('hidden');
+                contentRecommended.classList.add('hidden');
+            }
+        }
+
+        // --- おすすめ食品関連の関数 ---
+        function renderRecommendedFoods() {
+            const container = document.getElementById('recommended-foods-container');
+            if (!recommendedFoods || recommendedFoods.length === 0) {
+                container.innerHTML = '<span class="text-[10px] text-slate-400 py-1">おすすめの食品はありません</span>';
+                return;
+            }
+            let html = '';
+            recommendedFoods.forEach((item, index) => {
+                html += `
+                    <div class="inline-flex items-center gap-1 bg-white border border-amber-200 hover:border-amber-400 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
+                        <button type="button" onclick="selectRecommendedFood('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1">
+                            <span>${escapeHtml(item.name)}</span>
+                            <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
+                        </button>
+                        <button type="button" onclick="confirmRemoveRecommendedFood(${index}, '${escapeHtml(item.name)}')" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function selectRecommendedFood(name, calorie) {
+            document.getElementById('item-name').value = name;
+            document.getElementById('item-calorie').value = calorie;
+        }
+
+        function saveAsRecommended() {
+            const name = document.getElementById('item-name').value.trim();
+            const calorie = parseInt(document.getElementById('item-calorie').value);
+
+            if (!name || isNaN(calorie)) {
+                alert("項目名とカロリーを入力してから登録してください。");
+                return;
+            }
+
+            if (!recommendedFoods.some(f => f.name === name)) {
+                recommendedFoods.push({ name, calorie });
+                localStorage.setItem('recommended_foods', JSON.stringify(recommendedFoods));
+                renderRecommendedFoods();
+                alert(`「${name}」をおすすめに追加しました！`);
+            } else {
+                alert("この食品はすでに「おすすめ」に登録されています。");
+            }
+        }
+
+        function confirmRemoveRecommendedFood(index, name) {
+            if (confirm(`「${name}」をおすすめから削除しますか？`)) {
+                removeRecommendedFood(index);
+            }
+        }
+
+        function removeRecommendedFood(index) {
+            recommendedFoods.splice(index, 1);
+            localStorage.setItem('recommended_foods', JSON.stringify(recommendedFoods));
+            renderRecommendedFoods();
+        }
 
         // --- いつもの食品関連の関数 ---
         function renderFavoriteFoods() {
@@ -680,7 +790,7 @@
             let html = '';
             favoriteFoods.forEach((item, index) => {
                 html += `
-                    <div class="inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-emerald-400 px-2.5 py-1 rounded-xl text-xs shadow-xs transition group">
+                    <div class="inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-emerald-400 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
                         <button type="button" onclick="selectFavoriteFood('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1">
                             <span>${escapeHtml(item.name)}</span>
                             <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
@@ -902,6 +1012,7 @@
                 weight_records: weightRecords,
                 success_strategies: strategies,
                 favorite_foods: favoriteFoods,
+                recommended_foods: recommendedFoods,
                 calorie_goal: dailyGoal,
                 goal_weight: goalWeight,
                 calorie_play_count: playCount,
@@ -928,6 +1039,7 @@
                     if (imported.weight_records) { weightRecords = imported.weight_records; localStorage.setItem('weight_records', JSON.stringify(weightRecords)); }
                     if (imported.success_strategies) { strategies = imported.success_strategies; localStorage.setItem('success_strategies', JSON.stringify(strategies)); }
                     if (imported.favorite_foods) { favoriteFoods = imported.favorite_foods; localStorage.setItem('favorite_foods', JSON.stringify(favoriteFoods)); }
+                    if (imported.recommended_foods) { recommendedFoods = imported.recommended_foods; localStorage.setItem('recommended_foods', JSON.stringify(recommendedFoods)); }
                     if (imported.calorie_goal) { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
                     if (imported.goal_weight) { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
                     if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
