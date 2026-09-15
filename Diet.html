@@ -144,12 +144,14 @@
                     </div>
                     <div class="flex items-baseline justify-between flex-wrap gap-y-1">
                         <h2 id="balance-amount" class="text-2xl font-bold tracking-tight">0 <span class="text-sm font-normal">kcal</span></h2>
-                        <!-- 連続記録・フリーズ情報（ステータス管理ボタン付き） -->
-                        <div class="flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-xl">
-                            <i data-lucide="flame" class="w-3.5 h-3.5 text-emerald-100"></i>
-                            <span class="text-[10px] text-emerald-100">連続:</span>
-                            <span id="deficit-count-display" class="text-xs font-bold text-white">0</span>
-                            <span class="text-[10px] text-emerald-100">日 / フリーズ:</span>
+                        <!-- 連続記録・フリーズ情報（ステータス管理ボタン付き・強調デザイン） -->
+                        <div class="flex items-center gap-1.5 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-inner">
+                            <i data-lucide="flame" class="w-4 h-4 text-amber-300 animate-pulse"></i>
+                            <span class="text-[11px] font-bold text-amber-200">連続:</span>
+                            <span id="deficit-count-display" class="text-base font-extrabold text-white tracking-wide">0</span>
+                            <span class="text-[11px] font-bold text-amber-200">日</span>
+                            <span class="text-white/40 mx-0.5">/</span>
+                            <span class="text-[11px] text-emerald-100">フリーズ:</span>
                             <span id="freeze-count-display" class="text-xs font-bold text-white">0</span>
                             <span class="text-[10px] text-emerald-100">個</span>
                             <button onclick="openStreakEditModal()" class="text-emerald-200 hover:text-white ml-1 p-0.5 rounded transition" title="ステータス管理">
@@ -206,7 +208,7 @@
         </div>
     </div>
 
-    <!-- プレ数・連続記録・フリーズ管理モーダル -->
+    <!-- 連続記録・フリーズ管理モーダル -->
     <div id="streak-edit-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
