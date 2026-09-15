@@ -36,6 +36,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Chart.js for graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Canvas Confetti for Celebration Animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         body {
@@ -181,6 +183,36 @@
         <div id="strategy-container" class="space-y-2 pb-6"></div>
 
     </main>
+
+    <!-- 5日ごと達成お祝いモーダル -->
+    <div id="streak-celebration-modal" class="modal fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-gradient-to-b from-amber-500 via-amber-600 to-orange-600 rounded-3xl max-w-sm w-full p-8 shadow-2xl text-white text-center space-y-6 border-4 border-amber-300 relative overflow-hidden">
+            <!-- 背景装飾用の光エフェクト -->
+            <div class="absolute -top-16 -left-16 w-32 h-32 bg-white/20 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="absolute -bottom-16 -right-16 w-32 h-32 bg-amber-300/20 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="flex justify-center">
+                <div class="bg-white/20 backdrop-blur-md text-amber-200 p-4 rounded-full shadow-inner animate-bounce">
+                    <i data-lucide="trophy" class="w-12 h-12 text-amber-200"></i>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <span class="bg-white/20 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border border-white/30">Milestone Reached!</span>
+                <h2 id="celebration-title" class="text-3xl font-extrabold tracking-tight text-white drop-shadow-md">祝・5日連続達成！</h2>
+                <p id="celebration-text" class="text-xs text-amber-100 leading-relaxed pt-1">
+                    すばらしい！見事に5日間のカロリー管理を継続できました。この調子で自分のペースを維持していきましょう！
+                </p>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" onclick="closeCelebrationModal()" class="w-full bg-white hover:bg-amber-50 text-amber-700 font-extrabold py-3.5 px-6 rounded-2xl shadow-lg transition transform active:scale-95 text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i>
+                    <span>やったね！続ける</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- 締処理確認モーダル -->
     <div id="closing-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
@@ -511,7 +543,6 @@
             { name: 'バナナ', calorie: 80 }
         ];
 
-        // おすすめの食品リスト（初期値＋追加保存に対応）
         let recommendedFoods = JSON.parse(localStorage.getItem('recommended_foods')) || [
             { name: 'おにぎり（1個）', calorie: 180 },
             { name: 'サラダチキン', calorie: 135 },
@@ -580,7 +611,52 @@
             localStorage.setItem('calorie_records', JSON.stringify(records));
 
             renderApp();
-            alert("締め処理が完了しました。");
+
+            // 5日ごとに（5, 10, 15...）達成した瞬間に派手なお祝い画面を起動
+            if (deficitCount > 0 && deficitCount % 5 === 0) {
+                triggerCelebration(deficitCount);
+            } else {
+                alert("締め処理が完了しました。");
+            }
+        }
+
+        // 5日ごと達成のお祝い画面表示＆紙吹雪演出
+        function triggerCelebration(days) {
+            document.getElementById('celebration-title').textContent = `祝・${days}日連続達成！`;
+            document.getElementById('celebration-text').textContent = `すばらしい！見事に${days}日間のカロリー管理を継続できました。この調子で自分のペースを維持していきましょう！`;
+
+            showModal('streak-celebration-modal');
+            
+            // 紙吹雪（コンフェッティ）を派手に打ち上げる
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+                
+                // 追加の連続演出
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 80,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 }
+                    });
+                }, 250);
+                setTimeout(() => {
+                    confetti({
+                        particleCount: 80,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 }
+                    });
+                }, 400);
+            }
+        }
+
+        function closeCelebrationModal() {
+            hideModal('streak-celebration-modal');
         }
 
         function openStreakEditModal() {
@@ -610,6 +686,11 @@
 
             closeStreakEditModal();
             renderApp();
+
+            // 手動変更で5の倍数になった場合もテスト用に祝えるようにする
+            if (deficitCount > 0 && deficitCount % 5 === 0) {
+                triggerCelebration(deficitCount);
+            }
         }
 
         function clearStreakData() {
@@ -699,7 +780,6 @@
 
         function closeCalorieModal() { hideModal('calorie-modal'); }
 
-        // --- タブ切り替え関数 ---
         function switchFoodTab(tabName) {
             const btnRecommended = document.getElementById('tab-btn-recommended');
             const btnFavorite = document.getElementById('tab-btn-favorite');
@@ -719,7 +799,6 @@
             }
         }
 
-        // --- おすすめ食品関連の関数 ---
         function renderRecommendedFoods() {
             const container = document.getElementById('recommended-foods-container');
             if (!recommendedFoods || recommendedFoods.length === 0) {
@@ -780,7 +859,6 @@
             renderRecommendedFoods();
         }
 
-        // --- いつもの食品関連の関数 ---
         function renderFavoriteFoods() {
             const container = document.getElementById('favorite-foods-container');
             if (!favoriteFoods || favoriteFoods.length === 0) {
@@ -840,7 +918,6 @@
             localStorage.setItem('favorite_foods', JSON.stringify(favoriteFoods));
             renderFavoriteFoods();
         }
-        // ------------------------------
 
         function openHistoryModal() {
             renderHistoryList();
