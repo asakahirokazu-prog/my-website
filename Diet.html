@@ -73,7 +73,6 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased overflow-y-auto">
 
-    <!-- ヘッダー -->
     <header class="bg-white border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-2">
@@ -100,7 +99,6 @@
         </div>
     </header>
 
-    <!-- メインコンテンツ -->
     <main class="max-w-3xl w-full mx-auto p-3 sm:p-4 flex-1 flex flex-col gap-3 justify-start">
         
         <!-- 上部サマリー（体重 ＆ カロリー） -->
@@ -175,18 +173,6 @@
 
     </main>
 
-    <!-- 体重減少時のお楽しみイベントポップアップ -->
-    <div id="weight-cheer-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 transform -translate-y-4">
-        <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 border border-emerald-300">
-            <span id="cheer-emoji" class="text-xl">🎉</span>
-            <div>
-                <p id="cheer-title" class="text-xs font-extrabold uppercase tracking-wider text-emerald-100">ナイス減少！</p>
-                <p id="cheer-message" class="text-sm font-bold">軽い！調子いいですね！</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- 5日ごと達成お祝いモーダル -->
     <div id="streak-celebration-modal" class="modal fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-gradient-to-b from-amber-500 via-amber-600 to-orange-600 rounded-3xl max-w-sm w-full p-8 shadow-2xl text-white text-center space-y-6 border-4 border-amber-300 relative overflow-hidden">
             <div class="absolute -top-16 -left-16 w-32 h-32 bg-white/20 rounded-full blur-2xl pointer-events-none"></div>
@@ -215,7 +201,6 @@
         </div>
     </div>
 
-    <!-- 締処理確認モーダル -->
     <div id="closing-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -241,7 +226,6 @@
         </div>
     </div>
 
-    <!-- 連続記録・フリーズ管理モーダル -->
     <div id="streak-edit-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -280,7 +264,6 @@
         </div>
     </div>
 
-    <!-- 各種モーダル -->
     <div id="weight-history-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[80vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -321,7 +304,6 @@
         </div>
     </div>
 
-    <!-- カロリー記録モーダル -->
     <div id="calorie-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
@@ -386,7 +368,6 @@
         </div>
     </div>
 
-    <!-- 体重入力モーダル（＋／－ 0.1ずつ変更形式） -->
     <div id="weight-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -401,10 +382,6 @@
                 </button>
             </div>
             <form id="weight-form" onsubmit="handleWeightFormSubmit(event)" class="space-y-3 text-xs">
-                <div>
-                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">日付</label>
-                    <input type="date" id="weight-date" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-500">
-                </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">体重 (kg)</label>
                     <!-- メイン数値ディスプレイ＆プラスマイナスボタン -->
@@ -563,7 +540,6 @@
 
         let weightChartInstance = null;
 
-        // マイナスボタン押下時のランダムメッセージリスト
         const cheerEvents = [
             { emoji: "🌸", title: "ナイス減少！", msg: "おっ、軽くなりましたね！この調子！" },
             { emoji: "🌸", title: "素晴らしい！", msg: "素晴らしい！努力の成果が出てますね！" },
@@ -575,14 +551,12 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             updateDateDisplay();
-            document.getElementById('weight-date').value = new Date().toISOString().split('T')[0];
             renderApp();
             renderWeightApp();
             renderStrategies();
             lucide.createIcons();
         });
 
-        // 「締」ボタン押下時の処理
         function openClosingModal() {
             showModal('closing-modal');
         }
@@ -956,7 +930,6 @@
 
         function openWeightModal() {
             document.getElementById('weight-form').reset();
-            document.getElementById('weight-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('weight-form-title').textContent = '体重を記録する';
             document.getElementById('weight-submit-btn').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>記録する</span>';
             
@@ -966,9 +939,10 @@
             showModal('weight-modal');
         }
 
-        function closeWeightModal() { hideModal('weight-modal'); }
+        function closeWeightModal() { 
+            hideModal('weight-modal'); 
+        }
 
-        // 体重の増減（0.1単位）およびマイナス押下時の嬉しいイベント演出
         function adjustWeight(amount) {
             const input = document.getElementById('weight-value');
             let currentVal = parseFloat(input.value);
@@ -978,27 +952,13 @@
             let newVal = Math.max(20, Math.min(300, currentVal + amount));
             input.value = newVal.toFixed(1);
 
-            // マイナスボタンが押された場合のみ、お楽しみイベント（トースト表示＆大量の花びら演出）を発火
             if (amount < 0) {
                 triggerWeightCheerEvent();
             }
         }
 
-        // マイナスボタン押下時の演出ロジック（花びらを大量に降らせる）
         function triggerWeightCheerEvent() {
-            const randomEvent = cheerEvents[Math.floor(Math.random() * cheerEvents.length)];
-            
-            document.getElementById('cheer-emoji').textContent = randomEvent.emoji;
-            document.getElementById('cheer-title').textContent = randomEvent.title;
-            document.getElementById('cheer-message').textContent = randomEvent.msg;
-
-            const toast = document.getElementById('weight-cheer-toast');
-            toast.classList.remove('opacity-0', '-translate-y-4');
-            toast.classList.add('opacity-100', 'translate-y-0');
-
-            // 🌸桜色（ピンク系・白）の花びらをたっぷり舞い散らせる演出
             if (typeof confetti === 'function') {
-                // 1回目：画面中央から一気にバースト
                 confetti({
                     particleCount: 80,
                     spread: 120,
@@ -1006,7 +966,6 @@
                     colors: ['#ffb7c5', '#ffc0cb', '#ffffff', '#ff69b4', '#ff1493']
                 });
 
-                // 2回目：少し遅らせて左右の端から雪崩のように花びらを降らせる
                 setTimeout(() => {
                     confetti({
                         particleCount: 50,
@@ -1024,12 +983,6 @@
                     });
                 }, 200);
             }
-
-            // 3秒後にトーストを引っ込める
-            setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', '-translate-y-4');
-            }, 3000);
         }
 
         function openGraphModal() {
@@ -1181,9 +1134,9 @@
 
         function handleWeightFormSubmit(e) {
             e.preventDefault();
-            const date = document.getElementById('weight-date').value;
+            const date = new Date().toISOString().split('T')[0];
             const weight = parseFloat(document.getElementById('weight-value').value);
-            if (!date || isNaN(weight)) return;
+            if (isNaN(weight)) return;
 
             weightRecords.unshift({ id: Date.now().toString(), date, weight, timestamp: new Date().toISOString() });
             weightRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
