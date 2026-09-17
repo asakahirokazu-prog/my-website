@@ -138,6 +138,9 @@
                         <!-- 連続記録・フリーズ情報 -->
                         <div class="flex items-center gap-1.5 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-inner">
                             <i data-lucide="flame" class="w-4 h-4 text-amber-300 animate-pulse"></i>
+                            <span class="text-[11px] font-bold text-amber-200">プレ:</span>
+                            <span id="play-count-display" class="text-base font-extrabold text-white tracking-wide">0</span>
+                            <span class="text-white/40 mx-0.5">/</span>
                             <span class="text-[11px] font-bold text-amber-200">連続:</span>
                             <span id="deficit-count-display" class="text-base font-extrabold text-white tracking-wide">0</span>
                             <span class="text-[11px] font-bold text-amber-200">日</span>
@@ -572,15 +575,17 @@
             records.forEach(i => { totalIntake += i.calorie; });
 
             if (totalIntake < 2400) {
+                playCount += 1;
                 deficitCount += 1;
-            }
-
-            if (freezeCount === 1) {
-                if (totalIntake < 2400) {
-                    playCount += 1;
-                } else {
-                    freezeCount = 0;
+            } else {
+                if (freezeCount === 1) {
+                    deficitCount += 1;
                     playCount = 0;
+                    freezeCount = 0;
+                } else {
+                    playCount = 0;
+                    freezeCount = 0;
+                    deficitCount = 0;
                 }
             }
 
@@ -1179,6 +1184,7 @@
             document.getElementById('balance-amount').innerHTML = `${totalIntake.toLocaleString()} <span class="text-sm font-normal">kcal</span>`;
             document.getElementById('remaining-calorie').textContent = remaining.toLocaleString();
             
+            document.getElementById('play-count-display').textContent = playCount;
             document.getElementById('deficit-count-display').textContent = deficitCount;
             document.getElementById('freeze-count-display').textContent = freezeCount;
 
