@@ -7,114 +7,134 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tap-active:active { transform: scale(0.97); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-orange-50 min-h-screen text-gray-800 font-sans pb-12">
+<body class="bg-amber-50/60 min-h-screen text-slate-800 font-sans pb-12 text-xs">
 
     <!-- ヘッダー -->
-    <header class="bg-gradient-to-r from-orange-400 to-amber-500 text-white p-5 text-center shadow-md">
-        <h1 class="text-xl font-bold tracking-wider">🌟 臨場感英会話 AI Maker</h1>
-        <p class="text-xs opacity-90 mt-1">スマホでサクサク！秒速プロンプト作成</p>
+    <header class="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 text-center shadow-sm">
+        <h1 class="text-lg font-black tracking-wider">🌟 臨場感英会話 AI Maker</h1>
+        <p class="text-[11px] font-medium opacity-95 mt-1">スマホでサクサク！秒速プロンプト作成</p>
     </header>
 
     <!-- メインコンテナ -->
-    <main class="max-w-md mx-auto p-4">
+    <main class="max-w-md mx-auto p-4 space-y-4">
 
-        <!-- トップ：2大ボタン -->
-        <div id="top-view" class="space-y-6 mt-6">
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="switchView('register-view')" class="tap-active bg-white border-2 border-orange-400 text-orange-500 font-bold py-6 px-4 rounded-2xl shadow-sm flex flex-col items-center justify-center hover:bg-orange-50 transition">
-                    <span class="text-3xl mb-1">📝</span>
-                    <span class="text-sm">マスタ登録</span>
+        <!-- トップビュー：メインアクション＆サブ登録 -->
+        <div id="top-view" class="space-y-4 mt-2">
+            <!-- 特大メインボタン：マスタ呼び出し -->
+            <div>
+                <button onclick="openCallView()" class="tap-active w-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white font-black py-7 px-4 rounded-2xl shadow-md flex flex-col items-center justify-center hover:opacity-95 transition transform hover:-translate-y-0.5 border border-white/25">
+                    <span class="text-3xl mb-1 animate-bounce">🚀</span>
+                    <span class="text-lg tracking-wider font-extrabold">さあ、やろう！</span>
+                    <span class="text-[11px] font-medium opacity-95 mt-1">AI英会話プロンプトを秒速で生成する</span>
                 </button>
-                <button onclick="openCallView()" class="tap-active bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold py-6 px-4 rounded-2xl shadow-md flex flex-col items-center justify-center hover:opacity-95 transition">
-                    <span class="text-3xl mb-1">🚀</span>
-                    <span class="text-sm">マスタ呼び出し</span>
+            </div>
+
+            <!-- 小さめのサブボタン：マスタ登録 -->
+            <div class="flex justify-center">
+                <button onclick="switchView('register-view')" class="tap-active bg-white border border-orange-200 text-orange-700 font-bold py-2.5 px-6 rounded-full shadow-xs flex items-center gap-2 hover:bg-orange-50 transition text-xs">
+                    <span class="text-sm">📝</span>
+                    <span>マスタ登録・編集はこちら</span>
                 </button>
             </div>
 
             <!-- 現在の登録状況サマリ -->
-            <div class="bg-white rounded-2xl p-4 shadow-sm border border-orange-100 text-xs space-y-1">
-                <div class="font-bold text-orange-600 mb-2">📌 現在のストック状況</div>
-                <div id="summary-text" class="text-gray-500">読み込み中...</div>
+            <div class="bg-white rounded-xl p-3.5 shadow-xs border border-orange-100 space-y-1.5">
+                <div class="font-bold text-xs text-orange-800 mb-1">📌 現在のストック状況</div>
+                <div id="summary-text" class="text-slate-600 text-[11px] leading-relaxed">読み込み中...</div>
             </div>
         </div>
 
-        <!-- 登録ビュー -->
-        <div id="register-view" class="hidden space-y-5 mt-4">
+        <!-- 登録ビュー（タブ切り替え対応） -->
+        <div id="register-view" class="hidden space-y-3.5 mt-2">
             <div class="flex items-center justify-between">
-                <h2 class="font-bold text-lg text-orange-600">✍️ マスタ登録</h2>
-                <button onclick="switchView('top-view')" class="text-xs bg-gray-200 px-3 py-1.5 rounded-full font-bold">戻る</button>
+                <h2 class="font-black text-sm text-orange-900">✍️ マスタ登録</h2>
+                <button onclick="switchView('top-view')" class="text-[11px] bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full font-bold shadow-xs">戻る</button>
             </div>
 
-            <!-- 1. 自分のこと -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm space-y-2">
-                <label class="font-bold text-xs text-gray-700">1. 自分のこと（短い文章で追加）</label>
+            <!-- タブナビゲーションボタン群 -->
+            <div class="grid grid-cols-4 gap-1 bg-orange-200/80 p-1 rounded-xl">
+                <button onclick="switchTab('tab-me', this)" class="reg-tab-btn py-2 px-1 text-[11px] font-black rounded-lg text-center transition bg-white text-orange-900 shadow-xs">自分</button>
+                <button onclick="switchTab('tab-sit', this)" class="reg-tab-btn py-2 px-1 text-[11px] font-black rounded-lg text-center transition text-slate-700">シチュ</button>
+                <button onclick="switchTab('tab-level', this)" class="reg-tab-btn py-2 px-1 text-[11px] font-black rounded-lg text-center transition text-slate-700">レベル</button>
+                <button onclick="switchTab('tab-note', this)" class="reg-tab-btn py-2 px-1 text-[11px] font-black rounded-lg text-center transition text-slate-700">特記</button>
+            </div>
+
+            <!-- タブ 1: 自分のこと -->
+            <div id="tab-me" class="tab-content active bg-white p-4 rounded-xl shadow-xs space-y-3 border border-orange-100">
+                <div class="font-bold text-xs text-orange-900 border-b border-orange-100 pb-2">1. 自分のこと（短い文章で追加）</div>
                 <div class="flex gap-2">
-                    <input id="input-me" type="text" placeholder="例: 趣味はゴルフ（リバーサイドフェニックス）" class="flex-1 border rounded-xl px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:border-orange-400">
-                    <button onclick="addMe()" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-xs font-bold tap-active">追加</button>
+                    <input id="input-me" type="text" placeholder="例: 趣味はゴルフ" class="flex-1 border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/20 focus:outline-none focus:border-orange-500">
+                    <button onclick="addMe()" class="bg-orange-500 text-white px-4 py-2 rounded-lg text-xs font-bold tap-active shadow-xs">追加</button>
                 </div>
                 <div id="list-me" class="flex flex-wrap gap-1.5 pt-1"></div>
             </div>
 
-            <!-- 2. シチュエーション -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm space-y-2">
-                <label class="font-bold text-xs text-gray-700">2. シチュエーション登録</label>
-                <input id="sit-title" type="text" placeholder="タイトル (例: カフェで注文)" class="w-full border rounded-xl px-3 py-2 text-sm bg-gray-50">
-                <input id="sit-ai-role" type="text" placeholder="AIの役割 (例: フレンドリーなカフェ店員Alex)" class="w-full border rounded-xl px-3 py-2 text-sm bg-gray-50">
-                <input id="sit-my-goal" type="text" placeholder="私の目的 (例: オーツミルクへの変更を伝える)" class="w-full border rounded-xl px-3 py-2 text-sm bg-gray-50">
-                <button onclick="addSituation()" class="w-full bg-orange-500 text-white py-2.5 rounded-xl text-xs font-bold tap-active">シチュエーション登録</button>
-                <div id="list-sit" class="space-y-1.5 pt-1"></div>
+            <!-- タブ 2: シチュエーション -->
+            <div id="tab-sit" class="tab-content bg-white p-4 rounded-xl shadow-xs space-y-3 border border-orange-100">
+                <div class="font-bold text-xs text-orange-900 border-b border-orange-100 pb-2">2. シチュエーション登録</div>
+                <input id="sit-title" type="text" placeholder="タイトル (例: カフェで注文)" class="w-full border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/20">
+                <input id="sit-ai-role" type="text" placeholder="AIの役割 (例: カフェ店員Alex)" class="w-full border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/20">
+                <input id="sit-my-goal" type="text" placeholder="私の目的 (例: オーツミルクに変更を伝える)" class="w-full border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/20">
+                <button onclick="addSituation()" class="w-full bg-orange-500 text-white py-2.5 rounded-lg text-xs font-bold tap-active shadow-xs">シチュエーション登録</button>
+                <div id="list-sit" class="space-y-2 pt-1 max-h-60 overflow-y-auto"></div>
             </div>
 
-            <!-- 3. レベル登録 -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm space-y-2">
-                <label class="font-bold text-xs text-gray-700">3. レベル登録</label>
-                <input id="level-title" type="text" placeholder="タイトル (例: 中学英語＋簡単質問)" class="w-full border rounded-xl px-3 py-2 text-sm bg-gray-50">
-                <input id="level-content" type="text" placeholder="内容 (例: ①中学校英語レベルでAIが簡単な質問をする)" class="w-full border rounded-xl px-3 py-2 text-sm bg-gray-50">
-                <button onclick="addLevel()" class="w-full bg-orange-500 text-white py-2.5 rounded-xl text-xs font-bold tap-active">レベル登録</button>
-                <div id="list-level" class="space-y-1.5 pt-1"></div>
+            <!-- タブ 3: レベル登録 -->
+            <div id="tab-level" class="tab-content bg-white p-4 rounded-xl shadow-xs space-y-3 border border-orange-100">
+                <div class="font-bold text-xs text-orange-900 border-b border-orange-100 pb-2">3. レベル登録</div>
+                <input id="level-title" type="text" placeholder="タイトル (例: 中学英語＋簡単質問)" class="w-full border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/20">
+                <input id="level-content" type="text" placeholder="内容 (例: 中学レベルでAIが質問する)" class="w-full border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/20">
+                <button onclick="addLevel()" class="w-full bg-orange-500 text-white py-2.5 rounded-lg text-xs font-bold tap-active shadow-xs">レベル登録</button>
+                <div id="list-level" class="space-y-2 pt-1 max-h-60 overflow-y-auto"></div>
             </div>
 
-            <!-- 4. 特記事項 -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm space-y-2">
-                <label class="font-bold text-xs text-gray-700">4. 特記事項（短い文章で追加）</label>
+            <!-- タブ 4: 特記事項 -->
+            <div id="tab-note" class="tab-content bg-white p-4 rounded-xl shadow-xs space-y-3 border border-orange-100">
+                <div class="font-bold text-xs text-orange-900 border-b border-orange-100 pb-2">4. 特記事項（短い文章で追加）</div>
                 <div class="flex gap-2">
-                    <input id="input-note" type="text" placeholder="追加ルールがあれば" class="flex-1 border rounded-xl px-3 py-2 text-sm bg-gray-50">
-                    <button onclick="addNote()" class="bg-orange-500 text-white px-4 py-2 rounded-xl text-xs font-bold tap-active">追加</button>
+                    <input id="input-note" type="text" placeholder="追加ルールがあれば" class="flex-1 border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/20">
+                    <button onclick="addNote()" class="bg-orange-500 text-white px-4 py-2 rounded-lg text-xs font-bold tap-active shadow-xs">追加</button>
                 </div>
                 <div id="list-note" class="flex flex-wrap gap-1.5 pt-1"></div>
             </div>
         </div>
 
         <!-- 呼び出し＆生成ビュー -->
-        <div id="call-view" class="hidden space-y-5 mt-4">
+        <div id="call-view" class="hidden space-y-3.5 mt-2">
             <div class="flex items-center justify-between">
-                <h2 class="font-bold text-lg text-orange-600">🎯 マスタ呼び出し＆生成</h2>
-                <button onclick="switchView('top-view')" class="text-xs bg-gray-200 px-3 py-1.5 rounded-full font-bold">戻る</button>
+                <h2 class="font-black text-sm text-orange-900">🎯 マスタ呼び出し＆生成</h2>
+                <button onclick="switchView('top-view')" class="text-[11px] bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full font-bold shadow-xs">戻る</button>
             </div>
 
-            <div class="bg-white p-4 rounded-2xl shadow-sm space-y-3">
+            <div class="bg-white p-4 rounded-xl shadow-xs space-y-3 border border-orange-100">
                 <div>
-                    <label class="text-xs font-bold text-gray-600">シチュエーションを選ぶ</label>
-                    <select id="call-sit" class="w-full border rounded-xl px-3 py-2 text-sm bg-gray-50 mt-1"></select>
+                    <label class="text-xs font-bold text-slate-700">シチュエーションを選ぶ</label>
+                    <select id="call-sit" class="w-full border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/25 mt-1"></select>
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-gray-600">レベルを選ぶ</label>
-                    <select id="call-level" class="w-full border rounded-xl px-3 py-2 text-sm bg-gray-50 mt-1"></select>
+                    <label class="text-xs font-bold text-slate-700">レベルを選ぶ</label>
+                    <select id="call-level" class="w-full border border-orange-200 rounded-lg px-3 py-2 text-xs bg-orange-50/25 mt-1"></select>
                 </div>
-                <button onclick="generatePrompt()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold py-3 rounded-xl shadow tap-active text-sm">
+                <button onclick="generatePrompt()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black py-3 rounded-xl shadow-sm tap-active text-xs">
                     ✨ ChatGPT用スクリプト（プロンプト）生成
                 </button>
             </div>
 
             <!-- 生成結果出力エリア -->
-            <div id="output-area" class="hidden bg-white p-4 rounded-2xl shadow-sm space-y-3 border-2 border-orange-300">
+            <div id="output-area" class="hidden bg-white p-4 rounded-xl shadow-sm space-y-2.5 border-2 border-orange-400">
                 <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-orange-600">コピペ用プロンプト</span>
-                    <button onclick="copyPrompt()" class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-bold">コピー</button>
+                    <span class="text-xs font-black text-orange-900">コピペ用プロンプト</span>
+                    <button onclick="copyPrompt()" class="bg-orange-100 text-orange-800 px-3 py-1 rounded-lg text-[11px] font-bold shadow-xs">コピー</button>
                 </div>
-                <textarea id="prompt-result" rows="9" readonly class="w-full bg-orange-50/50 border rounded-xl p-3 text-xs text-gray-700 font-mono"></textarea>
+                <textarea id="prompt-result" rows="8" readonly class="w-full bg-orange-50/30 border border-orange-200 rounded-lg p-3 text-[11px] text-slate-800 font-mono leading-relaxed"></textarea>
             </div>
         </div>
 
@@ -133,7 +153,7 @@
             { title: '中学英語＋簡単質問＋世間話', content: '②中学校英語レベルでAIが簡単な質問をし、最後に世間話が入る' }
         ];
 
-        let db = JSON.parse(localStorage.getItem('tapulse_db_v4')) || {
+        let db = JSON.parse(localStorage.getItem('tapulse_db_v9')) || {
             me: DEFAULT_ME,
             situations: [{
                 title: 'カフェで注文', 
@@ -145,7 +165,7 @@
         };
 
         function saveDB() {
-            localStorage.setItem('tapulse_db_v4', JSON.stringify(db));
+            localStorage.setItem('tapulse_db_v9', JSON.stringify(db));
             renderSummary();
             renderLists();
         }
@@ -158,45 +178,53 @@
             if (viewId === 'call-view') populateCallSelects();
         }
 
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+
+            document.querySelectorAll('.reg-tab-btn').forEach(btn => {
+                btn.className = "reg-tab-btn py-2 px-1 text-[11px] font-black rounded-lg text-center transition text-slate-700";
+            });
+            btnElement.className = "reg-tab-btn py-2 px-1 text-[11px] font-black rounded-lg text-center transition bg-white text-orange-900 shadow-xs";
+        }
+
         function renderSummary() {
             const sumEl = document.getElementById('summary-text');
             sumEl.innerHTML = `
-                自分設定: ${db.me.length}件 | シチュエーション: ${db.situations.length}個 | レベル: ${db.levels.length}個 | 特記: ${db.notes.length}件
+                自分設定: <strong class="text-orange-900">${db.me.length}</strong>件 | シチュエーション: <strong class="text-orange-900">${db.situations.length}</strong>個 | レベル: <strong class="text-orange-900">${db.levels.length}</strong>個 | 特記: <strong class="text-orange-900">${db.notes.length}</strong>件
             `;
         }
 
         function renderLists() {
-            // meリスト
             document.getElementById('list-me').innerHTML = db.me.map((item, idx) => 
-                `<span class="bg-orange-100 text-orange-800 text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">${item} <button onclick="removeItem('me', ${idx})" class="font-bold">×</button></span>`
+                `<span class="bg-orange-100/80 text-orange-900 text-[11px] px-3 py-1 rounded-full flex items-center gap-1.5 border border-orange-200 font-medium">${item} <button onclick="removeItem('me', ${idx})" class="font-black text-orange-600 text-sm">×</button></span>`
             ).join('');
 
-            // sitリスト
             document.getElementById('list-sit').innerHTML = db.situations.map((s, idx) => `
-                <div class="text-xs bg-gray-50 p-2.5 rounded-xl space-y-1">
-                    <div class="flex justify-between items-center font-bold text-gray-800">
-                        <span>${s.title}</span>
-                        <button onclick="removeItem('situations', ${idx})" class="text-red-500 font-bold px-2">削除</button>
+                <div class="text-[11px] bg-orange-50/40 p-3 rounded-lg space-y-1 border border-orange-100">
+                    <div class="flex justify-between items-center font-bold text-slate-900">
+                        <span class="text-xs">${s.title}</span>
+                        <button onclick="removeItem('situations', ${idx})" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded text-[10px]">削除</button>
                     </div>
-                    <div class="text-[11px] text-gray-600">🤖 役割: ${s.aiRole}</div>
-                    <div class="text-[11px] text-gray-600">🎯 目的: ${s.myGoal}</div>
+                    <div class="text-slate-600">🤖 役割: ${s.aiRole}</div>
+                    <div class="text-slate-600">🎯 目的: ${s.myGoal}</div>
                 </div>
             `).join('');
 
-            // levelリスト
             document.getElementById('list-level').innerHTML = db.levels.map((l, idx) => `
-                <div class="text-xs bg-gray-50 p-2.5 rounded-xl space-y-1">
-                    <div class="flex justify-between items-center font-bold text-gray-800">
-                        <span>${l.title}</span>
-                        <button onclick="removeItem('levels', ${idx})" class="text-red-500 font-bold px-2">削除</button>
+                <div class="text-[11px] bg-orange-50/40 p-3 rounded-lg space-y-1 border border-orange-100">
+                    <div class="flex justify-between items-center font-bold text-slate-900">
+                        <span class="text-xs">${l.title}</span>
+                        <button onclick="removeItem('levels', ${idx})" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded text-[10px]">削除</button>
                     </div>
-                    <div class="text-[11px] text-gray-600">📄 内容: ${l.content}</div>
+                    <div class="text-slate-600">📄 内容: ${l.content}</div>
                 </div>
             `).join('');
 
-            // noteリスト
             document.getElementById('list-note').innerHTML = db.notes.map((item, idx) => 
-                `<span class="bg-gray-100 text-gray-700 text-[11px] px-2.5 py-1 rounded-full flex items-center gap-1">${item} <button onclick="removeItem('notes', ${idx})" class="font-bold">×</button></span>`
+                `<span class="bg-slate-100 text-slate-800 text-[11px] px-3 py-1 rounded-full flex items-center gap-1.5 font-medium border border-slate-200">${item} <button onclick="removeItem('notes', ${idx})" class="font-black text-slate-500 text-sm">×</button></span>`
             ).join('');
         }
 
