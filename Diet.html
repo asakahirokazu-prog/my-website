@@ -135,7 +135,7 @@
                     </div>
                     <div class="flex items-baseline justify-between flex-wrap gap-y-1">
                         <h2 id="balance-amount" class="text-2xl font-bold tracking-tight">0 <span class="text-sm font-normal">kcal</span></h2>
-                        <!-- 連続記録・フリーズ情報（プレ表示を削除） -->
+                        <!-- 連続記録・フリーズ情報 -->
                         <div class="flex items-center gap-1.5 bg-black/25 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shadow-inner">
                             <i data-lucide="flame" class="w-4 h-4 text-amber-300 animate-pulse"></i>
                             <span class="text-[11px] font-bold text-amber-200">連続:</span>
@@ -173,6 +173,24 @@
 
     </main>
 
+    <!-- お酒チェックモーダル -->
+    <div id="alcohol-check-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4 text-center">
+            <div class="flex justify-center">
+                <div class="bg-amber-100 text-amber-600 p-3 rounded-2xl">
+                    <i data-lucide="wine" class="w-6 h-6"></i>
+                </div>
+            </div>
+            <h3 class="text-base font-bold text-slate-900">お酒を飲みましたか？</h3>
+            <p class="text-xs text-slate-500">※「いいえ」を選ぶとプレ数が1加算されます。</p>
+            <div class="flex items-center gap-2 pt-2">
+                <button type="button" onclick="answerAlcohol('no')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl transition text-xs">いいえ</button>
+                <button type="button" onclick="answerAlcohol('yes')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition text-xs">はい</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 連続達成お祝いモーダル -->
     <div id="streak-celebration-modal" class="modal fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-gradient-to-b from-amber-500 via-amber-600 to-orange-600 rounded-3xl max-w-sm w-full p-8 shadow-2xl text-white text-center space-y-6 border-4 border-amber-300 relative overflow-hidden">
             <div class="absolute -top-16 -left-16 w-32 h-32 bg-white/20 rounded-full blur-2xl pointer-events-none"></div>
@@ -218,7 +236,7 @@
                 本日のカロリーを確定し、収支をリセットして連続記録・フリーズの判定を行います。よろしいですか？
             </p>
             <div class="flex items-center gap-2 pt-2">
-                <button type="button" onclick="executeClosingAction()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-xs">
+                <button type="button" onclick="startClosingFlow()" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-xs">
                     <i data-lucide="check" class="w-4 h-4"></i> <span>実行する</span>
                 </button>
                 <button type="button" onclick="closeClosingModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition text-xs">キャンセル</button>
@@ -565,9 +583,23 @@
             hideModal('closing-modal');
         }
 
-        function executeClosingAction() {
+        // 締め確認モーダルから「実行する」押下時のフロー
+        function startClosingFlow() {
             closeClosingModal();
+            showModal('alcohol-check-modal');
+        }
 
+        function answerAlcohol(ans) {
+            hideModal('alcohol-check-modal');
+            if (ans === 'no') {
+                playCount += 1;
+                localStorage.setItem('calorie_play_count', playCount);
+            }
+            // その後自動で「締処理」実行
+            executeClosingAction();
+        }
+
+        function executeClosingAction() {
             let totalIntake = 0;
             records.forEach(i => { totalIntake += i.calorie; });
 
