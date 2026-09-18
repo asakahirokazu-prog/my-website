@@ -9,7 +9,7 @@
         "short_name": "健康管理",
         "start_url": ".",
         "display": "standalone",
-        "background_color": "#fefae0",
+        "background_color": "#f1f5f9",
         "theme_color": "#10b981",
         "icons": [
             {
@@ -49,10 +49,10 @@
             height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #fefae0;
+            background: #f1f5f9;
         }
         ::-webkit-scrollbar-thumb {
-            background: #d4a373;
+            background: #cbd5e1;
             border-radius: 3px;
         }
         .modal-backdrop {
@@ -71,9 +71,9 @@
         }
     </style>
 </head>
-<body class="bg-[#fefae0] text-slate-800 min-h-screen flex flex-col antialiased overflow-y-auto">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased overflow-y-auto">
 
-    <header class="bg-[#fdfcdc] border-b border-[#faedcd]">
+    <header class="bg-white border-b border-slate-200 shadow-xs">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-2">
                 <div class="bg-emerald-500 text-white p-1.5 rounded-xl shadow-sm">
@@ -88,11 +88,11 @@
                     <span>締</span>
                 </button>
 
-                <span id="current-date" class="text-xs font-medium bg-[#fefae0] text-slate-600 px-3 py-1 rounded-full border border-[#faedcd] hidden sm:inline-block"></span>
-                <button onclick="openGraphModal()" class="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-[#fefae0] rounded-lg transition" title="推移グラフ">
+                <span id="current-date" class="text-xs font-medium bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 hidden sm:inline-block"></span>
+                <button onclick="openGraphModal()" class="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition" title="推移グラフ">
                     <i data-lucide="line-chart" class="w-5 h-5"></i>
                 </button>
-                <button onclick="openGoalModal()" class="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-[#fefae0] rounded-lg transition" title="設定・バックアップ">
+                <button onclick="openGoalModal()" class="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition" title="設定・バックアップ">
                     <i data-lucide="settings" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -321,8 +321,8 @@
         </div>
     </div>
 
-    <!-- カロリー入力画面のモーダル（背景を薄い灰色 bg-slate-100 に変更） -->
-    <div id="calorie-modal" class="modal fixed inset-0 bg-[#fefae0]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <!-- カロリー入力画面のモーダル -->
+    <div id="calorie-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
@@ -347,34 +347,34 @@
             </div>
 
             <!-- おすすめタブコンテンツ -->
-            <div id="tab-content-recommended" class="space-y-1.5 bg-amber-200/90 p-3 rounded-2xl border border-amber-400 shadow-inner">
+            <div id="tab-content-recommended" class="space-y-1.5 bg-amber-300/80 p-3 rounded-2xl border border-amber-400 shadow-inner">
                 <div id="recommended-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
 
             <!-- いつもの食品タブコンテンツ -->
-            <div id="tab-content-favorite" class="space-y-1.5 bg-sky-200/90 p-3 rounded-2xl border border-sky-400 shadow-inner hidden">
+            <div id="tab-content-favorite" class="space-y-1.5 bg-sky-300/80 p-3 rounded-2xl border border-sky-400 shadow-inner hidden">
                 <div id="favorite-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
 
             <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">項目名 / 食品名</label>
-                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" class="w-full px-3 py-2.5 bg-slate-200/80 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block font-semibold text-slate-600 uppercase text-[10px]">カロリー (kcal)</label>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="saveAsRecommended()" class="text-[10px] text-amber-700 hover:text-amber-800 font-bold flex items-center gap-0.5">
+                            <button type="button" onclick="saveAsRecommended()" class="text-[10px] text-amber-800 hover:text-amber-900 font-bold flex items-center gap-0.5">
                                 <i data-lucide="plus" class="w-3 h-3"></i> おすすめ
                             </button>
                             <span class="text-slate-300">|</span>
-                            <button type="button" onclick="saveAsFavorite()" class="text-[10px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-0.5">
+                            <button type="button" onclick="saveAsFavorite()" class="text-[10px] text-emerald-800 hover:text-emerald-900 font-bold flex items-center gap-0.5">
                                 <i data-lucide="plus" class="w-3 h-3"></i> いつもの
                             </button>
                         </div>
                     </div>
-                    <input type="number" id="item-calorie" required min="0" placeholder="例: 350" class="w-full px-3 py-2.5 bg-slate-200/80 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <input type="number" id="item-calorie" required min="0" placeholder="例: 350" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div class="flex items-center gap-2 pt-2">
                     <button type="submit" id="submit-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
@@ -557,15 +557,6 @@
         let freezeCount = parseInt(localStorage.getItem('calorie_freeze_count')) || 0;
 
         let weightChartInstance = null;
-
-        const cheerEvents = [
-            { emoji: "🌸", title: "ナイス減少！", msg: "おっ、軽くなりましたね！この調子！" },
-            { emoji: "🌸", title: "素晴らしい！", msg: "素晴らしい！努力の成果が出てますね！" },
-            { emoji: "🌸", title: "身体が軽い！", msg: "お見事！綺麗な桜色が舞い踊ります！" },
-            { emoji: "🌸", title: "好調キープ！", msg: "その調子！理想のボディへ一直線！" },
-            { emoji: "🌸", title: "フワッと軽快！", msg: "身体のキレが良くなってきましたね！" },
-            { emoji: "🌸", title: "お見事です！", msg: "マイナス0.1kg達成！小さな積み重ねが最強！" }
-        ];
 
         window.addEventListener('DOMContentLoaded', () => {
             updateDateDisplay();
@@ -753,7 +744,7 @@
         function renderRecommendedFoods() {
             const container = document.getElementById('recommended-foods-container');
             if (!recommendedFoods || recommendedFoods.length === 0) {
-                container.innerHTML = '<span class="text-[10px] text-amber-700/70 py-1">おすすめの食品はありません</span>';
+                container.innerHTML = '<span class="text-[10px] text-amber-900/70 py-1">おすすめの食品はありません</span>';
                 return;
             }
             let html = '';
@@ -813,13 +804,13 @@
         function renderFavoriteFoods() {
             const container = document.getElementById('favorite-foods-container');
             if (!favoriteFoods || favoriteFoods.length === 0) {
-                container.innerHTML = '<span class="text-[10px] text-slate-400 py-1">登録された食品はありません</span>';
+                container.innerHTML = '<span class="text-[10px] text-sky-900/70 py-1">登録された食品はありません</span>';
                 return;
             }
             let html = '';
             favoriteFoods.forEach((item, index) => {
                 html += `
-                    <div class="inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-emerald-400 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
+                    <div class="inline-flex items-center gap-1 bg-white border border-sky-300 hover:border-sky-500 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
                         <button type="button" onclick="selectFavoriteFood('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1">
                             <span>${escapeHtml(item.name)}</span>
                             <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
