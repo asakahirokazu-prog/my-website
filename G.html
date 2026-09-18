@@ -85,6 +85,11 @@
         <div id="view-category" class="hidden flex flex-col h-full justify-between py-0.5">
             
             <div id="container-form" class="flex flex-col space-y-2 flex-1 justify-start pt-0">
+                <!-- Registration date indicator -->
+                <div id="form-date-indicator" class="text-xs font-semibold text-emerald-700 px-1 hidden">
+                    登録日時: <span>-</span>
+                </div>
+
                 <div class="space-y-0.5">
                     <div class="flex items-center justify-between px-1">
                         <label class="block text-xs font-semibold text-slate-700">
@@ -227,6 +232,8 @@
                 document.getElementById('input-swing').value = '';
                 this.currentIndex = -1;
                 this.updateCountButtonUI();
+                const dateIndicator = document.getElementById('form-date-indicator');
+                dateIndicator.classList.add('hidden');
             }
 
             // Copy only address data
@@ -469,10 +476,14 @@
                 
                 document.getElementById('input-address').value = item.address === '（未入力）' ? '' : item.address;
                 document.getElementById('input-swing').value = item.swing === '（未入力）' ? '' : item.swing;
+                
+                const dateIndicator = document.getElementById('form-date-indicator');
+                dateIndicator.querySelector('span').textContent = dateStr;
+                dateIndicator.classList.remove('hidden');
+
                 this.updateInputIndicator();
                 this.updateCountButtonUI();
-                const countVal = typeof item.count === 'number' ? item.count : 0;
-                this.showToast(`[${dateStr}] のデータを読み込みました (👌 ${countVal})`);
+                this.showToast(`[${dateStr}] のデータを読み込みました`);
             }
 
             // Update input mode record indicator text
