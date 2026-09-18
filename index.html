@@ -20,7 +20,7 @@
       max-width: 600px;
       margin: 40px auto;
       padding: 0 20px;
-      touch-action: pan-y; /* 縦スクロールを許可しつつタッチ操作を受け付ける */
+      touch-action: pan-y;
     }
 
     h1 {
@@ -108,7 +108,7 @@
       cursor: grab;
       padding: 4px;
       flex-shrink: 0;
-      touch-action: none; /* ハンドル部分でのブラウザデフォルトのスクロール等を無効化 */
+      touch-action: none;
     }
 
     .drag-handle:active {
@@ -197,7 +197,6 @@
 
         const handle = li.querySelector('.drag-handle');
 
-        // ポインターイベント（マウス・タッチ・ペン共通で安定動作）
         handle.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           draggedIndex = index;
@@ -249,7 +248,8 @@
         title: titleInput.value.trim(),
         url: urlInput.value.trim()
       };
-      links.push(newLink);
+      // 配列の先頭に追加 (unshift)
+      links.unshift(newLink);
       saveAndRender();
       titleInput.value = '';
       urlInput.value = '';
