@@ -32,14 +32,11 @@
             <h1 id="app-title" class="text-base font-bold tracking-wide text-slate-700">ゴルフスイング課題管理</h1>
         </div>
         <div id="header-right">
-            <button id="btn-header-back" onclick="app.goHome()" class="hidden bg-emerald-100 hover:bg-emerald-200 active:scale-95 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-200 shadow-xs transition-all flex items-center space-x-1">
-                <span>🏠</span>
-                <span>ホーム</span>
-            </button>
+            <!-- Header right element removed as requested -->
         </div>
     </header>
 
-    <main class="flex-1 overflow-hidden relative p-4 flex flex-col justify-center max-w-md mx-auto w-full">
+    <main class="flex-1 overflow-y-auto relative p-4 flex flex-col justify-center max-w-md mx-auto w-full">
 
         <div id="view-home" class="flex flex-col justify-center space-y-4 h-full py-2">
             <div class="text-center mb-1">
@@ -98,7 +95,7 @@
                             <span>コピー</span>
                         </button>
                     </div>
-                    <textarea id="input-address" rows="7" placeholder="例：ボール位置が左すぎないか確認。スタンス幅を肩幅に。" class="w-full bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
+                    <textarea id="input-address" rows="5" placeholder="例：ボール位置が左すぎないか確認。スタンス幅を肩幅に。" class="w-full bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
                 </div>
 
                 <div class="space-y-0.5">
@@ -111,7 +108,7 @@
                             <span>コピー</span>
                         </button>
                     </div>
-                    <textarea id="input-swing" rows="7" placeholder="例：トップで右脇が開かないように回す。フィニッシュまで振り切る。" class="w-full bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
+                    <textarea id="input-swing" rows="5" placeholder="例：トップで右脇が開かないように回す。フィニッシュまで振り切る。" class="w-full bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
                 </div>
 
                 <div class="flex items-center space-x-2 pt-0.5">
@@ -200,7 +197,6 @@
                 this.currentCategory = category;
                 
                 document.getElementById('app-title').textContent = `${category}の課題`;
-                document.getElementById('btn-header-back').classList.remove('hidden');
                 
                 document.getElementById('view-home').classList.add('hidden');
                 document.getElementById('view-category').classList.remove('hidden');
@@ -218,7 +214,6 @@
                 this.currentCategory = null;
                 
                 document.getElementById('app-title').textContent = 'ゴルフスイング課題管理';
-                document.getElementById('btn-header-back').classList.add('hidden');
                 
                 document.getElementById('view-category').classList.add('hidden');
                 document.getElementById('view-home').classList.remove('hidden');
