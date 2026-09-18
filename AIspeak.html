@@ -13,14 +13,19 @@
             from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        /* Custom modal styles */
+        .custom-modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+        }
     </style>
 </head>
 <body class="bg-amber-50/60 min-h-screen text-slate-800 font-sans pb-12 text-xs">
 
     <!-- ヘッダー -->
     <header class="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 text-center shadow-sm">
-        <h1 class="text-lg font-black tracking-wider">🌟 臨場感英会話 AI Maker</h1>
-        <p class="text-[11px] font-medium opacity-95 mt-1">スマホでサクサク！秒速プロンプト作成</p>
+        <h1 class="text-lg font-black tracking-wider">🌟 AIと英会話をしたいです。</h1>
+        <p class="text-[11px] font-medium opacity-95 mt-1">スマホでサクサク！秒速プロンプト作成メーカー</p>
     </header>
 
     <!-- メインコンテナ -->
@@ -140,7 +145,27 @@
 
     </main>
 
+    <!-- カスタム通知モーダル -->
+    <div id="custom-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden custom-modal-backdrop">
+        <div class="bg-white rounded-2xl p-5 max-w-xs w-full shadow-lg border border-orange-100 text-center space-y-3">
+            <div id="modal-icon" class="text-2xl">✨</div>
+            <div id="modal-message" class="text-xs font-bold text-slate-800 leading-relaxed">通知メッセージ</div>
+            <button onclick="closeModal()" class="w-full bg-orange-500 text-white py-2 rounded-xl text-xs font-bold shadow-xs tap-active">OK</button>
+        </div>
+    </div>
+
     <script>
+        // カスタムメッセージボックス（alert禁止対応）
+        function showModal(message, icon = "✨") {
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('modal-icon').innerText = icon;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
         // デフォルト初期値
         const DEFAULT_NOTES = [
             "AIからどんどん話しかける",
@@ -153,7 +178,7 @@
             { title: '中学英語＋簡単質問＋世間話', content: '②中学校英語レベルでAIが簡単な質問をし、最後に世間話が入る' }
         ];
 
-        let db = JSON.parse(localStorage.getItem('tapulse_db_v9')) || {
+        let db = JSON.parse(localStorage.getItem('tapulse_db_v10')) || {
             me: DEFAULT_ME,
             situations: [{
                 title: 'カフェで注文', 
@@ -165,7 +190,7 @@
         };
 
         function saveDB() {
-            localStorage.setItem('tapulse_db_v9', JSON.stringify(db));
+            localStorage.setItem('tapulse_db_v10', JSON.stringify(db));
             renderSummary();
             renderLists();
         }
@@ -297,7 +322,9 @@
                 content: '中学校英語レベルで会話する'
             };
 
-            const promptText = `【ロールプレイ設定】
+            const promptText = `AIと英会話をしたいです。
+
+【ロールプレイ設定】
 ・シチュエーション: ${sit.title}
 ・あなた（AI）の役割: ${sit.aiRole}
 ・私（ユーザー）の目的: ${sit.myGoal}
@@ -319,7 +346,7 @@ ${db.notes.map(n => '- ' + n).join('\n')}
             const textarea = document.getElementById('prompt-result');
             textarea.select();
             document.execCommand('copy');
-            alert('プロンプトをコピーしました！ChatGPTに貼り付けてください。');
+            showModal('プロンプトをコピーしました！ChatGPTに貼り付けてください。', '📋');
         }
 
         // 初期描画
