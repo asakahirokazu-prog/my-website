@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ゴルフスイング課題管理</title>
+    <title>Swing-VAR</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -29,7 +29,7 @@
     <header class="bg-white/90 backdrop-blur-md border-b border-emerald-100/80 px-4 py-3 flex items-center justify-between shrink-0 shadow-xs">
         <div class="flex items-center space-x-2">
             <span class="text-emerald-600 text-xl font-bold">⛳️</span>
-            <h1 id="app-title" class="text-base font-bold tracking-wide text-slate-700">ゴルフスイング課題管理</h1>
+            <h1 id="app-title" class="text-base font-bold tracking-wide text-slate-700">Swing-VAR</h1>
         </div>
         <div id="header-right">
             <!-- Home button placed on the right side of the header title area when in category view -->
@@ -221,7 +221,7 @@
             goHome() {
                 this.currentCategory = null;
                 
-                document.getElementById('app-title').textContent = 'ゴルフスイング課題管理';
+                document.getElementById('app-title').textContent = 'Swing-VAR';
                 // Hide header home button when back on home view
                 document.getElementById('btn-header-home').classList.remove('flex');
                 document.getElementById('btn-header-home').classList.add('hidden');
