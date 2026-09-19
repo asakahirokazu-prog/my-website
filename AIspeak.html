@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TalkPulse AI 英会話ジェネレーター</title>
+    <title>TalkPulse AI 英会話ジェネレーター (IndexedDB)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .tap-active:active { transform: scale(0.97); }
@@ -13,7 +13,6 @@
             from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Custom modal styles */
         .custom-modal-backdrop {
             background-color: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(2px);
@@ -22,18 +21,16 @@
 </head>
 <body class="bg-amber-50/60 min-h-screen text-slate-800 font-sans pb-12 text-xs">
 
-    <!-- ヘッダー -->
     <header class="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-4 text-center shadow-sm">
         <h1 class="text-lg font-black tracking-wider">🌟 AIと英会話をしたいです。</h1>
-        <p class="text-[11px] font-medium opacity-95 mt-1">スマホでサクサク！秒速プロンプト作成メーカー</p>
+        <p class="text-[11px] font-medium opacity-95 mt-1">IndexedDB保存対応！秒速プロンプト作成メーカー</p>
     </header>
 
     <!-- メインコンテナ -->
     <main class="max-w-md mx-auto p-4 space-y-4">
 
-        <!-- トップビュー：メインアクション＆サブ登録 -->
+        <!-- トップビュー -->
         <div id="top-view" class="space-y-4 mt-2">
-            <!-- 特大メインボタン：マスタ呼び出し -->
             <div>
                 <button onclick="openCallView()" class="tap-active w-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white font-black py-7 px-4 rounded-2xl shadow-md flex flex-col items-center justify-center hover:opacity-95 transition transform hover:-translate-y-0.5 border border-white/25">
                     <span class="text-3xl mb-1 animate-bounce">🚀</span>
@@ -42,7 +39,6 @@
                 </button>
             </div>
 
-            <!-- 小さめのサブボタン：マスタ登録 -->
             <div class="flex justify-center">
                 <button onclick="switchView('register-view')" class="tap-active bg-white border border-orange-200 text-orange-700 font-bold py-2.5 px-6 rounded-full shadow-xs flex items-center gap-2 hover:bg-orange-50 transition text-xs">
                     <span class="text-sm">📝</span>
@@ -50,10 +46,13 @@
                 </button>
             </div>
 
-            <!-- 現在の登録状況サマリ -->
+            <!-- ストック状況サマリ -->
             <div class="bg-white rounded-xl p-3.5 shadow-xs border border-orange-100 space-y-1.5">
-                <div class="font-bold text-xs text-orange-800 mb-1">📌 現在のストック状況</div>
-                <div id="summary-text" class="text-slate-600 text-[11px] leading-relaxed">読み込み中...</div>
+                <div class="flex items-center justify-between">
+                    <div class="font-bold text-xs text-orange-800">📌 現在のストック状況 (IndexedDB)</div>
+                    <span id="db-status-badge" class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">接続中...</span>
+                </div>
+                <div id="summary-text" class="text-slate-600 text-[11px] leading-relaxed">データを読み込んでいます...</div>
             </div>
         </div>
 
@@ -64,7 +63,6 @@
                 <button onclick="switchView('top-view')" class="text-[11px] bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full font-bold shadow-xs">戻る</button>
             </div>
 
-            <!-- タブナビゲーションボタン群 -->
             <div class="grid grid-cols-4 gap-1 bg-orange-200/80 p-1 rounded-xl">
                 <button onclick="switchTab('tab-me', this)" class="reg-tab-btn py-2 px-1 text-[11px] font-black rounded-lg text-center transition bg-white text-orange-900 shadow-xs">自分</button>
                 <button onclick="switchTab('tab-sit', this)" class="reg-tab-btn py-2 px-1 text-[11px] font-black rounded-lg text-center transition text-slate-700">シチュ</button>
@@ -155,7 +153,7 @@
     </div>
 
     <script>
-        // カスタムメッセージボックス（alert禁止対応）
+        // カスタムメッセージボックス
         function showModal(message, icon = "✨") {
             document.getElementById('modal-message').innerText = message;
             document.getElementById('modal-icon').innerText = icon;
@@ -174,23 +172,236 @@
         ];
         const DEFAULT_ME = ["ゴルフが好き", "日常会話をスムーズにしたい"];
         const DEFAULT_LEVELS = [
-            { title: '中学英語＋簡単質問', content: '①中学校英語レベルでAIが簡単な質問をする' },
-            { title: '中学英語＋簡単質問＋世間話', content: '②中学校英語レベルでAIが簡単な質問をし、最後に世間話が入る' }
+            { id: 1, title: '中学英語＋簡単質問', content: '①中学校英語レベルでAIが簡単な質問をする' },
+            { id: 2, title: '中学英語＋簡単質問＋世間話', content: '②中学校英語レベルでAIが簡単な質問をし、最後に世間話が入る' }
+        ];
+        const DEFAULT_SITUATIONS = [
+            { id: 1, title: 'カフェで注文', aiRole: 'フレンドリーなカフェ店員Alex', myGoal: 'オーツミルク変更をクリアに伝える' }
         ];
 
-        let db = JSON.parse(localStorage.getItem('tapulse_db_v10')) || {
-            me: DEFAULT_ME,
-            situations: [{
-                title: 'カフェで注文', 
-                aiRole: 'フレンドリーなカフェ店員Alex', 
-                myGoal: 'オーツミルク変更をクリアに伝える'
-            }],
+        // IndexedDB 管理変数
+        let dbInstance = null;
+        const DB_NAME = 'TalkPulseDB';
+        const DB_VERSION = 1;
+
+        let dbData = {
+            me: [...DEFAULT_ME],
+            situations: [...DEFAULT_SITUATIONS],
             levels: [...DEFAULT_LEVELS],
             notes: [...DEFAULT_NOTES]
         };
 
-        function saveDB() {
-            localStorage.setItem('tapulse_db_v10', JSON.stringify(db));
+        // IndexedDB 接続の初期化
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                if (!window.indexedDB) {
+                    console.warn("IndexedDB is not supported. Falling back to localStorage.");
+                    loadFromLocalStorageFallback();
+                    resolve(false);
+                    return;
+                }
+
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = (event) => {
+                    console.error("IndexedDB error: ", event.target.error);
+                    loadFromLocalStorageFallback();
+                    resolve(false);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    // 各マスタデータ用オブジェクトストアを作成
+                    const stores = ['me', 'situations', 'levels', 'notes'];
+                    stores.forEach(storeName => {
+                        if (!database.objectStoreNames.contains(storeName)) {
+                            database.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+                        }
+                    });
+                };
+
+                request.onsuccess = (event) => {
+                    dbInstance = event.target.result;
+                    document.getElementById('db-status-badge').innerText = "IndexedDB稼働中";
+                    document.getElementById('db-status-badge').className = "bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-bold";
+                    
+                    // 初回起動時や空のときに既存LocalStorageデータからの移行またはデフォルト登録を行う
+                    checkAndSeedData().then(() => {
+                        loadAllDataFromDB().then(() => resolve(true));
+                    });
+                };
+            });
+        }
+
+        // LocalStorage フォールバック読み込み
+        function loadFromLocalStorageFallback() {
+            document.getElementById('db-status-badge').innerText = "LocalStorage稼働中";
+            document.getElementById('db-status-badge').className = "bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold";
+            const saved = localStorage.getItem('tapulse_db_v10');
+            if (saved) {
+                try {
+                    dbData = JSON.parse(saved);
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+            renderSummary();
+            renderLists();
+        }
+
+        // 初期データチェック＆シード / 旧LocalStorageからのマイグレーション
+        function checkAndSeedData() {
+            return new Promise((resolve) => {
+                const stores = ['me', 'situations', 'levels', 'notes'];
+                let checkedCount = 0;
+                let isEmpty = true;
+
+                stores.forEach(storeName => {
+                    const transaction = dbInstance.transaction(storeName, 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const countReq = store.count();
+
+                    countReq.onsuccess = () => {
+                        if (countReq.result > 0) {
+                            isEmpty = false;
+                        }
+                        checkedCount++;
+                        if (checkedCount === stores.length) {
+                            if (isEmpty) {
+                                // データが空の場合、旧LocalStorageがあれば移行、なければデフォルトを入れる
+                                const oldData = localStorage.getItem('tapulse_db_v10');
+                                if (oldData) {
+                                    try {
+                                        const parsed = JSON.parse(oldData);
+                                        seedParsedDataToDB(parsed).then(() => resolve());
+                                        return;
+                                    } catch(e) {}
+                                }
+                                // デフォルトデータを投入
+                                seedDefaultDataToDB().then(() => resolve());
+                            } else {
+                                resolve();
+                            }
+                        }
+                    };
+                });
+            });
+        }
+
+        function seedDefaultDataToDB() {
+            return new Promise((resolve) => {
+                const transaction = dbInstance.transaction(['me', 'situations', 'levels', 'notes'], 'readwrite');
+                
+                DEFAULT_ME.forEach(item => transaction.objectStore('me').add({ text: item }));
+                DEFAULT_SITUATIONS.forEach(item => transaction.objectStore('situations').add(item));
+                DEFAULT_LEVELS.forEach(item => transaction.objectStore('levels').add(item));
+                DEFAULT_NOTES.forEach(item => transaction.objectStore('notes').add({ text: item }));
+
+                transaction.oncomplete = () => resolve();
+            });
+        }
+
+        function seedParsedDataToDB(parsed) {
+            return new Promise((resolve) => {
+                const transaction = dbInstance.transaction(['me', 'situations', 'levels', 'notes'], 'readwrite');
+                
+                if (parsed.me) parsed.me.forEach(text => transaction.objectStore('me').add({ text }));
+                if (parsed.situations) parsed.situations.forEach(item => {
+                    const cleanItem = { title: item.title, aiRole: item.aiRole, myGoal: item.myGoal };
+                    transaction.objectStore('situations').add(cleanItem);
+                });
+                if (parsed.levels) parsed.levels.forEach(item => {
+                    const cleanItem = { title: item.title, content: item.content };
+                    transaction.objectStore('levels').add(cleanItem);
+                });
+                if (parsed.notes) parsed.notes.forEach(text => transaction.objectStore('notes').add({ text }));
+
+                transaction.oncomplete = () => resolve();
+            });
+        }
+
+        // DBから全データを取得してメモリ上の dbData を更新
+        function loadAllDataFromDB() {
+            return new Promise((resolve) => {
+                if (!dbInstance) {
+                    resolve();
+                    return;
+                }
+
+                const stores = ['me', 'situations', 'levels', 'notes'];
+                let loadedCount = 0;
+                const newDbData = { me: [], situations: [], levels: [], notes: [] };
+
+                stores.forEach(storeName => {
+                    const transaction = dbInstance.transaction(storeName, 'readonly');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.getAll();
+
+                    request.onsuccess = (event) => {
+                        const records = event.target.result;
+                        if (storeName === 'me' || storeName === 'notes') {
+                            newDbData[storeName] = records.map(r => r.text);
+                        } else {
+                            newDbData[storeName] = records;
+                        }
+                        loadedCount++;
+                        if (loadedCount === stores.length) {
+                            dbData = newDbData;
+                            // バックアップ用にLocalStorageにも同期保存
+                            localStorage.setItem('tapulse_db_v10', JSON.stringify(dbData));
+                            renderSummary();
+                            renderLists();
+                            resolve();
+                        }
+                    };
+                });
+            });
+        }
+
+        // データを追加する共通関数
+        function addRecordToDB(storeName, valueObj) {
+            if (!dbInstance) {
+                // フォールバック
+                if (storeName === 'me' || storeName === 'notes') {
+                    dbData[storeName].push(valueObj.text);
+                } else {
+                    dbData[storeName].push(valueObj);
+                }
+                saveDBFallback();
+                return;
+            }
+
+            const transaction = dbInstance.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            store.add(valueObj);
+
+            transaction.oncomplete = () => {
+                loadAllDataFromDB();
+            };
+        }
+
+        // データを削除する共通関数
+        function removeRecordFromDB(storeName, id) {
+            if (!dbInstance) {
+                // フォールバック
+                dbData[storeName].splice(id, 1);
+                saveDBFallback();
+                return;
+            }
+
+            // IndexedDBの場合、レコードのキー(id)で削除
+            // 注意: リスト上のインデックスではなく、DBのidが必要。UI側でレコードのidを持つように調整する。
+            const transaction = dbInstance.transaction(storeName, 'readwrite');
+            const store = transaction.objectStore(storeName);
+            store.delete(id);
+
+            transaction.oncomplete = () => {
+                loadAllDataFromDB();
+            };
+        }
+
+        function saveDBFallback() {
+            localStorage.setItem('tapulse_db_v10', JSON.stringify(dbData));
             renderSummary();
             renderLists();
         }
@@ -218,52 +429,98 @@
         function renderSummary() {
             const sumEl = document.getElementById('summary-text');
             sumEl.innerHTML = `
-                自分設定: <strong class="text-orange-900">${db.me.length}</strong>件 | シチュエーション: <strong class="text-orange-900">${db.situations.length}</strong>個 | レベル: <strong class="text-orange-900">${db.levels.length}</strong>個 | 特記: <strong class="text-orange-900">${db.notes.length}</strong>件
+                自分設定: <strong class="text-orange-900">${dbData.me.length}</strong>件 | シチュエーション: <strong class="text-orange-900">${dbData.situations.length}</strong>個 | レベル: <strong class="text-orange-900">${dbData.levels.length}</strong>個 | 特記: <strong class="text-orange-900">${dbData.notes.length}</strong>件
             `;
         }
 
         function renderLists() {
-            document.getElementById('list-me').innerHTML = db.me.map((item, idx) => 
-                `<span class="bg-orange-100/80 text-orange-900 text-[11px] px-3 py-1 rounded-full flex items-center gap-1.5 border border-orange-200 font-medium">${item} <button onclick="removeItem('me', ${idx})" class="font-black text-orange-600 text-sm">×</button></span>`
+            // me データの描画（IndexedDB利用時はストア内のオブジェクトにidが付与されている想定で取得）
+            // ローカルストレージフォールバック時は単純な配列インデックスまたはIndexedDB全件取得結果のオブジェクトを表示
+            fetchAndRenderStoreItems();
+        }
+
+        // 各ストアの生データをID付きで取得してリスト描画する
+        function fetchAndRenderStoreItems() {
+            if (!dbInstance) {
+                renderListsFromMemory();
+                return;
+            }
+
+            const stores = ['me', 'situations', 'levels', 'notes'];
+            const fetched = {};
+            let count = 0;
+
+            stores.forEach(storeName => {
+                const transaction = dbInstance.transaction(storeName, 'readonly');
+                const store = transaction.objectStore(storeName);
+                const req = store.getAllKeys();
+                const reqVal = store.getAll();
+
+                reqVal.onsuccess = (e) => {
+                    const values = e.target.result;
+                    const keys = req.result;
+                    fetched[storeName] = values.map((val, idx) => {
+                        return typeof val === 'object' ? { ...val, _id: keys[idx] } : { text: val, _id: keys[idx] };
+                    });
+
+                    count++;
+                    if (count === stores.length) {
+                        renderListsDOM(fetched);
+                    }
+                };
+            });
+        }
+
+        function renderListsFromMemory() {
+            const fetched = {
+                me: dbData.me.map((t, i) => ({ text: t, _id: i })),
+                situations: dbData.situations.map((s, i) => ({ ...s, _id: i })),
+                levels: dbData.levels.map((l, i) => ({ ...l, _id: i })),
+                notes: dbData.notes.map((n, i) => ({ text: n, _id: i }))
+            };
+            renderListsDOM(fetched);
+        }
+
+        function renderListsDOM(data) {
+            document.getElementById('list-me').innerHTML = data.me.map((item) => 
+                `<span class="bg-orange-100/80 text-orange-900 text-[11px] px-3 py-1 rounded-full flex items-center gap-1.5 border border-orange-200 font-medium">${item.text} <button onclick="removeItem('me', ${item._id})" class="font-black text-orange-600 text-sm">×</button></span>`
             ).join('');
 
-            document.getElementById('list-sit').innerHTML = db.situations.map((s, idx) => `
+            document.getElementById('list-sit').innerHTML = data.situations.map((s) => `
                 <div class="text-[11px] bg-orange-50/40 p-3 rounded-lg space-y-1 border border-orange-100">
                     <div class="flex justify-between items-center font-bold text-slate-900">
                         <span class="text-xs">${s.title}</span>
-                        <button onclick="removeItem('situations', ${idx})" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded text-[10px]">削除</button>
+                        <button onclick="removeItem('situations', ${s._id})" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded text-[10px]">削除</button>
                     </div>
                     <div class="text-slate-600">🤖 役割: ${s.aiRole}</div>
                     <div class="text-slate-600">🎯 目的: ${s.myGoal}</div>
                 </div>
             `).join('');
 
-            document.getElementById('list-level').innerHTML = db.levels.map((l, idx) => `
+            document.getElementById('list-level').innerHTML = data.levels.map((l) => `
                 <div class="text-[11px] bg-orange-50/40 p-3 rounded-lg space-y-1 border border-orange-100">
                     <div class="flex justify-between items-center font-bold text-slate-900">
                         <span class="text-xs">${l.title}</span>
-                        <button onclick="removeItem('levels', ${idx})" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded text-[10px]">削除</button>
+                        <button onclick="removeItem('levels', ${l._id})" class="text-rose-600 font-bold px-2 py-0.5 bg-rose-50 rounded text-[10px]">削除</button>
                     </div>
                     <div class="text-slate-600">📄 内容: ${l.content}</div>
                 </div>
             `).join('');
 
-            document.getElementById('list-note').innerHTML = db.notes.map((item, idx) => 
-                `<span class="bg-slate-100 text-slate-800 text-[11px] px-3 py-1 rounded-full flex items-center gap-1.5 font-medium border border-slate-200">${item} <button onclick="removeItem('notes', ${idx})" class="font-black text-slate-500 text-sm">×</button></span>`
+            document.getElementById('list-note').innerHTML = data.notes.map((item) => 
+                `<span class="bg-slate-100 text-slate-800 text-[11px] px-3 py-1 rounded-full flex items-center gap-1.5 font-medium border border-slate-200">${item.text} <button onclick="removeItem('notes', ${item._id})" class="font-black text-slate-500 text-sm">×</button></span>`
             ).join('');
         }
 
-        function removeItem(key, idx) {
-            db[key].splice(idx, 1);
-            saveDB();
+        function removeItem(key, id) {
+            removeRecordFromDB(key, id);
         }
 
         function addMe() {
             const val = document.getElementById('input-me').value.trim();
             if(!val) return;
-            db.me.push(val);
+            addRecordToDB('me', { text: val });
             document.getElementById('input-me').value = '';
-            saveDB();
         }
 
         function addSituation() {
@@ -271,29 +528,26 @@
             const aiRole = document.getElementById('sit-ai-role').value.trim();
             const myGoal = document.getElementById('sit-my-goal').value.trim();
             if(!title || !aiRole || !myGoal) return;
-            db.situations.push({title, aiRole, myGoal});
+            addRecordToDB('situations', { title, aiRole, myGoal });
             document.getElementById('sit-title').value = '';
             document.getElementById('sit-ai-role').value = '';
             document.getElementById('sit-my-goal').value = '';
-            saveDB();
         }
 
         function addLevel() {
             const title = document.getElementById('level-title').value.trim();
             const content = document.getElementById('level-content').value.trim();
             if(!title || !content) return;
-            db.levels.push({title, content});
+            addRecordToDB('levels', { title, content });
             document.getElementById('level-title').value = '';
             document.getElementById('level-content').value = '';
-            saveDB();
         }
 
         function addNote() {
             const val = document.getElementById('input-note').value.trim();
             if(!val) return;
-            db.notes.push(val);
+            addRecordToDB('notes', { text: val });
             document.getElementById('input-note').value = '';
-            saveDB();
         }
 
         function openCallView() {
@@ -302,22 +556,22 @@
 
         function populateCallSelects() {
             const sSel = document.getElementById('call-sit');
-            sSel.innerHTML = db.situations.map((s, i) => `<option value="${i}">${s.title}（役:${s.aiRole} / 目:${s.myGoal}）</option>`).join('');
+            sSel.innerHTML = dbData.situations.map((s, i) => `<option value="${i}">${s.title}（役:${s.aiRole} / 目:${s.myGoal}）</option>`).join('');
 
             const lSel = document.getElementById('call-level');
-            lSel.innerHTML = db.levels.map((l, i) => `<option value="${i}">${l.title}</option>`).join('');
+            lSel.innerHTML = dbData.levels.map((l, i) => `<option value="${i}">${l.title}</option>`).join('');
         }
 
         function generatePrompt() {
             const sIdx = document.getElementById('call-sit').value;
             const lIdx = document.getElementById('call-level').value;
 
-            const sit = db.situations[sIdx] || {
+            const sit = dbData.situations[sIdx] || {
                 title: '会話', 
                 aiRole: '対話相手', 
                 myGoal: 'スムーズにやり取りする'
             };
-            const levelObj = db.levels[lIdx] || {
+            const levelObj = dbData.levels[lIdx] || {
                 title: '標準レベル',
                 content: '中学校英語レベルで会話する'
             };
@@ -331,10 +585,10 @@
 ・英語レベル・方針: ${levelObj.content}
 
 【私（ユーザー）について】
-${db.me.map(m => '- ' + m).join('\n')}
+${dbData.me.map(m => '- ' + m).join('\n')}
 
 【特別ルール】
-${db.notes.map(n => '- ' + n).join('\n')}
+${dbData.notes.map(n => '- ' + n).join('\n')}
 
 さあ、上記の役割になりきって、シチュエーションの最初のセリフ（英語）からロールプレイを開始してください！`;
 
@@ -349,8 +603,10 @@ ${db.notes.map(n => '- ' + n).join('\n')}
             showModal('プロンプトをコピーしました！ChatGPTに貼り付けてください。', '📋');
         }
 
-        // 初期描画
-        saveDB();
+        // アプリ起動時にIndexedDBを初期化
+        window.onload = function() {
+            initIndexedDB();
+        };
     </script>
 </body>
 </html>
