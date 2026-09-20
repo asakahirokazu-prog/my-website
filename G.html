@@ -80,14 +80,22 @@
 
         <div id="view-category" class="hidden flex flex-col h-full justify-between py-0.5">
             
-            <div id="container-form" class="flex flex-col space-y-2 flex-1 justify-start pt-0">
+            <div id="container-form" class="flex flex-col space-y-3 flex-1 justify-start pt-0">
                 <!-- Registration date indicator -->
                 <div id="form-date-indicator" class="text-xs font-semibold text-emerald-700 px-1 hidden">
                     登録日時: <span>-</span>
                 </div>
 
-                <div class="space-y-0.5">
-                    <div class="flex items-center justify-between px-1">
+                <!-- Tab Navigation Buttons -->
+                <div class="flex rounded-xl bg-slate-300/70 p-1 space-x-1 shrink-0">
+                    <button type="button" id="tab-btn-address" onclick="app.switchTab('address')" class="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-700 transition-all shadow-xs bg-white text-emerald-700">アドレス</button>
+                    <button type="button" id="tab-btn-swing" onclick="app.switchTab('swing')" class="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-700 transition-all">スイング</button>
+                    <button type="button" id="tab-btn-diary" onclick="app.switchTab('diary')" class="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-700 transition-all">日記</button>
+                </div>
+
+                <!-- Tab Contents -->
+                <div id="tab-content-address" class="space-y-0.5 flex-1 flex flex-col">
+                    <div class="flex items-center justify-between px-1 mb-1">
                         <label class="block text-xs font-semibold text-slate-700">
                             ■ アドレスの課題・意識
                         </label>
@@ -102,11 +110,11 @@
                             </button>
                         </div>
                     </div>
-                    <textarea id="input-address" rows="3" placeholder="例：ボール位置が左すぎないか確認。スタンス幅を肩幅に。" class="w-full bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
+                    <textarea id="input-address" rows="5" placeholder="例：ボール位置が左すぎないか確認。スタンス幅を肩幅に。" class="w-full flex-1 bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
                 </div>
 
-                <div class="space-y-0.5">
-                    <div class="flex items-center justify-between px-1">
+                <div id="tab-content-swing" class="space-y-0.5 flex-1 flex flex-col hidden">
+                    <div class="flex items-center justify-between px-1 mb-1">
                         <label class="block text-xs font-semibold text-slate-700">
                             ■ スイングの課題・意識
                         </label>
@@ -121,11 +129,11 @@
                             </button>
                         </div>
                     </div>
-                    <textarea id="input-swing" rows="3" placeholder="例：トップで右脇が開かないように回す。フィニッシュまで振り切る。" class="w-full bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
+                    <textarea id="input-swing" rows="5" placeholder="例：トップで右脇が開かないように回す。フィニッシュまで振り切る。" class="w-full flex-1 bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
                 </div>
 
-                <div class="space-y-0.5">
-                    <div class="flex items-center justify-between px-1">
+                <div id="tab-content-diary" class="space-y-0.5 flex-1 flex flex-col hidden">
+                    <div class="flex items-center justify-between px-1 mb-1">
                         <label class="block text-xs font-semibold text-slate-700">
                             ■ 日記
                         </label>
@@ -140,7 +148,7 @@
                             </button>
                         </div>
                     </div>
-                    <textarea id="input-diary" rows="3" placeholder="例：今日はドライバーの捕まりが良くて飛距離が伸びた。" class="w-full bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
+                    <textarea id="input-diary" rows="5" placeholder="例：今日はドライバーの捕まりが良くて飛距離が伸びた。" class="w-full flex-1 bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
                 </div>
 
                 <div class="flex items-center justify-end space-x-2 pt-0.5">
@@ -174,8 +182,29 @@
                 this.currentCategory = null;
                 this.histories = [];
                 this.currentIndex = -1; // -1 means currently viewing the new blank input state
+                this.currentTab = 'address'; // 'address', 'swing', 'diary'
                 
                 this.initDB();
+            }
+
+            // Switch tabs in category view
+            switchTab(tabName) {
+                this.currentTab = tabName;
+                
+                const tabs = ['address', 'swing', 'diary'];
+                tabs.forEach(t => {
+                    const btn = document.getElementById(`tab-btn-${t}`);
+                    const content = document.getElementById(`tab-content-${t}`);
+                    if (t === tabName) {
+                        btn.className = 'flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-700 transition-all shadow-xs bg-white text-emerald-700';
+                        content.classList.remove('hidden');
+                        content.classList.add('flex');
+                    } else {
+                        btn.className = 'flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-700 transition-all text-slate-500 hover:text-slate-700';
+                        content.classList.remove('flex');
+                        content.classList.add('hidden');
+                    }
+                });
             }
 
             // Initialize IndexedDB
@@ -471,7 +500,7 @@
                 }
             }
 
-            // Show toast notification
+            // Update total records count on home screen
             showToast(message, isError = false) {
                 const toast = document.getElementById('toast');
                 toast.textContent = message;
