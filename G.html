@@ -83,7 +83,7 @@
             <div id="container-form" class="flex flex-col space-y-3 flex-1 justify-start pt-0">
                 <!-- Registration date indicator -->
                 <div id="form-date-indicator" class="text-xs font-semibold text-emerald-700 px-1 hidden">
-                    登録日時: <span>-</span>
+                    登録日時: <span id="form-date-text">-</span>
                 </div>
 
                 <!-- Tab Navigation Buttons -->
@@ -472,14 +472,29 @@
             // Helper to populate form fields with selected history item
             loadCurrentHistoryItemToForm() {
                 const item = this.histories[this.currentIndex];
-                const dateStr = new Date(item.timestamp).toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const dateObj = new Date(item.timestamp);
+                const dateStr = dateObj.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
                 
                 document.getElementById('input-address').value = item.address === '（未入力）' ? '' : item.address;
                 document.getElementById('input-swing').value = item.swing === '（未入力）' ? '' : item.swing;
                 document.getElementById('input-diary').value = item.diary === '（未入力）' || !item.diary ? '' : item.diary;
                 
                 const dateIndicator = document.getElementById('form-date-indicator');
-                dateIndicator.querySelector('span').textContent = dateStr;
+                const dateTextSpan = document.getElementById('form-date-text');
+                dateTextSpan.textContent = dateStr;
+
+                // Check if the record date is today
+                const now = new Date();
+                const isToday = dateObj.getFullYear() === now.getFullYear() &&
+                                dateObj.getMonth() === now.getMonth() &&
+                                dateObj.getDate() === now.getDate();
+
+                if (isToday) {
+                    dateIndicator.className = 'text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-xl flex items-center justify-between shadow-sm';
+                } else {
+                    dateIndicator.className = 'text-xs font-semibold text-emerald-700 px-1';
+                }
+
                 dateIndicator.classList.remove('hidden');
 
                 this.updateInputIndicator();
