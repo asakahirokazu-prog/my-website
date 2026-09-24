@@ -69,6 +69,15 @@
         .modal.hidden .modal-content {
             transform: scale(0.95) translateY(10px);
         }
+        @keyframes toastFade {
+            0% { opacity: 0; transform: translateY(10px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-5px); }
+        }
+        .animate-toast {
+            animation: toastFade 1s ease forwards;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased overflow-y-auto">
@@ -323,7 +332,11 @@
 
     <!-- カロリー入力画面のモーダル -->
     <div id="calorie-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto relative">
+            
+            <!-- トースト通知用コンテナ -->
+            <div id="toast-container" class="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none"></div>
+
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <div class="bg-emerald-100 text-emerald-600 p-2 rounded-xl">
@@ -348,15 +361,18 @@
 
             <!-- おすすめタブコンテンツ -->
             <div id="tab-content-recommended" class="space-y-1.5 bg-amber-300/80 p-3 rounded-2xl border border-amber-400 shadow-inner">
+                <div class="text-[10px] font-bold text-amber-900 mb-1">💡 押下すると直接DB（記録）に登録されます（モーダルは閉じません）</div>
                 <div id="recommended-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
 
             <!-- いつもの食品タブコンテンツ -->
             <div id="tab-content-favorite" class="space-y-1.5 bg-sky-300/80 p-3 rounded-2xl border border-sky-400 shadow-inner hidden">
+                <div class="text-[10px] font-bold text-sky-900 mb-1">⭐ 押下すると直接DB（記録）に登録されます（モーダルは閉じません）</div>
                 <div id="favorite-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
 
-            <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs">
+            <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs pt-2 border-t border-slate-100">
+                <p class="text-[10px] font-bold text-slate-500">または手動で入力:</p>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">項目名 / 食品名</label>
                     <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -366,11 +382,11 @@
                         <label class="block font-semibold text-slate-600 uppercase text-[10px]">カロリー (kcal)</label>
                         <div class="flex items-center gap-2">
                             <button type="button" onclick="saveAsRecommended()" class="text-[10px] text-amber-800 hover:text-amber-900 font-bold flex items-center gap-0.5">
-                                <i data-lucide="plus" class="w-3 h-3"></i> おすすめ
+                                <i data-lucide="plus" class="w-3 h-3"></i> おすすめに登録
                             </button>
                             <span class="text-slate-300">|</span>
                             <button type="button" onclick="saveAsFavorite()" class="text-[10px] text-emerald-800 hover:text-emerald-900 font-bold flex items-center gap-0.5">
-                                <i data-lucide="plus" class="w-3 h-3"></i> いつもの
+                                <i data-lucide="plus" class="w-3 h-3"></i> いつものに登録
                             </button>
                         </div>
                     </div>
@@ -380,7 +396,7 @@
                     <button type="submit" id="submit-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
                         <i data-lucide="check" class="w-4 h-4"></i> <span>追加する</span>
                     </button>
-                    <button type="button" onclick="closeCalorieModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">キャンセル</button>
+                    <button type="button" onclick="closeCalorieModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">閉じる</button>
                 </div>
             </form>
         </div>
@@ -751,8 +767,8 @@
             recommendedFoods.forEach((item, index) => {
                 html += `
                     <div class="inline-flex items-center gap-1 bg-white border border-amber-300 hover:border-amber-500 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
-                        <button type="button" onclick="selectRecommendedFood('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1">
-                            <span>${escapeHtml(item.name)}</span>
+                        <button type="button" onclick="registerFoodDirectly('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1 hover:text-amber-600 transition">
+                            <span>⚡ ${escapeHtml(item.name)}</span>
                             <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
                         </button>
                         <button type="button" onclick="confirmRemoveRecommendedFood(${index}, '${escapeHtml(item.name)}')" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
@@ -765,9 +781,22 @@
             lucide.createIcons();
         }
 
-        function selectRecommendedFood(name, calorie) {
-            document.getElementById('item-name').value = name;
-            document.getElementById('item-calorie').value = calorie;
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg backdrop-blur-md animate-toast whitespace-nowrap";
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 1000);
+        }
+
+        function registerFoodDirectly(name, calorie) {
+            records.unshift({ id: Date.now().toString(), name, calorie, timestamp: new Date().toISOString() });
+            localStorage.setItem('calorie_records', JSON.stringify(records));
+            renderApp();
+            showToast("追加しました！");
         }
 
         function saveAsRecommended() {
@@ -811,8 +840,8 @@
             favoriteFoods.forEach((item, index) => {
                 html += `
                     <div class="inline-flex items-center gap-1 bg-white border border-sky-300 hover:border-sky-500 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
-                        <button type="button" onclick="selectFavoriteFood('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1">
-                            <span>${escapeHtml(item.name)}</span>
+                        <button type="button" onclick="registerFoodDirectly('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1 hover:text-sky-600 transition">
+                            <span>⚡ ${escapeHtml(item.name)}</span>
                             <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
                         </button>
                         <button type="button" onclick="confirmRemoveFavoriteFood(${index}, '${escapeHtml(item.name)}')" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
@@ -823,11 +852,6 @@
             });
             container.innerHTML = html;
             lucide.createIcons();
-        }
-
-        function selectFavoriteFood(name, calorie) {
-            document.getElementById('item-name').value = name;
-            document.getElementById('item-calorie').value = calorie;
         }
 
         function saveAsFavorite() {
