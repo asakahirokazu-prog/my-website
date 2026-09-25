@@ -63,7 +63,6 @@
       letter-spacing: -0.02em;
     }
 
-    /* 年月選択 ＆ 前月コピー コントロールバー */
     .controls-bar {
       display: flex;
       align-items: center;
@@ -136,19 +135,46 @@
       width: 100%;
     }
 
+    .card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .card-title {
       font-size: 0.9rem;
       font-weight: 700;
       color: var(--text-muted);
     }
 
+    /* ＋追加ボタン */
+    .btn-icon-add {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      line-height: 1;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-icon-add:active {
+      transform: scale(0.92);
+    }
+
     .header-amount-display {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: var(--text-main);
     }
 
-    /* 口座金額入力エリア */
     .amount-input-wrapper {
       position: relative;
       display: flex;
@@ -180,104 +206,53 @@
       margin: 4px 0;
     }
 
-    /* 内訳リスト共通スタイル */
-    .dynamic-list {
+    /* 各グループのカードリスト表示用コンテナ */
+    .summary-list-container {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-    }
-
-    .dynamic-item {
-      display: flex;
-      align-items: center;
       gap: 8px;
-      background: #f9fafb;
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #f3f4f6;
     }
 
-    .item-name-input {
-      flex: 1;
-      font-size: 0.95rem;
-      border: 1px solid transparent;
-      background: transparent;
-      outline: none;
-      color: var(--text-main);
-      font-weight: 500;
-      min-width: 0;
-      padding: 4px;
-      border-radius: 6px;
-    }
-
-    .item-name-input:focus {
-      background: #ffffff;
-      border-color: var(--border-color);
-    }
-
-    .item-name-input::placeholder {
-      color: #9ca3af;
-    }
-
-    .item-amount-wrapper {
-      position: relative;
+    /* 1行リストアイテム */
+    .summary-row-item {
       display: flex;
       align-items: center;
-      width: 110px;
+      justify-content: space-between;
+      gap: 12px;
+      background: #f8fafc;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
     }
 
-    .item-amount-input {
-      width: 100%;
-      font-size: 1.05rem;
+    .summary-row-item:active {
+      background: #f1f5f9;
+      transform: scale(0.99);
+    }
+
+    .summary-title-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    .summary-title-text {
+      font-size: 0.95rem;
       font-weight: 700;
       color: var(--text-main);
-      text-align: right;
-      padding: 6px 8px;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      background: #ffffff;
-      outline: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .item-amount-input:focus {
-      border-color: var(--primary);
-    }
-
-    .btn-remove {
-      background: none;
-      border: none;
-      color: #9ca3af;
-      font-size: 1.2rem;
-      cursor: pointer;
-      padding: 0 4px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .btn-remove:active {
-      color: var(--danger);
-    }
-
-    .btn-add {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      width: 100%;
-      padding: 10px;
-      background: #f3f4f6;
-      border: 1px dashed #d1d5db;
-      border-radius: 10px;
+    .summary-amount-display {
+      font-size: 1.1rem;
+      font-weight: 700;
       color: var(--text-main);
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      margin-top: 4px;
-    }
-
-    .btn-add:active {
-      background: #e5e7eb;
+      white-space: nowrap;
     }
 
     /* ④ 予定残高 */
@@ -298,6 +273,236 @@
       text-align: right;
       letter-spacing: -0.02em;
     }
+
+    /* モーダル用CSS */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: #ffffff;
+      border-radius: var(--radius);
+      padding: 20px;
+      width: 92%;
+      max-width: 440px;
+      max-height: 85vh;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      transform: translateY(10px);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .modal-badge {
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #e0e7ff;
+      color: var(--primary);
+    }
+
+    .btn-modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-title-section {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .modal-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .modal-title-input {
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      outline: none;
+      color: var(--text-main);
+    }
+
+    .modal-title-input:focus {
+      border-color: var(--primary);
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding-right: 2px;
+      max-height: 35vh;
+    }
+
+    .modal-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f9fafb;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .modal-row-name {
+      flex: 1;
+      font-size: 0.9rem;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      outline: none;
+      min-width: 0;
+    }
+
+    .modal-row-name:focus {
+      border-color: var(--primary);
+    }
+
+    .modal-row-amount-wrapper {
+      width: 110px;
+    }
+
+    .modal-row-amount {
+      width: 100%;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-align: right;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      outline: none;
+    }
+
+    .modal-row-amount:focus {
+      border-color: var(--primary);
+    }
+
+    .btn-row-remove {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-row-remove:hover, .btn-row-remove:active {
+      color: var(--danger);
+    }
+
+    .btn-modal-add-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 8px;
+      background: #f3f4f6;
+      border: 1px dashed #d1d5db;
+      border-radius: 8px;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .modal-total-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+
+    .modal-total-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .modal-total-amount {
+      font-size: 1.2rem;
+      color: var(--primary);
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 8px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 12px;
+    }
+
+    .btn-modal-save {
+      flex: 2;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .btn-modal-delete {
+      flex: 1;
+      background: #fef2f2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -305,7 +510,6 @@
   <div class="app-container">
     <header>
       <h1>口座引き落とし収支管理</h1>
-      <!-- 年月選択 ＆ 前月コピーボタン -->
       <div class="controls-bar">
         <div class="month-picker-wrapper">
           <span class="month-picker-label">対象:</span>
@@ -328,17 +532,13 @@
     <!-- ② 固定費額 -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">② 固定費額</span>
+        <div class="card-title-group">
+          <span class="card-title">② 固定費額</span>
+          <button class="btn-icon-add" id="addFixedGroupBtn" title="固定費グループを追加">＋</button>
+        </div>
         <div class="header-amount-display" id="fixedTotalDisplay">¥0</div>
       </div>
-      
-      <div class="dynamic-list" id="fixedList">
-        <!-- 固定費内訳項目が入ります -->
-      </div>
-
-      <button class="btn-add" id="addFixedItemBtn">
-        <span>＋ 固定費項目を追加</span>
-      </button>
+      <div class="summary-list-container" id="fixedListContainer"></div>
     </div>
 
     <div class="divider"></div>
@@ -346,17 +546,13 @@
     <!-- ③ 変動費額 -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">③ 変動費額</span>
+        <div class="card-title-group">
+          <span class="card-title">③ 変動費額</span>
+          <button class="btn-icon-add" id="addVariableGroupBtn" title="変動費グループを追加">＋</button>
+        </div>
         <div class="header-amount-display" id="variableTotalDisplay">¥0</div>
       </div>
-      
-      <div class="dynamic-list" id="variableList">
-        <!-- 変動費内訳項目が入ります -->
-      </div>
-
-      <button class="btn-add" id="addVariableItemBtn">
-        <span>＋ 項目を追加</span>
-      </button>
+      <div class="summary-list-container" id="variableListContainer"></div>
     </div>
 
     <div class="divider"></div>
@@ -370,55 +566,86 @@
         ¥0
       </div>
     </div>
+
+    <!-- ⑤ 高額支払予定金額 -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-title">⑤ 高額支払予定金額</span>
+          <button class="btn-icon-add" id="addHighPaymentGroupBtn" title="高額支払グループを追加">＋</button>
+        </div>
+        <div class="header-amount-display" id="highPaymentTotalDisplay">¥0</div>
+      </div>
+      <div class="summary-list-container" id="highPaymentListContainer"></div>
+    </div>
+  </div>
+
+  <!-- モーダル構造 -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-badge" id="modalCategoryBadge">グループ追加</span>
+        <button class="btn-modal-close" id="closeModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-title-section">
+        <label class="modal-label" for="modalCategoryTitleInput">タイトル名</label>
+        <input type="text" id="modalCategoryTitleInput" class="modal-title-input" placeholder="例: 特別支出（旅行・家電など）">
+      </div>
+
+      <div class="modal-label">明細リスト</div>
+      <div class="modal-body" id="modalRowsContainer"></div>
+
+      <button class="btn-modal-add-row" id="modalAddRowBtn">
+        <span>＋ 行を追加</span>
+      </button>
+
+      <div class="modal-total-summary">
+        <span class="modal-total-label">合計金額</span>
+        <span class="modal-total-amount" id="modalTempTotalDisplay">¥0</span>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-modal-delete" id="modalDeleteBtn">削除</button>
+        <button class="btn-modal-save" id="modalSaveBtn">保存する</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    // デフォルトの初期データ
-    const DEFAULT_FIXED_ITEMS = [
-      { name: "家賃", amount: 0 },
-      { name: "電気・ガス・水道", amount: 0 },
-      { name: "通信費", amount: 0 },
-      { name: "サブスク等", amount: 0 }
-    ];
-
-    const DEFAULT_VARIABLE_ITEMS = [
-      { name: "食費・雑費", amount: 0 },
-      { name: "予備費", amount: 0 }
-    ];
-
     let allData = {};
     let currentYearMonth = "";
 
+    // データ構造: fixedGroups, variableGroups, highPaymentGroups
     let state = {
       balance: 0,
-      fixedItems: DEFAULT_FIXED_ITEMS,
-      variableItems: DEFAULT_VARIABLE_ITEMS
+      fixedGroups: [],
+      variableGroups: [],
+      highPaymentGroups: []
     };
 
-    // 今日の日付からデフォルト年月（YYYY-MM）を取得
+    let currentModalType = 'fixed'; // 'fixed' | 'variable' | 'highPayment'
+    let editingGroupIndex = null;
+    let tempModalTitle = "";
+    let tempModalItems = [];
+
     function getCurrentYearMonth() {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      return `${year}-${month}`;
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     }
 
-    // 指定された年月の「1ヶ月前」の年月（YYYY-MM）を計算する
     function getPreviousYearMonth(yearMonthStr) {
       if (!yearMonthStr) return "";
       const [year, month] = yearMonthStr.split('-').map(Number);
       let prevYear = year;
       let prevMonth = month - 1;
-
       if (prevMonth < 1) {
         prevMonth = 12;
         prevYear -= 1;
       }
-
       return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
     }
 
-    // ローカルストレージ読み込み
     function loadData() {
       const saved = localStorage.getItem('account_visualizer_monthly_data');
       if (saved) {
@@ -430,26 +657,53 @@
         }
       }
       
-      // 選択中の年月のデータをロード
       if (allData[currentYearMonth]) {
         state = allData[currentYearMonth];
+        if (!state.fixedGroups) state.fixedGroups = [];
+        if (!state.variableGroups) state.variableGroups = [];
+        if (!state.highPaymentGroups) state.highPaymentGroups = [];
       } else {
-        // 新しい月の場合の初期値設定
         state = {
           balance: 0,
-          fixedItems: JSON.parse(JSON.stringify(DEFAULT_FIXED_ITEMS)),
-          variableItems: JSON.parse(JSON.stringify(DEFAULT_VARIABLE_ITEMS))
+          fixedGroups: [
+            {
+              title: "固定費",
+              items: [
+                { name: "家賃", amount: 0 },
+                { name: "電気・ガス・水道", amount: 0 },
+                { name: "通信費", amount: 0 }
+              ]
+            }
+          ],
+          variableGroups: [
+            {
+              title: "変動費",
+              items: [
+                { name: "食費・雑費", amount: 0 },
+                { name: "予備費", amount: 0 },
+                { name: "", amount: 0 }
+              ]
+            }
+          ],
+          highPaymentGroups: [
+            {
+              title: "高額支払",
+              items: [
+                { name: "旅行費用", amount: 0 },
+                { name: "家電購入", amount: 0 },
+                { name: "", amount: 0 }
+              ]
+            }
+          ]
         };
       }
     }
 
-    // ローカルストレージ保存
     function saveData() {
       allData[currentYearMonth] = state;
       localStorage.setItem('account_visualizer_monthly_data', JSON.stringify(allData));
     }
 
-    // 前月コピー処理
     function copyPreviousMonthData() {
       const prevYM = getPreviousYearMonth(currentYearMonth);
       const [prevYear, prevMonth] = prevYM.split('-').map(Number);
@@ -460,22 +714,17 @@
       }
 
       if (confirm(`${prevYear}年${prevMonth}月のデータをコピーして現在の月（${currentYearMonth.replace('-', '年')}月）に反映しますか？\n（入力済みの内容は上書きされます）`)) {
-        // ディープコピーして現在の state に設定
         state = JSON.parse(JSON.stringify(allData[prevYM]));
         saveData();
-        renderFixedItems();
-        renderVariableItems();
         updateCalculations();
       }
     }
 
-    // 数値フォーマット関数（カンマ区切り表示）
     function formatNumber(num) {
       if (isNaN(num) || num === null) return "0";
       return num.toLocaleString('ja-JP');
     }
 
-    // 入力値から数値のみを抽出する関数
     function parseFormattedNumber(str) {
       if (!str) return 0;
       const clean = str.toString().replace(/[￥¥,\s]/g, '').replace(/[^0-9-]/g, '');
@@ -489,21 +738,233 @@
       });
     }
 
-    // 計算と画面表示の自動更新
+    function getTargetList(type) {
+      if (type === 'fixed') return state.fixedGroups;
+      if (type === 'variable') return state.variableGroups;
+      if (type === 'highPayment') return state.highPaymentGroups;
+      return [];
+    }
+
+    function getCategoryName(type) {
+      if (type === 'fixed') return '固定費';
+      if (type === 'variable') return '変動費';
+      if (type === 'highPayment') return '高額支払予定';
+      return '';
+    }
+
+    /* --- モーダル制御 --- */
+
+    function openModal(type, groupIndex = null) {
+      currentModalType = type;
+      editingGroupIndex = groupIndex;
+
+      const isNew = groupIndex === null;
+      const categoryName = getCategoryName(type);
+      document.getElementById('modalCategoryBadge').textContent = isNew ? `${categoryName}のグループ追加` : `${categoryName}の編集`;
+
+      const deleteBtn = document.getElementById('modalDeleteBtn');
+      deleteBtn.style.display = isNew ? 'none' : 'block';
+
+      if (isNew) {
+        tempModalTitle = "";
+        tempModalItems = [
+          { name: "", amount: 0 },
+          { name: "", amount: 0 },
+          { name: "", amount: 0 }
+        ];
+      } else {
+        const targetList = getTargetList(type);
+        const targetObj = targetList[groupIndex];
+        tempModalTitle = targetObj.title || "";
+        tempModalItems = JSON.parse(JSON.stringify(targetObj.items || []));
+      }
+
+      document.getElementById('modalCategoryTitleInput').value = tempModalTitle;
+      renderModalRows();
+      updateModalTempTotal();
+      document.getElementById('detailModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.remove('active');
+      currentModalType = 'fixed';
+      editingGroupIndex = null;
+      tempModalItems = [];
+    }
+
+    function updateModalTempTotal() {
+      const total = tempModalItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+      document.getElementById('modalTempTotalDisplay').textContent = `¥${formatNumber(total)}`;
+    }
+
+    function renderModalRows() {
+      const container = document.getElementById('modalRowsContainer');
+      container.innerHTML = '';
+
+      tempModalItems.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'modal-row';
+        row.innerHTML = `
+          <input type="text" class="modal-row-name" value="${escapeHtml(item.name)}" placeholder="項目名" data-index="${index}">
+          <div class="modal-row-amount-wrapper">
+            <input type="text" class="modal-row-amount" inputmode="numeric" value="${formatNumber(item.amount)}" data-index="${index}">
+          </div>
+          <button class="btn-row-remove" data-index="${index}">&times;</button>
+        `;
+        container.appendChild(row);
+      });
+
+      container.querySelectorAll('.modal-row-name').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = e.target.dataset.index;
+          tempModalItems[idx].name = e.target.value;
+        });
+      });
+
+      container.querySelectorAll('.modal-row-amount').forEach(input => {
+        input.addEventListener('focus', (e) => {
+          if (parseFormattedNumber(e.target.value) === 0) e.target.value = '';
+        });
+        input.addEventListener('input', (e) => {
+          const idx = e.target.dataset.index;
+          const val = parseFormattedNumber(e.target.value);
+          tempModalItems[idx].amount = val;
+          e.target.value = formatNumber(val);
+          updateModalTempTotal();
+        });
+        input.addEventListener('blur', (e) => {
+          if (e.target.value === '') e.target.value = '0';
+        });
+      });
+
+      container.querySelectorAll('.btn-row-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = e.target.dataset.index;
+          tempModalItems.splice(idx, 1);
+          renderModalRows();
+          updateModalTempTotal();
+        });
+      });
+    }
+
+    function addModalRow() {
+      tempModalItems.push({ name: '', amount: 0 });
+      renderModalRows();
+      const inputs = document.querySelectorAll('#modalRowsContainer .modal-row-name');
+      if (inputs.length > 0) {
+        inputs[inputs.length - 1].focus();
+      }
+    }
+
+    function saveModalData() {
+      const titleInput = document.getElementById('modalCategoryTitleInput').value.trim();
+      const defaultName = getCategoryName(currentModalType);
+      const finalTitle = titleInput || defaultName;
+
+      const cleanedItems = tempModalItems.filter(item => item.name.trim() !== '' || item.amount > 0);
+
+      const newGroup = {
+        title: finalTitle,
+        items: cleanedItems.length > 0 ? cleanedItems : [{ name: '', amount: 0 }]
+      };
+
+      const targetList = getTargetList(currentModalType);
+
+      if (editingGroupIndex === null) {
+        targetList.push(newGroup);
+      } else {
+        targetList[editingGroupIndex] = newGroup;
+      }
+
+      updateCalculations();
+      closeModal();
+    }
+
+    function deleteModalGroup() {
+      if (editingGroupIndex === null) return;
+      if (confirm('このグループを削除してもよろしいですか？')) {
+        const targetList = getTargetList(currentModalType);
+        targetList.splice(editingGroupIndex, 1);
+        updateCalculations();
+        closeModal();
+      }
+    }
+
+    /* --- 計算 ＆ トップ画面更新 --- */
+
     function updateCalculations() {
       const balance = state.balance;
-      const fixedTotal = state.fixedItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-      const variableTotal = state.variableItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-      
-      // ④ 予定残高 = ①口座金額 - ②固定費額 - ③変動費額
+
+      // 固定費描画 & 計算
+      let fixedTotal = 0;
+      const fixedContainer = document.getElementById('fixedListContainer');
+      fixedContainer.innerHTML = '';
+      state.fixedGroups.forEach((group, index) => {
+        const groupSum = (group.items || []).reduce((s, i) => s + (i.amount || 0), 0);
+        fixedTotal += groupSum;
+
+        const row = document.createElement('div');
+        row.className = 'summary-row-item';
+        row.innerHTML = `
+          <div class="summary-title-wrapper">
+            <span class="summary-title-text">${escapeHtml(group.title)}</span>
+          </div>
+          <div class="summary-amount-display">¥${formatNumber(groupSum)}</div>
+        `;
+        row.addEventListener('click', () => openModal('fixed', index));
+        fixedContainer.appendChild(row);
+      });
+
+      // 変動費描画 & 計算
+      let variableTotal = 0;
+      const variableContainer = document.getElementById('variableListContainer');
+      variableContainer.innerHTML = '';
+      state.variableGroups.forEach((group, index) => {
+        const groupSum = (group.items || []).reduce((s, i) => s + (i.amount || 0), 0);
+        variableTotal += groupSum;
+
+        const row = document.createElement('div');
+        row.className = 'summary-row-item';
+        row.innerHTML = `
+          <div class="summary-title-wrapper">
+            <span class="summary-title-text">${escapeHtml(group.title)}</span>
+          </div>
+          <div class="summary-amount-display">¥${formatNumber(groupSum)}</div>
+        `;
+        row.addEventListener('click', () => openModal('variable', index));
+        variableContainer.appendChild(row);
+      });
+
+      // 高額支払描画 & 計算
+      let highPaymentTotal = 0;
+      const highPaymentContainer = document.getElementById('highPaymentListContainer');
+      highPaymentContainer.innerHTML = '';
+      state.highPaymentGroups.forEach((group, index) => {
+        const groupSum = (group.items || []).reduce((s, i) => s + (i.amount || 0), 0);
+        highPaymentTotal += groupSum;
+
+        const row = document.createElement('div');
+        row.className = 'summary-row-item';
+        row.innerHTML = `
+          <div class="summary-title-wrapper">
+            <span class="summary-title-text">${escapeHtml(group.title)}</span>
+          </div>
+          <div class="summary-amount-display">¥${formatNumber(groupSum)}</div>
+        `;
+        row.addEventListener('click', () => openModal('highPayment', index));
+        highPaymentContainer.appendChild(row);
+      });
+
+      // 予定残高（①口座金額 - ②固定費 - ③変動費）※ ⑤高額支払は加味しない
       const plannedBalance = balance - fixedTotal - variableTotal;
 
+      // UI反映
       document.getElementById('balanceInput').value = formatNumber(balance);
       document.getElementById('fixedTotalDisplay').textContent = `¥${formatNumber(fixedTotal)}`;
       document.getElementById('variableTotalDisplay').textContent = `¥${formatNumber(variableTotal)}`;
+      document.getElementById('highPaymentTotalDisplay').textContent = `¥${formatNumber(highPaymentTotal)}`;
       document.getElementById('plannedBalanceDisplay').textContent = `¥${formatNumber(plannedBalance)}`;
 
-      // ①のタイトルを年月入りに更新
       const [year, month] = currentYearMonth.split('-');
       if (year && month) {
         document.getElementById('balanceCardTitle').textContent = `① ${year}年${parseInt(month, 10)}月25日現在の口座の金額`;
@@ -512,144 +973,32 @@
       saveData();
     }
 
-    // ② 固定費リストのレンダリング
-    function renderFixedItems() {
-      const container = document.getElementById('fixedList');
-      container.innerHTML = '';
-
-      state.fixedItems.forEach((item, index) => {
-        const itemEl = document.createElement('div');
-        itemEl.className = 'dynamic-item';
-        itemEl.innerHTML = `
-          <input type="text" class="item-name-input fixed-name" value="${escapeHtml(item.name)}" placeholder="項目名" data-index="${index}">
-          <div class="item-amount-wrapper">
-            <input type="text" class="item-amount-input fixed-amount" inputmode="numeric" value="${formatNumber(item.amount)}" data-index="${index}">
-          </div>
-          <button class="btn-remove fixed-remove" data-index="${index}">×</button>
-        `;
-        container.appendChild(itemEl);
-      });
-
-      // 項目名変更
-      container.querySelectorAll('.fixed-name').forEach(input => {
-        input.addEventListener('input', (e) => {
-          const idx = e.target.dataset.index;
-          state.fixedItems[idx].name = e.target.value;
-          saveData();
-        });
-      });
-
-      // 金額変更
-      container.querySelectorAll('.fixed-amount').forEach(input => {
-        input.addEventListener('focus', (e) => {
-          if (parseFormattedNumber(e.target.value) === 0) e.target.value = '';
-        });
-
-        input.addEventListener('input', (e) => {
-          const idx = e.target.dataset.index;
-          const val = parseFormattedNumber(e.target.value);
-          state.fixedItems[idx].amount = val;
-          e.target.value = formatNumber(val);
-          updateCalculations();
-        });
-
-        input.addEventListener('blur', (e) => {
-          if (e.target.value === '') e.target.value = '0';
-        });
-      });
-
-      // 削除（確認ダイアログ表示）
-      container.querySelectorAll('.fixed-remove').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const idx = e.target.dataset.index;
-          const itemName = state.fixedItems[idx].name || 'この項目';
-          
-          if (confirm(`「${itemName}」を削除してもよろしいですか？`)) {
-            state.fixedItems.splice(idx, 1);
-            renderFixedItems();
-            updateCalculations();
-          }
-        });
-      });
-    }
-
-    // ③ 変動費リストのレンダリング
-    function renderVariableItems() {
-      const container = document.getElementById('variableList');
-      container.innerHTML = '';
-
-      state.variableItems.forEach((item, index) => {
-        const itemEl = document.createElement('div');
-        itemEl.className = 'dynamic-item';
-        itemEl.innerHTML = `
-          <input type="text" class="item-name-input var-name" value="${escapeHtml(item.name)}" placeholder="項目名" data-index="${index}">
-          <div class="item-amount-wrapper">
-            <input type="text" class="item-amount-input var-amount" inputmode="numeric" value="${formatNumber(item.amount)}" data-index="${index}">
-          </div>
-          <button class="btn-remove var-remove" data-index="${index}">×</button>
-        `;
-        container.appendChild(itemEl);
-      });
-
-      // 項目名変更
-      container.querySelectorAll('.var-name').forEach(input => {
-        input.addEventListener('input', (e) => {
-          const idx = e.target.dataset.index;
-          state.variableItems[idx].name = e.target.value;
-          saveData();
-        });
-      });
-
-      // 金額変更
-      container.querySelectorAll('.var-amount').forEach(input => {
-        input.addEventListener('focus', (e) => {
-          if (parseFormattedNumber(e.target.value) === 0) e.target.value = '';
-        });
-
-        input.addEventListener('input', (e) => {
-          const idx = e.target.dataset.index;
-          const val = parseFormattedNumber(e.target.value);
-          state.variableItems[idx].amount = val;
-          e.target.value = formatNumber(val);
-          updateCalculations();
-        });
-
-        input.addEventListener('blur', (e) => {
-          if (e.target.value === '') e.target.value = '0';
-        });
-      });
-
-      // 削除（確認ダイアログ表示）
-      container.querySelectorAll('.var-remove').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const idx = e.target.dataset.index;
-          const itemName = state.variableItems[idx].name || 'この項目';
-          
-          if (confirm(`「${itemName}」を削除してもよろしいですか？`)) {
-            state.variableItems.splice(idx, 1);
-            renderVariableItems();
-            updateCalculations();
-          }
-        });
-      });
-    }
-
-    // 初期イベントハンドラの設定
     function initEvents() {
-      // 年月変更イベント
-      const monthInput = document.getElementById('monthInput');
-      monthInput.addEventListener('change', (e) => {
+      // 各 ＋ ボタン
+      document.getElementById('addFixedGroupBtn').addEventListener('click', () => openModal('fixed', null));
+      document.getElementById('addVariableGroupBtn').addEventListener('click', () => openModal('variable', null));
+      document.getElementById('addHighPaymentGroupBtn').addEventListener('click', () => openModal('highPayment', null));
+
+      // モーダルイベント
+      document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+      document.getElementById('modalSaveBtn').addEventListener('click', saveModalData);
+      document.getElementById('modalDeleteBtn').addEventListener('click', deleteModalGroup);
+      document.getElementById('modalAddRowBtn').addEventListener('click', addModalRow);
+
+      document.getElementById('detailModal').addEventListener('click', (e) => {
+        if (e.target.id === 'detailModal') closeModal();
+      });
+
+      // 年月変更・前月コピー
+      document.getElementById('monthInput').addEventListener('change', (e) => {
         currentYearMonth = e.target.value;
         loadData();
-        renderFixedItems();
-        renderVariableItems();
         updateCalculations();
       });
 
-      // 前月コピーボタン
       document.getElementById('copyPrevBtn').addEventListener('click', copyPreviousMonthData);
 
-      // ① 残高入力
+      // 残高入力
       const balanceInput = document.getElementById('balanceInput');
       balanceInput.addEventListener('focus', (e) => {
         if (parseFormattedNumber(e.target.value) === 0) e.target.value = '';
@@ -663,36 +1012,13 @@
       balanceInput.addEventListener('blur', (e) => {
         if (e.target.value === '') e.target.value = '0';
       });
-
-      // ② 固定費の項目追加ボタン
-      document.getElementById('addFixedItemBtn').addEventListener('click', () => {
-        state.fixedItems.push({ name: '', amount: 0 });
-        renderFixedItems();
-        const inputs = document.querySelectorAll('#fixedList .fixed-name');
-        if (inputs.length > 0) {
-          inputs[inputs.length - 1].focus();
-        }
-      });
-
-      // ③ 変動費の項目追加ボタン
-      document.getElementById('addVariableItemBtn').addEventListener('click', () => {
-        state.variableItems.push({ name: '', amount: 0 });
-        renderVariableItems();
-        const inputs = document.querySelectorAll('#variableList .var-name');
-        if (inputs.length > 0) {
-          inputs[inputs.length - 1].focus();
-        }
-      });
     }
 
-    // 起動時初期化
     document.addEventListener('DOMContentLoaded', () => {
       currentYearMonth = getCurrentYearMonth();
       document.getElementById('monthInput').value = currentYearMonth;
       
       loadData();
-      renderFixedItems();
-      renderVariableItems();
       updateCalculations();
       initEvents();
     });
