@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食材カロリー管理</title>
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --bg-color: #f4f6f5;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-bottom: 60px;
+        }
+        h1 {
+            font-size: 1.4rem;
+            text-align: center;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+        }
+        /* タブのスタイル */
+        .tab-container {
+            display: flex;
+            background: #e0e0e0;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 16px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        h2 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 4px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            color: #666;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        button.action-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        button.action-btn:active {
+            opacity: 0.8;
+        }
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        .list-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .list-left input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+        .delete-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .total-banner {
+            background: #e8f5e9;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 16px;
+            border: 1px solid #c8e6c9;
+        }
+        .total-banner .calories {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍎 食材カロリー管理</h1>
+
+    <!-- タブ切り替えボタン -->
+    <div class="tab-container">
+        <button class="tab-btn active" onclick="switchTab('calc')">カロリー計算</button>
+        <button class="tab-btn" onclick="switchTab('register')">食材を登録</button>
+    </div>
+
+    <!-- TAB 1: カロリー計算・一覧画面 -->
+    <div id="tab-calc" class="tab-content active">
+        <div class="total-banner">
+            <div>選択した食材の合計カロリー</div>
+            <div class="calories"><span id="selectedTotal">0</span> kcal</div>
+        </div>
+
+        <div class="card">
+            <h2>食材を選ぶ</h2>
+            <div id="masterList">
+                <p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: 新規登録画面 -->
+    <div id="tab-register" class="tab-content">
+        <div class="card">
+            <h2>食材の新規登録</h2>
+            <div class="form-group">
+                <label for="foodName">食材名</label>
+                <input type="text" id="foodName" placeholder="例: バナナ (1本)">
+            </div>
+            <div class="form-group">
+                <label for="foodCalorie">カロリー (kcal)</label>
+                <input type="number" id="foodCalorie" placeholder="例: 86" inputmode="numeric">
+            </div>
+            <button class="action-btn" onclick="addFoodMaster()">食材を登録する</button>
+        </div>
+
+        <div class="card">
+            <h2>登録済み食材の一覧・削除</h2>
+            <div id="deleteList">
+                <p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ローカルストレージからデータ取得、初期データ設定
+        let foods = JSON.parse(localStorage.getItem('simple_tab_calorie_foods')) || [
+            { id: 1, name: 'バナナ (1本)', calorie: 86 },
+            { id: 2, name: 'ゆで卵 (1個)', calorie: 76 },
+            { id: 3, name: 'プロテイン (1杯)', calorie: 120 }
+        ];
+
+        function init() {
+            updateLists();
+        }
+
+        // タブ切り替え関数
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tabName === 'calc') {
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+                document.getElementById('tab-calc').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+                document.getElementById('tab-register').classList.add('active');
+            }
+        }
+
+        // 食材マスタの追加
+        function addFoodMaster() {
+            const name = document.getElementById('foodName').value.trim();
+            const calorie = parseFloat(document.getElementById('foodCalorie').value);
+
+            if (!name || isNaN(calorie) || calorie < 0) {
+                alert('正しい食材名とカロリーを入力してください。');
+                return;
+            }
+
+            foods.push({ id: Date.now(), name, calorie });
+            saveAndRefresh();
+
+            document.getElementById('foodName').value = '';
+            document.getElementById('foodCalorie').value = '';
+
+            // 登録したら自動で計算タブに戻る
+            switchTab('calc');
+        }
+
+        // 食材マスタの削除
+        function deleteFoodMaster(id) {
+            foods = foods.filter(f => f.id !== id);
+            saveAndRefresh();
+        }
+
+        // 保存と画面更新
+        function saveAndRefresh() {
+            localStorage.setItem('simple_tab_calorie_foods', JSON.stringify(foods));
+            updateLists();
+        }
+
+        // リストの更新
+        function updateLists() {
+            const calcContainer = document.getElementById('masterList');
+            const deleteContainer = document.getElementById('deleteList');
+
+            if (foods.length === 0) {
+                calcContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>';
+                deleteContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>';
+                calculateTotal();
+                return;
+            }
+
+            const checkedIds = Array.from(document.querySelectorAll('.food-checkbox:checked'))
+                                     .map(cb => parseInt(cb.value));
+
+            // 1. カロリー計算タブ側のリスト（チェックボックス付き）
+            calcContainer.innerHTML = '';
+            foods.forEach(f => {
+                const isChecked = checkedIds.includes(f.id) ? 'checked' : '';
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="list-left">
+                        <input type="checkbox" class="food-checkbox" value="${f.id}" ${isChecked} onchange="calculateTotal()">
+                        <span><strong>${f.name}</strong><br><small style="color:#666;">${f.calorie} kcal</small></span>
+                    </div>
+                `;
+                calcContainer.appendChild(div);
+            });
+
+            // 2. 登録・削除タブ側のリスト（削除ボタン付き）
+            deleteContainer.innerHTML = '';
+            foods.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <span><strong>${f.name}</strong><br><small style="color:#666;">${f.calorie} kcal</small></span>
+                    <button class="delete-btn" onclick="deleteFoodMaster(${f.id})">削除</button>
+                `;
+                deleteContainer.appendChild(div);
+            });
+
+            calculateTotal();
+        }
+
+        // 合計カロリーの計算
+        function calculateTotal() {
+            const checkboxes = document.querySelectorAll('.food-checkbox:checked');
+            let total = 0;
+
+            checkboxes.forEach(cb => {
+                const id = parseInt(cb.value);
+                const food = foods.find(f => f.id === id);
+                if (food) {
+                    total += food.calorie;
+                }
+            });
+
+            document.getElementById('selectedTotal').textContent = total;
+        }
+
+        init();
+    </script>
+</body>
+</html>
