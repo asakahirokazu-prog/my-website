@@ -152,6 +152,91 @@
             font-weight: bold;
             color: var(--primary-color);
         }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        /* モーダルのスタイル */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 16px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: modalPop 0.2s ease-out;
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-title {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-btn-cancel {
+            background: #e0e0e0;
+            color: #555;
+        }
+        .modal-btn-submit {
+            background: var(--primary-color);
+            color: white;
+        }
+        .saved-meal-item {
+            cursor: pointer;
+            transition: background 0.2s;
+            padding: 8px;
+            border-radius: 8px;
+        }
+        .saved-meal-item:hover {
+            background: #f0f4f1;
+        }
     </style>
 </head>
 <body>
@@ -169,12 +254,20 @@
         <div class="total-banner">
             <div>選択した食材の合計カロリー</div>
             <div class="calories"><span id="selectedTotal">0</span> kcal</div>
+            <button class="action-btn" style="margin-top: 12px;" onclick="openSaveModal()">選択した内容を登録する</button>
         </div>
 
         <div class="card">
             <h2>食材を選ぶ</h2>
             <div id="masterList">
                 <p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>料理一覧</h2>
+            <div id="savedMealsList">
+                <p style="color: #888; font-size: 0.9rem;">保存された記録はありません</p>
             </div>
         </div>
     </div>
@@ -202,15 +295,76 @@
         </div>
     </div>
 
+    <!-- 登録用モーダル -->
+    <div id="saveModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">料理の記録を保存</div>
+            <div class="form-group">
+                <label for="modalMealName">料理名 / 食事記録名</label>
+                <input type="text" id="modalMealName" placeholder="例: 朝食プレート、特製サラダ">
+            </div>
+            <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">
+                合計カロリー: <strong id="modalTotalCal" style="color: var(--primary-color);">0</strong> kcal
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeSaveModal()">キャンセル</button>
+                <button class="modal-btn modal-btn-submit" onclick="saveMealToIDB()">保存する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 料理詳細表示モーダル -->
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title" id="detailMealTitle">料理の詳細</div>
+            <div style="font-size: 0.9rem; color: #666; margin-bottom: 8px;">
+                合計カロリー: <strong id="detailTotalCal" style="color: var(--primary-color);">0</strong> kcal
+            </div>
+            <div style="font-size: 0.85rem; color: #999; margin-bottom: 12px;" id="detailDate"></div>
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 0.85rem; color: #666; margin-bottom: 4px;">含まれる食材:</label>
+                <div id="detailFoodsList" style="max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 8px; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeDetailModal()">閉じる</button>
+                <button class="modal-btn" style="background: #d32f2f; color: white;" id="detailDeleteBtn">削除する</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">保存しました！</div>
+
     <script>
-        // ローカルストレージからデータ取得、初期データ設定
+        let db = null;
         let foods = JSON.parse(localStorage.getItem('simple_tab_calorie_foods')) || [
             { id: 1, name: 'バナナ (1本)', calorie: 86 },
             { id: 2, name: 'ゆで卵 (1個)', calorie: 76 },
             { id: 3, name: 'プロテイン (1杯)', calorie: 120 }
         ];
 
+        // IndexedDB初期化
+        function initIndexedDB() {
+            const request = indexedDB.open('CalorieAppDB', 1);
+
+            request.onerror = (event) => {
+                console.error("IndexedDB error:", event.target.error);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const dbInstance = event.target.result;
+                if (!dbInstance.objectStoreNames.contains('meals')) {
+                    dbInstance.createObjectStore('meals', { keyPath: 'id', autoIncrement: true });
+                }
+            };
+
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                loadSavedMeals();
+            };
+        }
+
         function init() {
+            initIndexedDB();
             updateLists();
         }
 
@@ -228,30 +382,226 @@
             }
         }
 
+        // トースト通知表示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // モーダルを開く
+        function openSaveModal() {
+            const checkboxes = document.querySelectorAll('.food-checkbox:checked');
+            if (checkboxes.length === 0) {
+                showToast('食材を1つ以上選択してください。');
+                return;
+            }
+
+            let total = 0;
+            checkboxes.forEach(cb => {
+                const id = parseInt(cb.value);
+                const food = foods.find(f => f.id === id);
+                if (food) total += food.calorie;
+            });
+
+            document.getElementById('modalTotalCal').textContent = total;
+            document.getElementById('modalMealName').value = '';
+            document.getElementById('saveModal').classList.add('active');
+            
+            // モーダル表示後に確実に入力欄へフォーカスを当てる
+            setTimeout(() => {
+                document.getElementById('modalMealName').focus();
+            }, 50);
+        }
+
+        // モーダルを閉じる
+        function closeSaveModal() {
+            document.getElementById('saveModal').classList.remove('active');
+        }
+
+        // IndexedDBへ料理名と選択された食材・合計カロリーを保存
+        function saveMealToIDB() {
+            const mealNameInput = document.getElementById('modalMealName');
+            const mealName = mealNameInput.value.trim();
+            const checkboxes = document.querySelectorAll('.food-checkbox:checked');
+
+            if (!mealName) {
+                showToast('料理名を入力してください。');
+                mealNameInput.focus();
+                return;
+            }
+
+            const selectedFoods = [];
+            let totalCalorie = 0;
+
+            checkboxes.forEach(cb => {
+                const id = parseInt(cb.value);
+                const food = foods.find(f => f.id === id);
+                if (food) {
+                    selectedFoods.push(food);
+                    totalCalorie += food.calorie;
+                }
+            });
+
+            const mealData = {
+                name: mealName,
+                foods: selectedFoods,
+                totalCalorie: totalCalorie,
+                createdAt: new Date().toLocaleString()
+            };
+
+            if (!db) {
+                showToast('データベースが初期化されていません。');
+                return;
+            }
+
+            const transaction = db.transaction(['meals'], 'readwrite');
+            const store = transaction.objectStore('meals');
+            const request = store.add(mealData);
+
+            request.onsuccess = () => {
+                showToast('IndexedDBに料理を保存しました！');
+                closeSaveModal();
+                // チェックボックスのクリア
+                checkboxes.forEach(cb => cb.checked = false);
+                calculateTotal();
+                loadSavedMeals();
+            };
+
+            request.onerror = (event) => {
+                console.error("Save error:", event.target.error);
+                showToast('保存に失敗しました。');
+            };
+        }
+
+        // IndexedDBから保存された食事履歴を読み込む
+        function loadSavedMeals() {
+            if (!db) return;
+
+            const transaction = db.transaction(['meals'], 'readonly');
+            const store = transaction.objectStore('meals');
+            const request = store.getAll();
+
+            request.onsuccess = (event) => {
+                const meals = event.target.result;
+                const container = document.getElementById('savedMealsList');
+
+                if (!meals || meals.length === 0) {
+                    container.innerHTML = '<p style="color: #888; font-size: 0.9rem;">保存された記録はありません</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                // 新しい順に並べ替え
+                meals.reverse().forEach(meal => {
+                    const foodNames = meal.foods.map(f => f.name).join(', ');
+                    const div = document.createElement('div');
+                    div.className = 'list-item saved-meal-item';
+                    div.onclick = () => openDetailModal(meal);
+                    div.innerHTML = `
+                        <div style="width: 100%;">
+                            <strong>${escapeHTML(meal.name)}</strong> (${meal.totalCalorie} kcal)<br>
+                            <small style="color:#666;">食材: ${escapeHTML(foodNames)}</small><br>
+                            <small style="color:#999; font-size: 0.75rem;">${meal.createdAt}</small>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            };
+        }
+
+        // 料理詳細モーダルを開く
+        function openDetailModal(meal) {
+            document.getElementById('detailMealTitle').textContent = meal.name;
+            document.getElementById('detailTotalCal').textContent = meal.totalCalorie;
+            document.getElementById('detailDate').textContent = `登録日時: ${meal.createdAt}`;
+            
+            const foodsContainer = document.getElementById('detailFoodsList');
+            foodsContainer.innerHTML = '';
+            meal.foods.forEach(f => {
+                const item = document.createElement('div');
+                item.style.padding = '4px 0';
+                item.style.borderBottom = '1px solid #eee';
+                item.innerHTML = `<strong>${escapeHTML(f.name)}</strong>: ${f.calorie} kcal`;
+                foodsContainer.appendChild(item);
+            });
+
+            const deleteBtn = document.getElementById('detailDeleteBtn');
+            deleteBtn.onclick = () => {
+                deleteMealFromIDB(meal.id);
+                closeDetailModal();
+            };
+
+            document.getElementById('detailModal').classList.add('active');
+        }
+
+        // 料理詳細モーダルを閉じる
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        // IndexedDBから食事履歴を削除
+        function deleteMealFromIDB(id) {
+            if (!db) return;
+
+            const transaction = db.transaction(['meals'], 'readwrite');
+            const store = transaction.objectStore('meals');
+            const request = store.delete(id);
+
+            request.onsuccess = () => {
+                showToast('履歴を削除しました');
+                loadSavedMeals();
+            };
+
+            request.onerror = () => {
+                showToast('削除に失敗しました');
+            };
+        }
+
+        // HTMLエスケープヘルパー
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"\n]/g, function(match) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                    '\n': '<br>'
+                }[match];
+            });
+        }
+
         // 食材マスタの追加
         function addFoodMaster() {
-            const name = document.getElementById('foodName').value.trim();
-            const calorie = parseFloat(document.getElementById('foodCalorie').value);
+            const nameInput = document.getElementById('foodName');
+            const calorieInput = document.getElementById('foodCalorie');
+            const name = nameInput.value.trim();
+            const calorie = parseFloat(calorieInput.value);
 
             if (!name || isNaN(calorie) || calorie < 0) {
-                alert('正しい食材名とカロリーを入力してください。');
+                showToast('正しい食材名とカロリーを入力してください。');
                 return;
             }
 
             foods.push({ id: Date.now(), name, calorie });
             saveAndRefresh();
 
-            document.getElementById('foodName').value = '';
-            document.getElementById('foodCalorie').value = '';
+            nameInput.value = '';
+            calorieInput.value = '';
+            showToast('食材を登録しました！');
 
-            // 登録したら自動で計算タブに戻る
-            switchTab('calc');
+            // 登録してもタブの切り替えを行わず、そのままのタブを維持する
         }
 
         // 食材マスタの削除
         function deleteFoodMaster(id) {
             foods = foods.filter(f => f.id !== id);
             saveAndRefresh();
+            showToast('食材を削除しました');
         }
 
         // 保存と画面更新
@@ -284,7 +634,7 @@
                 div.innerHTML = `
                     <div class="list-left">
                         <input type="checkbox" class="food-checkbox" value="${f.id}" ${isChecked} onchange="calculateTotal()">
-                        <span><strong>${f.name}</strong><br><small style="color:#666;">${f.calorie} kcal</small></span>
+                        <span><strong>${escapeHTML(f.name)}</strong><br><small style="color:#666;">${f.calorie} kcal</small></span>
                     </div>
                 `;
                 calcContainer.appendChild(div);
@@ -296,7 +646,7 @@
                 const div = document.createElement('div');
                 div.className = 'list-item';
                 div.innerHTML = `
-                    <span><strong>${f.name}</strong><br><small style="color:#666;">${f.calorie} kcal</small></span>
+                    <span><strong>${escapeHTML(f.name)}</strong><br><small style="color:#666;">${f.calorie} kcal</small></span>
                     <button class="delete-btn" onclick="deleteFoodMaster(${f.id})">削除</button>
                 `;
                 deleteContainer.appendChild(div);
