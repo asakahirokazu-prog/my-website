@@ -86,13 +86,79 @@
             margin-bottom: 4px;
             color: #666;
         }
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], select {
             width: 100%;
             padding: 12px;
             border: 1px solid var(--border-color);
             border-radius: 8px;
             font-size: 1rem;
+            background-color: #fff;
         }
+        /* カテゴリのラジオボタンスタイル（登録画面用） */
+        .category-radios {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        .category-radio-label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #f9f9f9;
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            flex: 1 1 calc(33% - 8px);
+            justify-content: center;
+        }
+        .category-radio-label input {
+            accent-color: var(--primary-color);
+        }
+        /* カテゴリのバッジ */
+        .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #e0e0e0;
+            color: #333;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        .badge-野菜 { background: #e8f5e9; color: #2e7d32; }
+        .badge-肉 { background: #ffebee; color: #c62828; }
+        .badge-魚 { background: #e3f2fd; color: #1565c0; }
+        .badge-穀物 { background: #fff8e1; color: #f57f17; }
+        .badge-その他 { background: #f3e5f5; color: #6a1b9a; }
+
+        /* フィルタータブスタイル */
+        .filter-container {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+            padding-bottom: 4px;
+        }
+        .filter-btn {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            color: #555;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+
         button.action-btn {
             width: 100%;
             padding: 12px;
@@ -170,7 +236,6 @@
         .toast.show {
             opacity: 1;
         }
-        /* モーダルのスタイル */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -259,6 +324,17 @@
 
         <div class="card">
             <h2>食材を選ぶ</h2>
+            
+            <!-- カテゴリ絞り込みフィルター -->
+            <div class="filter-container" id="filterContainer">
+                <button class="filter-btn active" onclick="setCategoryFilter('すべて')">すべて</button>
+                <button class="filter-btn" onclick="setCategoryFilter('野菜')">野菜</button>
+                <button class="filter-btn" onclick="setCategoryFilter('肉')">肉</button>
+                <button class="filter-btn" onclick="setCategoryFilter('魚')">魚</button>
+                <button class="filter-btn" onclick="setCategoryFilter('穀物')">穀物</button>
+                <button class="filter-btn" onclick="setCategoryFilter('その他')">その他</button>
+            </div>
+
             <div id="masterList">
                 <p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>
             </div>
@@ -278,11 +354,21 @@
             <h2>食材の新規登録</h2>
             <div class="form-group">
                 <label for="foodName">食材名</label>
-                <input type="text" id="foodName" placeholder="例: バナナ (1本)">
+                <input type="text" id="foodName" placeholder="例: キャベツ (100g)">
             </div>
             <div class="form-group">
                 <label for="foodCalorie">カロリー (kcal)</label>
-                <input type="number" id="foodCalorie" placeholder="例: 86" inputmode="numeric">
+                <input type="number" id="foodCalorie" placeholder="例: 25" inputmode="numeric">
+            </div>
+            <div class="form-group">
+                <label>カテゴリ</label>
+                <div class="category-radios">
+                    <label class="category-radio-label"><input type="radio" name="foodCategory" value="野菜" checked> 野菜</label>
+                    <label class="category-radio-label"><input type="radio" name="foodCategory" value="肉"> 肉</label>
+                    <label class="category-radio-label"><input type="radio" name="foodCategory" value="魚"> 魚</label>
+                    <label class="category-radio-label"><input type="radio" name="foodCategory" value="穀物"> 穀物</label>
+                    <label class="category-radio-label"><input type="radio" name="foodCategory" value="その他"> その他</label>
+                </div>
             </div>
             <button class="action-btn" onclick="addFoodMaster()">食材を登録する</button>
         </div>
@@ -336,10 +422,12 @@
 
     <script>
         let db = null;
+        let currentFilter = 'すべて';
         let foods = JSON.parse(localStorage.getItem('simple_tab_calorie_foods')) || [
-            { id: 1, name: 'バナナ (1本)', calorie: 86 },
-            { id: 2, name: 'ゆで卵 (1個)', calorie: 76 },
-            { id: 3, name: 'プロテイン (1杯)', calorie: 120 }
+            { id: 1, name: 'バナナ (1本)', calorie: 86, category: 'その他' },
+            { id: 2, name: 'ゆで卵 (1個)', calorie: 76, category: 'その他' },
+            { id: 3, name: '鶏むね肉 (100g)', calorie: 145, category: '肉' },
+            { id: 4, name: 'トマト (1個)', calorie: 30, category: '野菜' }
         ];
 
         // IndexedDB初期化
@@ -382,6 +470,19 @@
             }
         }
 
+        // カテゴリフィルター切り替え
+        function setCategoryFilter(category) {
+            currentFilter = category;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.textContent === category) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            updateLists();
+        }
+
         // トースト通知表示
         function showToast(message) {
             const toast = document.getElementById('toast');
@@ -411,7 +512,6 @@
             document.getElementById('modalMealName').value = '';
             document.getElementById('saveModal').classList.add('active');
             
-            // モーダル表示後に確実に入力欄へフォーカスを当てる
             setTimeout(() => {
                 document.getElementById('modalMealName').focus();
             }, 50);
@@ -465,7 +565,6 @@
             request.onsuccess = () => {
                 showToast('IndexedDBに料理を保存しました！');
                 closeSaveModal();
-                // チェックボックスのクリア
                 checkboxes.forEach(cb => cb.checked = false);
                 calculateTotal();
                 loadSavedMeals();
@@ -495,7 +594,6 @@
                 }
 
                 container.innerHTML = '';
-                // 新しい順に並べ替え
                 meals.reverse().forEach(meal => {
                     const foodNames = meal.foods.map(f => f.name).join(', ');
                     const div = document.createElement('div');
@@ -525,7 +623,7 @@
                 const item = document.createElement('div');
                 item.style.padding = '4px 0';
                 item.style.borderBottom = '1px solid #eee';
-                item.innerHTML = `<strong>${escapeHTML(f.name)}</strong>: ${f.calorie} kcal`;
+                item.innerHTML = `<strong>${escapeHTML(f.name)}</strong> (${f.category || 'その他'}): ${f.calorie} kcal`;
                 foodsContainer.appendChild(item);
             });
 
@@ -579,22 +677,23 @@
         function addFoodMaster() {
             const nameInput = document.getElementById('foodName');
             const calorieInput = document.getElementById('foodCalorie');
+            const categoryRadio = document.querySelector('input[name="foodCategory"]:checked');
+            
             const name = nameInput.value.trim();
             const calorie = parseFloat(calorieInput.value);
+            const category = categoryRadio ? categoryRadio.value : 'その他';
 
             if (!name || isNaN(calorie) || calorie < 0) {
                 showToast('正しい食材名とカロリーを入力してください。');
                 return;
             }
 
-            foods.push({ id: Date.now(), name, calorie });
+            foods.push({ id: Date.now(), name, calorie, category });
             saveAndRefresh();
 
             nameInput.value = '';
             calorieInput.value = '';
             showToast('食材を登録しました！');
-
-            // 登録してもタブの切り替えを行わず、そのままのタブを維持する
         }
 
         // 食材マスタの削除
@@ -625,28 +724,38 @@
             const checkedIds = Array.from(document.querySelectorAll('.food-checkbox:checked'))
                                      .map(cb => parseInt(cb.value));
 
-            // 1. カロリー計算タブ側のリスト（チェックボックス付き）
+            // 1. カロリー計算タブ側のリスト（フィルタリング対応・チェックボックス付き）
             calcContainer.innerHTML = '';
-            foods.forEach(f => {
-                const isChecked = checkedIds.includes(f.id) ? 'checked' : '';
-                const div = document.createElement('div');
-                div.className = 'list-item';
-                div.innerHTML = `
-                    <div class="list-left">
-                        <input type="checkbox" class="food-checkbox" value="${f.id}" ${isChecked} onchange="calculateTotal()">
-                        <span><strong>${escapeHTML(f.name)}</strong><br><small style="color:#666;">${f.calorie} kcal</small></span>
-                    </div>
-                `;
-                calcContainer.appendChild(div);
-            });
+            const filteredFoods = currentFilter === 'すべて' 
+                ? foods 
+                : foods.filter(f => f.category === currentFilter);
+
+            if (filteredFoods.length === 0) {
+                calcContainer.innerHTML = `<p style="color: #888; font-size: 0.9rem;">「${currentFilter}」カテゴリの食材はありません</p>`;
+            } else {
+                filteredFoods.forEach(f => {
+                    const isChecked = checkedIds.includes(f.id) ? 'checked' : '';
+                    const categoryName = f.category || 'その他';
+                    const div = document.createElement('div');
+                    div.className = 'list-item';
+                    div.innerHTML = `
+                        <div class="list-left">
+                            <input type="checkbox" class="food-checkbox" value="${f.id}" ${isChecked} onchange="calculateTotal()">
+                            <span><strong>${escapeHTML(f.name)}</strong> <span class="badge badge-${categoryName}">${categoryName}</span><br><small style="color:#666;">${f.calorie} kcal</small></span>
+                        </div>
+                    `;
+                    calcContainer.appendChild(div);
+                });
+            }
 
             // 2. 登録・削除タブ側のリスト（削除ボタン付き）
             deleteContainer.innerHTML = '';
             foods.forEach(f => {
+                const categoryName = f.category || 'その他';
                 const div = document.createElement('div');
                 div.className = 'list-item';
                 div.innerHTML = `
-                    <span><strong>${escapeHTML(f.name)}</strong><br><small style="color:#666;">${f.calorie} kcal</small></span>
+                    <span><strong>${escapeHTML(f.name)}</strong> <span class="badge badge-${categoryName}">${categoryName}</span><br><small style="color:#666;">${f.calorie} kcal</small></span>
                     <button class="delete-btn" onclick="deleteFoodMaster(${f.id})">削除</button>
                 `;
                 deleteContainer.appendChild(div);
