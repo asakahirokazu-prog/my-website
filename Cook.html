@@ -134,6 +134,34 @@
         .badge-穀物 { background: #fff8e1; color: #f57f17; }
         .badge-その他 { background: #f3e5f5; color: #6a1b9a; }
 
+        /* 選択された食材ラベル一覧のコンテナ */
+        .selected-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 10px;
+            margin-bottom: 12px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        .selected-tag {
+            background: #ffffff;
+            color: var(--primary-color);
+            border: 1px solid #c8e6c9;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .selected-tag span {
+            font-size: 0.7rem;
+            color: #555;
+        }
+
         /* フィルタータブスタイル */
         .filter-container {
             display: flex;
@@ -217,6 +245,7 @@
             font-size: 1.8rem;
             font-weight: bold;
             color: var(--primary-color);
+            margin-top: 4px;
         }
         .toast {
             position: fixed;
@@ -319,6 +348,12 @@
         <div class="total-banner">
             <div>選択した食材の合計カロリー</div>
             <div class="calories"><span id="selectedTotal">0</span> kcal</div>
+            
+            <!-- 上段のカロリー表示の下に並べるラベルコンテナ -->
+            <div id="selectedTagsContainer" class="selected-tags-container">
+                <span style="font-size: 0.8rem; color: #777;">食材が選択されていません</span>
+            </div>
+
             <button class="action-btn" style="margin-top: 12px;" onclick="openSaveModal()">選択した内容を登録する</button>
         </div>
 
@@ -399,6 +434,36 @@
         </div>
     </div>
 
+    <!-- 食材編集用モーダル -->
+    <div id="editFoodModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">食材の編集</div>
+            <input type="hidden" id="editFoodId">
+            <div class="form-group">
+                <label for="editFoodName">食材名</label>
+                <input type="text" id="editFoodName">
+            </div>
+            <div class="form-group">
+                <label for="editFoodCalorie">カロリー (kcal)</label>
+                <input type="number" id="editFoodCalorie" inputmode="numeric">
+            </div>
+            <div class="form-group">
+                <label>カテゴリ</label>
+                <div class="category-radios">
+                    <label class="category-radio-label"><input type="radio" name="editFoodCategory" value="野菜"> 野菜</label>
+                    <label class="category-radio-label"><input type="radio" name="editFoodCategory" value="肉"> 肉</label>
+                    <label class="category-radio-label"><input type="radio" name="editFoodCategory" value="魚"> 魚</label>
+                    <label class="category-radio-label"><input type="radio" name="editFoodCategory" value="穀物"> 穀物</label>
+                    <label class="category-radio-label"><input type="radio" name="editFoodCategory" value="その他"> その他</label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeEditFoodModal()">キャンセル</button>
+                <button class="modal-btn modal-btn-submit" onclick="updateFoodMaster()">更新する</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 料理詳細表示モーダル -->
     <div id="detailModal" class="modal-overlay">
         <div class="modal-content">
@@ -423,6 +488,7 @@
     <script>
         let db = null;
         let currentFilter = 'すべて';
+        let selectedFoodIds = new Set(); // カテゴリを切り替えても選択状態を保持するSet
         let foods = JSON.parse(localStorage.getItem('simple_tab_calorie_foods')) || [
             { id: 1, name: 'バナナ (1本)', calorie: 86, category: 'その他' },
             { id: 2, name: 'ゆで卵 (1個)', calorie: 76, category: 'その他' },
@@ -495,15 +561,13 @@
 
         // モーダルを開く
         function openSaveModal() {
-            const checkboxes = document.querySelectorAll('.food-checkbox:checked');
-            if (checkboxes.length === 0) {
+            if (selectedFoodIds.size === 0) {
                 showToast('食材を1つ以上選択してください。');
                 return;
             }
 
             let total = 0;
-            checkboxes.forEach(cb => {
-                const id = parseInt(cb.value);
+            selectedFoodIds.forEach(id => {
                 const food = foods.find(f => f.id === id);
                 if (food) total += food.calorie;
             });
@@ -522,11 +586,59 @@
             document.getElementById('saveModal').classList.remove('active');
         }
 
+        // 食材編集モーダルを開く
+        function openEditFoodModal(id) {
+            const food = foods.find(f => f.id === id);
+            if (!food) return;
+
+            document.getElementById('editFoodId').value = food.id;
+            document.getElementById('editFoodName').value = food.name;
+            document.getElementById('editFoodCalorie').value = food.calorie;
+            
+            const radios = document.querySelectorAll('input[name="editFoodCategory"]');
+            radios.forEach(r => {
+                if (r.value === (food.category || 'その他')) {
+                    r.checked = true;
+                }
+            });
+
+            document.getElementById('editFoodModal').classList.add('active');
+        }
+
+        // 食材編集モーダルを閉じる
+        function closeEditFoodModal() {
+            document.getElementById('editFoodModal').classList.remove('active');
+        }
+
+        // 食材マスタの更新
+        function updateFoodMaster() {
+            const id = parseInt(document.getElementById('editFoodId').value);
+            const nameInput = document.getElementById('editFoodName');
+            const calorieInput = document.getElementById('editFoodCalorie');
+            const categoryRadio = document.querySelector('input[name="editFoodCategory"]:checked');
+
+            const name = nameInput.value.trim();
+            const calorie = parseFloat(calorieInput.value);
+            const category = categoryRadio ? categoryRadio.value : 'その他';
+
+            if (!name || isNaN(calorie) || calorie < 0) {
+                showToast('正しい食材名とカロリーを入力してください。');
+                return;
+            }
+
+            const index = foods.findIndex(f => f.id === id);
+            if (index !== -1) {
+                foods[index] = { id, name, calorie, category };
+                saveAndRefresh();
+                closeEditFoodModal();
+                showToast('食材情報を更新しました！');
+            }
+        }
+
         // IndexedDBへ料理名と選択された食材・合計カロリーを保存
         function saveMealToIDB() {
             const mealNameInput = document.getElementById('modalMealName');
             const mealName = mealNameInput.value.trim();
-            const checkboxes = document.querySelectorAll('.food-checkbox:checked');
 
             if (!mealName) {
                 showToast('料理名を入力してください。');
@@ -537,8 +649,7 @@
             const selectedFoods = [];
             let totalCalorie = 0;
 
-            checkboxes.forEach(cb => {
-                const id = parseInt(cb.value);
+            selectedFoodIds.forEach(id => {
                 const food = foods.find(f => f.id === id);
                 if (food) {
                     selectedFoods.push(food);
@@ -565,8 +676,8 @@
             request.onsuccess = () => {
                 showToast('IndexedDBに料理を保存しました！');
                 closeSaveModal();
-                checkboxes.forEach(cb => cb.checked = false);
-                calculateTotal();
+                selectedFoodIds.clear();
+                updateLists();
                 loadSavedMeals();
             };
 
@@ -699,6 +810,7 @@
         // 食材マスタの削除
         function deleteFoodMaster(id) {
             foods = foods.filter(f => f.id !== id);
+            selectedFoodIds.delete(id); // 削除された場合は選択状態からも除外
             saveAndRefresh();
             showToast('食材を削除しました');
         }
@@ -709,6 +821,17 @@
             updateLists();
         }
 
+        // チェックボックス変更時のハンドラ
+        function handleCheckboxChange(id, checkbox) {
+            const numericId = parseInt(id);
+            if (checkbox.checked) {
+                selectedFoodIds.add(numericId);
+            } else {
+                selectedFoodIds.delete(numericId);
+            }
+            updateTotalAndTags();
+        }
+
         // リストの更新
         function updateLists() {
             const calcContainer = document.getElementById('masterList');
@@ -717,12 +840,9 @@
             if (foods.length === 0) {
                 calcContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>';
                 deleteContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>';
-                calculateTotal();
+                updateTotalAndTags();
                 return;
             }
-
-            const checkedIds = Array.from(document.querySelectorAll('.food-checkbox:checked'))
-                                     .map(cb => parseInt(cb.value));
 
             // 1. カロリー計算タブ側のリスト（フィルタリング対応・チェックボックス付き）
             calcContainer.innerHTML = '';
@@ -734,13 +854,13 @@
                 calcContainer.innerHTML = `<p style="color: #888; font-size: 0.9rem;">「${currentFilter}」カテゴリの食材はありません</p>`;
             } else {
                 filteredFoods.forEach(f => {
-                    const isChecked = checkedIds.includes(f.id) ? 'checked' : '';
+                    const isChecked = selectedFoodIds.has(f.id) ? 'checked' : '';
                     const categoryName = f.category || 'その他';
                     const div = document.createElement('div');
                     div.className = 'list-item';
                     div.innerHTML = `
                         <div class="list-left">
-                            <input type="checkbox" class="food-checkbox" value="${f.id}" ${isChecked} onchange="calculateTotal()">
+                            <input type="checkbox" class="food-checkbox" value="${f.id}" ${isChecked} onchange="handleCheckboxChange(${f.id}, this)">
                             <span><strong>${escapeHTML(f.name)}</strong> <span class="badge badge-${categoryName}">${categoryName}</span><br><small style="color:#666;">${f.calorie} kcal</small></span>
                         </div>
                     `;
@@ -748,7 +868,7 @@
                 });
             }
 
-            // 2. 登録・削除タブ側のリスト（削除ボタン付き）
+            // 2. 登録・削除タブ側のリスト（編集ボタン・削除ボタン付き）
             deleteContainer.innerHTML = '';
             foods.forEach(f => {
                 const categoryName = f.category || 'その他';
@@ -756,26 +876,37 @@
                 div.className = 'list-item';
                 div.innerHTML = `
                     <span><strong>${escapeHTML(f.name)}</strong> <span class="badge badge-${categoryName}">${categoryName}</span><br><small style="color:#666;">${f.calorie} kcal</small></span>
-                    <button class="delete-btn" onclick="deleteFoodMaster(${f.id})">削除</button>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="delete-btn" style="background: #1976d2;" onclick="openEditFoodModal(${f.id})">編集</button>
+                        <button class="delete-btn" onclick="deleteFoodMaster(${f.id})">削除</button>
+                    </div>
                 `;
                 deleteContainer.appendChild(div);
             });
 
-            calculateTotal();
+            updateTotalAndTags();
         }
 
-        // 合計カロリーの計算
-        function calculateTotal() {
-            const checkboxes = document.querySelectorAll('.food-checkbox:checked');
+        // 合計カロリーの計算と選択された食材ラベルの描画
+        function updateTotalAndTags() {
             let total = 0;
+            const tagsContainer = document.getElementById('selectedTagsContainer');
+            tagsContainer.innerHTML = '';
 
-            checkboxes.forEach(cb => {
-                const id = parseInt(cb.value);
-                const food = foods.find(f => f.id === id);
-                if (food) {
-                    total += food.calorie;
-                }
-            });
+            if (selectedFoodIds.size === 0) {
+                tagsContainer.innerHTML = '<span style="font-size: 0.8rem; color: #777;">食材が選択されていません</span>';
+            } else {
+                selectedFoodIds.forEach(id => {
+                    const food = foods.find(f => f.id === id);
+                    if (food) {
+                        total += food.calorie;
+                        const tag = document.createElement('div');
+                        tag.className = 'selected-tag';
+                        tag.innerHTML = `${escapeHTML(food.name)} <span>(${food.calorie}kcal)</span>`;
+                        tagsContainer.appendChild(tag);
+                    }
+                });
+            }
 
             document.getElementById('selectedTotal').textContent = total;
         }
