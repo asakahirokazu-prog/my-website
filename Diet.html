@@ -44,6 +44,13 @@
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
+        /* バックグラウンドスクロール防止用クラス */
+        body.modal-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -334,8 +341,8 @@
     <div id="calorie-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto relative">
             
-            <!-- トースト通知用コンテナ -->
-            <div id="toast-container" class="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none"></div>
+            <!-- トースト通知用コンテナ（画面中央に表示） -->
+            <div id="toast-container" class="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"></div>
 
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
@@ -361,13 +368,11 @@
 
             <!-- おすすめタブコンテンツ -->
             <div id="tab-content-recommended" class="space-y-1.5 bg-amber-300/80 p-3 rounded-2xl border border-amber-400 shadow-inner">
-                <div class="text-[10px] font-bold text-amber-900 mb-1">💡 押下すると直接DB（記録）に登録されます（モーダルは閉じません）</div>
                 <div id="recommended-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
 
             <!-- いつもの食品タブコンテンツ -->
             <div id="tab-content-favorite" class="space-y-1.5 bg-sky-300/80 p-3 rounded-2xl border border-sky-400 shadow-inner hidden">
-                <div class="text-[10px] font-bold text-sky-900 mb-1">⭐ 押下すると直接DB（記録）に登録されます（モーダルは閉じません）</div>
                 <div id="favorite-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
             </div>
 
@@ -375,7 +380,7 @@
                 <p class="text-[10px] font-bold text-slate-500">または手動で入力:</p>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">項目名 / 食品名</label>
-                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" onkeydown="handleItemNameKeydown(event)" onblur="handleItemNameBlur(event)" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div>
                     <div class="flex justify-between items-center mb-1">
@@ -715,15 +720,23 @@
             document.getElementById('current-date').textContent = new Date().toLocaleDateString('ja-JP', options);
         }
 
+        // モーダルを表示したときにバックグラウンドのスクロールを固定
         function showModal(id) {
             const modal = document.getElementById(id);
             modal.classList.remove('hidden');
+            document.body.classList.add('modal-open');
             lucide.createIcons();
         }
 
+        // モーダルを非表示にしたときにバックグラウンドのスクロール固定を解除
         function hideModal(id) {
             const modal = document.getElementById(id);
             modal.classList.add('hidden');
+            // 他に開いているモーダルがなければスクロール固定を解除
+            const openModals = document.querySelectorAll('.modal:not(.hidden)');
+            if (openModals.length === 0) {
+                document.body.classList.remove('modal-open');
+            }
         }
 
         function openCalorieModal() {
@@ -783,13 +796,14 @@
 
         function showToast(message) {
             const container = document.getElementById('toast-container');
+            container.innerHTML = ''; // 既存のトーストがあればクリア
             const toast = document.createElement('div');
-            toast.className = "bg-slate-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg backdrop-blur-md animate-toast whitespace-nowrap";
+            toast.className = "bg-slate-900/95 text-white text-sm font-bold px-6 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md animate-toast whitespace-nowrap border border-white/20 pointer-events-auto";
             toast.textContent = message;
             container.appendChild(toast);
             setTimeout(() => {
                 toast.remove();
-            }, 1000);
+            }, 1200);
         }
 
         function registerFoodDirectly(name, calorie) {
@@ -797,6 +811,28 @@
             localStorage.setItem('calorie_records', JSON.stringify(records));
             renderApp();
             showToast("追加しました！");
+        }
+
+        function handleItemNameKeydown(e) {
+            // Enterキーが押されたとき（確定時）に次のカロリー入力欄へフォーカスを移動
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = e.target.value.trim();
+                if (val.length > 0) {
+                    const calorieInput = document.getElementById('item-calorie');
+                    if (calorieInput) {
+                        calorieInput.focus();
+                    }
+                }
+            }
+        }
+
+        function handleItemNameBlur(e) {
+            // 入力欄からフォーカスが外れたとき（確定時）に空でなければ次の項目へ
+            const val = e.target.value.trim();
+            if (val.length > 0) {
+                // 必要であればここで何か追加処理を記述
+            }
         }
 
         function saveAsRecommended() {
