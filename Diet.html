@@ -44,7 +44,6 @@
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        /* バックグラウンドスクロール防止用クラス */
         body.modal-open {
             overflow: hidden;
             position: fixed;
@@ -84,6 +83,13 @@
         }
         .animate-toast {
             animation: toastFade 1s ease forwards;
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        .animate-float {
+            animation: floatSlow 3s ease-in-out infinite;
         }
     </style>
 </head>
@@ -188,6 +194,41 @@
 
     </main>
 
+    <!-- 目標達成 超盛大お祝いモーダル -->
+    <div id="goal-achievement-modal" class="modal fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-gradient-to-b from-amber-400 via-orange-500 to-rose-600 rounded-3xl max-w-md w-full p-8 shadow-2xl text-white text-center space-y-6 border-4 border-amber-200 relative overflow-hidden animate-float">
+            <!-- 光の演出用エフェクト -->
+            <div class="absolute -top-20 -left-20 w-40 h-40 bg-white/35 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-yellow-200/35 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex justify-center pt-2">
+                <div class="bg-white text-amber-500 p-5 rounded-full shadow-2xl animate-bounce">
+                    <i data-lucide="crown" class="w-14 h-14 text-amber-500"></i>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <span class="bg-white/30 text-white px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest border border-white/40 shadow-inner">🏆 偉大な達成！</span>
+                <h2 class="text-3xl sm:text-4xl font-black tracking-tight text-white drop-shadow-lg">目標体重に到達しました！</h2>
+                <p id="achievement-desc" class="text-xs sm:text-sm text-amber-100 font-medium leading-relaxed pt-1 drop-shadow">
+                    おめでとうございます！ついに目標の体重を達成しました。これまでのあなたの努力と継続の結晶です！
+                </p>
+            </div>
+
+            <div class="bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-center shadow-inner">
+                <p class="text-[10px] uppercase tracking-wider text-amber-200 font-bold">達成体重</p>
+                <p id="achievement-weight-val" class="text-3xl font-black text-white mt-0.5">-- <span class="text-sm font-normal">kg</span></p>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" onclick="closeGoalAchievementModal()" class="w-full bg-white hover:bg-amber-50 text-orange-700 font-black py-4 px-6 rounded-2xl shadow-2xl transition transform active:scale-95 text-base flex items-center justify-center gap-2">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-orange-500"></i>
+                    <span>最高だ！お祝いを満喫する</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- お酒チェックモーダル -->
     <div id="alcohol-check-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4 text-center">
@@ -234,6 +275,7 @@
         </div>
     </div>
 
+    <!-- 締め処理確認用モーダル -->
     <div id="closing-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -259,6 +301,7 @@
         </div>
     </div>
 
+    <!-- ステータス編集モーダル -->
     <div id="streak-edit-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -297,6 +340,7 @@
         </div>
     </div>
 
+    <!-- 体重履歴モーダル -->
     <div id="weight-history-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[80vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -317,6 +361,7 @@
         </div>
     </div>
 
+    <!-- カロリー履歴モーダル -->
     <div id="history-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[80vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -341,7 +386,6 @@
     <div id="calorie-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto relative">
             
-            <!-- トースト通知用コンテナ（画面中央に表示） -->
             <div id="toast-container" class="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"></div>
 
             <div class="flex justify-between items-center">
@@ -407,6 +451,7 @@
         </div>
     </div>
 
+    <!-- 体重入力モーダル -->
     <div id="weight-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div class="flex justify-between items-center">
@@ -423,7 +468,6 @@
             <form id="weight-form" onsubmit="handleWeightFormSubmit(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">体重 (kg)</label>
-                    <!-- メイン数値ディスプレイ＆プラスマイナスボタン -->
                     <div class="flex items-center gap-2 mt-1">
                         <button type="button" onclick="adjustWeight(-0.1)" class="w-14 h-14 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-2xl text-2xl font-black transition flex items-center justify-center shadow-xs active:scale-95 touch-none select-none" title="0.1kg減らす">-</button>
                         
@@ -445,6 +489,7 @@
         </div>
     </div>
 
+    <!-- グラフモーダル -->
     <div id="graph-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
@@ -467,6 +512,7 @@
         </div>
     </div>
 
+    <!-- 設定モーダル -->
     <div id="goal-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
@@ -507,6 +553,7 @@
         </div>
     </div>
 
+    <!-- 工夫記録モーダル -->
     <div id="success-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-4">
             <div class="flex justify-between items-center mb-2">
@@ -720,7 +767,6 @@
             document.getElementById('current-date').textContent = new Date().toLocaleDateString('ja-JP', options);
         }
 
-        // モーダルを表示したときにバックグラウンドのスクロールを固定
         function showModal(id) {
             const modal = document.getElementById(id);
             modal.classList.remove('hidden');
@@ -728,11 +774,9 @@
             lucide.createIcons();
         }
 
-        // モーダルを非表示にしたときにバックグラウンドのスクロール固定を解除
         function hideModal(id) {
             const modal = document.getElementById(id);
             modal.classList.add('hidden');
-            // 他に開いているモーダルがなければスクロール固定を解除
             const openModals = document.querySelectorAll('.modal:not(.hidden)');
             if (openModals.length === 0) {
                 document.body.classList.remove('modal-open');
@@ -796,7 +840,7 @@
 
         function showToast(message) {
             const container = document.getElementById('toast-container');
-            container.innerHTML = ''; // 既存のトーストがあればクリア
+            container.innerHTML = '';
             const toast = document.createElement('div');
             toast.className = "bg-slate-900/95 text-white text-sm font-bold px-6 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md animate-toast whitespace-nowrap border border-white/20 pointer-events-auto";
             toast.textContent = message;
@@ -814,7 +858,6 @@
         }
 
         function handleItemNameKeydown(e) {
-            // Enterキーが押されたとき（確定時）に次のカロリー入力欄へフォーカスを移動
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const val = e.target.value.trim();
@@ -827,13 +870,7 @@
             }
         }
 
-        function handleItemNameBlur(e) {
-            // 入力欄からフォーカスが外れたとき（確定時）に空でなければ次の項目へ
-            const val = e.target.value.trim();
-            if (val.length > 0) {
-                // 必要であればここで何か追加処理を記述
-            }
-        }
+        function handleItemNameBlur(e) {}
 
         function saveAsRecommended() {
             const name = document.getElementById('item-name').value.trim();
@@ -1048,24 +1085,36 @@
                     origin: { y: 0.4 },
                     colors: ['#ffb7c5', '#ffc0cb', '#ffffff', '#ff69b4', '#ff1493']
                 });
-
-                setTimeout(() => {
-                    confetti({
-                        particleCount: 50,
-                        angle: 60,
-                        spread: 70,
-                        origin: { x: 0, y: 0.5 },
-                        colors: ['#ffb7c5', '#ffc0cb', '#ffffff']
-                    });
-                    confetti({
-                        particleCount: 50,
-                        angle: 120,
-                        spread: 70,
-                        origin: { x: 1, y: 0.5 },
-                        colors: ['#ffb7c5', '#ffc0cb', '#ffffff']
-                    });
-                }, 200);
             }
+        }
+
+        function triggerGrandGoalAchievementCelebration(weight) {
+            document.getElementById('achievement-weight-val').innerHTML = `${weight.toFixed(1)} <span class="text-sm font-normal">kg</span>`;
+            showModal('goal-achievement-modal');
+
+            if (typeof confetti === 'function') {
+                const duration = 3.5 * 1000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 99999 };
+
+                function randomInRange(min, max) {
+                    return Math.random() * (max - min) + min;
+                }
+
+                const interval = setInterval(function() {
+                    const timeLeft = animationEnd - Date.now();
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+                    const particleCount = 50 * (timeLeft / duration);
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                    confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+                }, 250);
+            }
+        }
+
+        function closeGoalAchievementModal() {
+            hideModal('goal-achievement-modal');
         }
 
         function openGraphModal() {
@@ -1226,6 +1275,12 @@
             localStorage.setItem('weight_records', JSON.stringify(weightRecords));
             closeWeightModal();
             renderWeightApp();
+
+            if (weight <= goalWeight) {
+                setTimeout(() => {
+                    triggerGrandGoalAchievementCelebration(weight);
+                }, 300);
+            }
         }
 
         function handleFormSubmit(e) {
