@@ -137,29 +137,56 @@
         /* 選択された食材ラベル一覧のコンテナ */
         .selected-tags-container {
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
             margin-top: 10px;
             margin-bottom: 12px;
-            max-height: 100px;
+            max-height: 180px;
             overflow-y: auto;
+            text-align: left;
+            padding: 0 4px;
         }
-        .selected-tag {
+        .selected-tag-item {
             background: #ffffff;
-            color: var(--primary-color);
             border: 1px solid #c8e6c9;
-            padding: 4px 10px;
-            border-radius: 16px;
-            font-size: 0.8rem;
-            display: inline-flex;
+            padding: 8px 12px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 4px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        .selected-tag span {
-            font-size: 0.7rem;
+        .selected-tag-info {
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .selected-tag-info span {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: normal;
+        }
+        
+        /* 個数選択ラベル（ボタン風） */
+        .qty-picker {
+            display: flex;
+            gap: 4px;
+        }
+        .qty-btn {
+            background: #f0f0f0;
+            border: 1px solid #d0d0d0;
             color: #555;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .qty-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
         }
 
         /* フィルタータブスタイル */
@@ -349,9 +376,9 @@
             <div>選択した食材の合計カロリー</div>
             <div class="calories"><span id="selectedTotal">0</span> kcal</div>
             
-            <!-- 上段のカロリー表示の下に並べるラベルコンテナ -->
+            <!-- 上段のカロリー表示の下に並べるラベルコンテナ（個数選択付き） -->
             <div id="selectedTagsContainer" class="selected-tags-container">
-                <span style="font-size: 0.8rem; color: #777;">食材が選択されていません</span>
+                <span style="font-size: 0.8rem; color: #777; text-align: center; display: block;">食材が選択されていません</span>
             </div>
 
             <button class="action-btn" style="margin-top: 12px;" onclick="openSaveModal()">選択した内容を登録する</button>
@@ -488,7 +515,8 @@
     <script>
         let db = null;
         let currentFilter = 'すべて';
-        let selectedFoodIds = new Set(); // カテゴリを切り替えても選択状態を保持するSet
+        // 選択された食材IDと個数のペアを管理するMap (id -> quantity)
+        let selectedFoodMap = new Map(); 
         let foods = JSON.parse(localStorage.getItem('simple_tab_calorie_foods')) || [
             { id: 1, name: 'バナナ (1本)', calorie: 86, category: 'その他' },
             { id: 2, name: 'ゆで卵 (1個)', calorie: 76, category: 'その他' },
@@ -561,15 +589,15 @@
 
         // モーダルを開く
         function openSaveModal() {
-            if (selectedFoodIds.size === 0) {
+            if (selectedFoodMap.size === 0) {
                 showToast('食材を1つ以上選択してください。');
                 return;
             }
 
             let total = 0;
-            selectedFoodIds.forEach(id => {
+            selectedFoodMap.forEach((qty, id) => {
                 const food = foods.find(f => f.id === id);
-                if (food) total += food.calorie;
+                if (food) total += food.calorie * qty;
             });
 
             document.getElementById('modalTotalCal').textContent = total;
@@ -635,7 +663,7 @@
             }
         }
 
-        // IndexedDBへ料理名と選択された食材・合計カロリーを保存
+        // IndexedDBへ料理名と選択された食材・個数・合計カロリーを保存
         function saveMealToIDB() {
             const mealNameInput = document.getElementById('modalMealName');
             const mealName = mealNameInput.value.trim();
@@ -649,11 +677,11 @@
             const selectedFoods = [];
             let totalCalorie = 0;
 
-            selectedFoodIds.forEach(id => {
+            selectedFoodMap.forEach((qty, id) => {
                 const food = foods.find(f => f.id === id);
                 if (food) {
-                    selectedFoods.push(food);
-                    totalCalorie += food.calorie;
+                    selectedFoods.push({ ...food, quantity: qty });
+                    totalCalorie += food.calorie * qty;
                 }
             });
 
@@ -676,7 +704,7 @@
             request.onsuccess = () => {
                 showToast('IndexedDBに料理を保存しました！');
                 closeSaveModal();
-                selectedFoodIds.clear();
+                selectedFoodMap.clear();
                 updateLists();
                 loadSavedMeals();
             };
@@ -706,14 +734,14 @@
 
                 container.innerHTML = '';
                 meals.reverse().forEach(meal => {
-                    const foodNames = meal.foods.map(f => f.name).join(', ');
+                    const foodDetails = meal.foods.map(f => `${f.name}×${f.quantity || 1}`).join(', ');
                     const div = document.createElement('div');
                     div.className = 'list-item saved-meal-item';
                     div.onclick = () => openDetailModal(meal);
                     div.innerHTML = `
                         <div style="width: 100%;">
                             <strong>${escapeHTML(meal.name)}</strong> (${meal.totalCalorie} kcal)<br>
-                            <small style="color:#666;">食材: ${escapeHTML(foodNames)}</small><br>
+                            <small style="color:#666;">食材: ${escapeHTML(foodDetails)}</small><br>
                             <small style="color:#999; font-size: 0.75rem;">${meal.createdAt}</small>
                         </div>
                     `;
@@ -731,10 +759,11 @@
             const foodsContainer = document.getElementById('detailFoodsList');
             foodsContainer.innerHTML = '';
             meal.foods.forEach(f => {
+                const qty = f.quantity || 1;
                 const item = document.createElement('div');
                 item.style.padding = '4px 0';
                 item.style.borderBottom = '1px solid #eee';
-                item.innerHTML = `<strong>${escapeHTML(f.name)}</strong> (${f.category || 'その他'}): ${f.calorie} kcal`;
+                item.innerHTML = `<strong>${escapeHTML(f.name)}</strong> × ${qty} (${f.category || 'その他'}): ${f.calorie * qty} kcal`;
                 foodsContainer.appendChild(item);
             });
 
@@ -810,7 +839,7 @@
         // 食材マスタの削除
         function deleteFoodMaster(id) {
             foods = foods.filter(f => f.id !== id);
-            selectedFoodIds.delete(id); // 削除された場合は選択状態からも除外
+            selectedFoodMap.delete(id); // 削除された場合は選択状態からも除外
             saveAndRefresh();
             showToast('食材を削除しました');
         }
@@ -825,11 +854,32 @@
         function handleCheckboxChange(id, checkbox) {
             const numericId = parseInt(id);
             if (checkbox.checked) {
-                selectedFoodIds.add(numericId);
+                // デフォルトで個数1を選択
+                selectedFoodMap.set(numericId, 1);
             } else {
-                selectedFoodIds.delete(numericId);
+                selectedFoodMap.delete(numericId);
             }
-            updateTotalAndTags();
+            updateLists();
+        }
+
+        // 個数変更時のハンドラ
+        function changeQuantity(id, qty) {
+            const numericId = parseInt(id);
+            if (selectedFoodMap.has(numericId)) {
+                selectedFoodMap.set(numericId, qty);
+                updateTotalAndTags();
+                // 個数ラベルのactive状態を更新
+                const container = document.getElementById(`qty-picker-${numericId}`);
+                if (container) {
+                    container.querySelectorAll('.qty-btn').forEach(btn => {
+                        if (parseInt(btn.dataset.qty) === qty) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    });
+                }
+            }
         }
 
         // リストの更新
@@ -854,7 +904,7 @@
                 calcContainer.innerHTML = `<p style="color: #888; font-size: 0.9rem;">「${currentFilter}」カテゴリの食材はありません</p>`;
             } else {
                 filteredFoods.forEach(f => {
-                    const isChecked = selectedFoodIds.has(f.id) ? 'checked' : '';
+                    const isChecked = selectedFoodMap.has(f.id) ? 'checked' : '';
                     const categoryName = f.category || 'その他';
                     const div = document.createElement('div');
                     div.className = 'list-item';
@@ -887,23 +937,34 @@
             updateTotalAndTags();
         }
 
-        // 合計カロリーの計算と選択された食材ラベルの描画
+        // 合計カロリーの計算と選択された食材ラベル（個数ボタン付き）の描画
         function updateTotalAndTags() {
             let total = 0;
             const tagsContainer = document.getElementById('selectedTagsContainer');
             tagsContainer.innerHTML = '';
 
-            if (selectedFoodIds.size === 0) {
-                tagsContainer.innerHTML = '<span style="font-size: 0.8rem; color: #777;">食材が選択されていません</span>';
+            if (selectedFoodMap.size === 0) {
+                tagsContainer.innerHTML = '<span style="font-size: 0.8rem; color: #777; text-align: center; display: block;">食材が選択されていません</span>';
             } else {
-                selectedFoodIds.forEach(id => {
+                selectedFoodMap.forEach((qty, id) => {
                     const food = foods.find(f => f.id === id);
                     if (food) {
-                        total += food.calorie;
-                        const tag = document.createElement('div');
-                        tag.className = 'selected-tag';
-                        tag.innerHTML = `${escapeHTML(food.name)} <span>(${food.calorie}kcal)</span>`;
-                        tagsContainer.appendChild(tag);
+                        const itemTotal = food.calorie * qty;
+                        total += itemTotal;
+
+                        const tagItem = document.createElement('div');
+                        tagItem.className = 'selected-tag-item';
+                        tagItem.innerHTML = `
+                            <div class="selected-tag-info">
+                                ${escapeHTML(food.name)} <span>(${itemTotal}kcal)</span>
+                            </div>
+                            <div class="qty-picker" id="qty-picker-${food.id}">
+                                <button class="qty-btn ${qty === 1 ? 'active' : ''}" data-qty="1" onclick="changeQuantity(${food.id}, 1)">1つ</button>
+                                <button class="qty-btn ${qty === 2 ? 'active' : ''}" data-qty="2" onclick="changeQuantity(${food.id}, 2)">2つ</button>
+                                <button class="qty-btn ${qty === 3 ? 'active' : ''}" data-qty="3" onclick="changeQuantity(${food.id}, 3)">3つ</button>
+                            </div>
+                        `;
+                        tagsContainer.appendChild(tagItem);
                     }
                 });
             }
