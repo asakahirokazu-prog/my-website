@@ -262,14 +262,14 @@
     }
 
     .today-item.completed {
-      background-color: #f3f4f6 !important;
-      border-left-color: #9ca3af !important;
-      opacity: 0.65;
+      background-color: #d1d5db !important;
+      border-left-color: #6b7280 !important;
+      opacity: 0.85;
     }
 
     .today-item.completed .item-text {
       text-decoration: line-through;
-      color: var(--text-muted);
+      color: #374151;
     }
 
     .item-left {
@@ -712,13 +712,22 @@
     let activeCategoryFilter = 'ALL';
     let selectedColor = COLOR_PALETTE[0];
     let activeShoppingTaskId = null;
-    let masterSectionOpen = true;
+    let masterSectionOpen = false;
 
     // --- App Initializer ---
     function init() {
       if (!categories.find(c => c.id === 'cat-other' || c.name === 'その他')) {
         categories.push({ id: 'cat-other', name: 'その他', color: '#6b7280' });
       }
+      
+      // Apply initial closed state to collapsible section
+      const body = document.getElementById('master-section-body');
+      const arrow = document.getElementById('master-toggle-arrow');
+      if (body && arrow) {
+        body.classList.add('hidden');
+        arrow.classList.add('collapsed');
+      }
+
       renderCategoryTabs();
       renderMasterChips();
       renderTodayTasks();
@@ -930,8 +939,10 @@
 
         const li = document.createElement('li');
         li.className = `today-item ${task.completed ? 'completed' : ''}`;
-        li.style.backgroundColor = bgRgba;
-        li.style.borderLeftColor = cat.color;
+        if (!task.completed) {
+          li.style.backgroundColor = bgRgba;
+          li.style.borderLeftColor = cat.color;
+        }
 
         li.innerHTML = `
           <div class="item-left" onclick="handleTaskClick('${task.id}')">
