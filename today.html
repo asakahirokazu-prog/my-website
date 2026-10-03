@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>今日</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --radius: 12px;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 40px;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px 16px;
+    }
+
+    /* Header Styles (Single Line Layout) */
+    header {
+      margin-bottom: 16px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .title-area {
+      min-width: 0;
+      flex: 1;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .icon-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-weight: 600;
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      white-space: nowrap;
+    }
+
+    .icon-btn.danger {
+      color: var(--danger);
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      background: var(--card-bg);
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar-bg {
+      background: #e5e7eb;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      background: var(--success);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Section Styles */
+    section {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    /* Collapsible Section Header */
+    .section-header-collapsible {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle-arrow {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      transition: transform 0.25s ease;
+    }
+
+    .toggle-arrow.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .collapsible-body {
+      margin-top: 12px;
+      display: block;
+    }
+
+    .collapsible-body.hidden {
+      display: none;
+    }
+
+    /* Category Filter Tabs (Flex Wrap) */
+    .category-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .tab-btn {
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--text);
+      color: #fff;
+      border-color: var(--text);
+    }
+
+    /* Master Chips Area (Flex Wrap) */
+    .master-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip-btn {
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: transform 0.1s;
+    }
+
+    .chip-btn:active {
+      transform: scale(0.96);
+    }
+
+    .cat-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Today's List */
+    .today-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .today-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--card-bg);
+      gap: 10px;
+    }
+
+    .today-item.completed {
+      background: #f9fafb;
+      opacity: 0.6;
+    }
+
+    .today-item.completed .item-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+    }
+
+    .custom-checkbox {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .today-item.completed .custom-checkbox {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .item-details {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .item-text {
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-cat {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .shopping-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      padding: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-radius: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 20px 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 480px;
+      border-radius: 16px 16px 0 0;
+      padding: 20px;
+      max-height: 85vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.25s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+
+    .input-with-btn {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    .btn-inline {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .master-item-list {
+      list-style: none;
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+
+    .master-item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .color-picker {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .color-option {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .color-option.selected {
+      border-color: var(--text);
+    }
+
+    /* Shopping List Specific */
+    .shopping-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .shopping-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .shopping-item-text {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .shopping-item-row.done .shopping-item-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .share-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #10b981;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease;
+      z-index: 2000;
+    }
+
+    .share-toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <div class="title-area">
+          <h1>今日</h1>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" onclick="copyShareText()">📋 コピー</button>
+          <button class="icon-btn" onclick="openMasterModal()">⚙️ マスタ</button>
+          <button class="icon-btn danger" onclick="clearTodayTasks()">🗑 クリア</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="progress-container">
+      <div class="progress-header">
+        <span>達成度</span>
+        <span id="progress-text">0 / 0 (0%)</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- Master Tap Section (Collapsible) -->
+    <section>
+      <div class="section-header-collapsible" onclick="toggleMasterSection()">
+        <h2>タップして今日のやりたいことに追加</h2>
+        <span class="toggle-arrow" id="master-toggle-arrow">▼</span>
+      </div>
+
+      <div class="collapsible-body" id="master-section-body">
+        <!-- Category Filter Tabs -->
+        <div class="category-tabs" id="category-tabs"></div>
+
+        <!-- Master Task Chips -->
+        <div class="master-chips" id="master-chips"></div>
+      </div>
+    </section>
+
+    <!-- Today's Tasks Section -->
+    <section>
+      <h2>今日のやりたいことリスト</h2>
+      <ul class="today-list" id="today-list"></ul>
+    </section>
+  </div>
+
+  <!-- Master Management Modal -->
+  <div class="modal-overlay" id="master-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">マスタ設定管理</h2>
+        <button class="modal-close" onclick="closeMasterModal()">✕</button>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="category-tabs" style="margin-bottom: 12px;">
+        <button class="tab-btn active" id="btn-tab-task" onclick="switchModalTab('task')">タスクマスタ</button>
+        <button class="tab-btn" id="btn-tab-cat" onclick="switchModalTab('cat')">カテゴリマスタ</button>
+      </div>
+
+      <!-- Task Master Form -->
+      <div id="modal-task-sec">
+        <form onsubmit="saveTaskMaster(event)">
+          <div class="form-group">
+            <label>タスク名</label>
+            <input type="text" id="task-name-input" class="form-control" placeholder="例: スーパーで買出し" required>
+          </div>
+          <div class="form-group">
+            <label>カテゴリ</label>
+            <select id="task-cat-select" class="form-control"></select>
+          </div>
+          <button type="submit" class="btn-submit">タスクマスタに追加</button>
+        </form>
+
+        <ul class="master-item-list" id="task-master-list"></ul>
+      </div>
+
+      <!-- Category Master Form -->
+      <div id="modal-cat-sec" style="display: none;">
+        <form onsubmit="saveCategoryMaster(event)">
+          <div class="form-group">
+            <label>カテゴリ名</label>
+            <input type="text" id="cat-name-input" class="form-control" placeholder="例: 趣味" required>
+          </div>
+          <div class="form-group">
+            <label>テーマカラー</label>
+            <div class="color-picker" id="color-picker"></div>
+          </div>
+          <button type="submit" class="btn-submit">カテゴリマスタに追加</button>
+        </form>
+
+        <ul class="master-item-list" id="cat-master-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shopping List Modal -->
+  <div class="modal-overlay" id="shopping-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="shopping-modal-title">🛒 買い出しリスト</h2>
+        <button class="modal-close" onclick="closeShoppingModal()">✕</button>
+      </div>
+
+      <form onsubmit="addShoppingItem(event)">
+        <div class="form-group">
+          <label>買うものを追加</label>
+          <div class="input-with-btn">
+            <input type="text" id="shopping-input" class="form-control" placeholder="例: 牛乳、卵、洗剤..." required>
+            <button type="submit" class="btn-inline">追加</button>
+          </div>
+        </div>
+      </form>
+
+      <ul class="master-item-list" id="shopping-items-list"></ul>
+
+      <div style="margin-top: 16px; display: flex; gap: 8px;">
+        <button class="btn-submit" onclick="registerShoppingList()">登録</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="share-toast" id="share-toast">クリップボードにコピーしました！</div>
+
+  <script>
+    // --- Initial Default Data ---
+    const DEFAULT_CATEGORIES = [
+      { id: 'cat-1', name: '家事', color: '#ef4444' },
+      { id: 'cat-2', name: '家で', color: '#3b82f6' },
+      { id: 'cat-3', name: '買い出し', color: '#10b981' },
+      { id: 'cat-4', name: '読書', color: '#f59e0b' },
+      { id: 'cat-5', name: 'ゴルフ', color: '#8b5cf6' }
+    ];
+
+    const DEFAULT_TASKS = [
+      { id: 't-1', name: '部屋の掃除', categoryId: 'cat-1' },
+      { id: 't-2', name: '洗濯機を回す', categoryId: 'cat-1' },
+      { id: 't-3', name: '映画を観る', categoryId: 'cat-2' },
+      { id: 't-4', name: 'ストレッチ', categoryId: 'cat-2' },
+      { id: 't-5', name: '日用品の購入', categoryId: 'cat-3' },
+      { id: 't-6', name: 'ビジネス書を30分読む', categoryId: 'cat-4' },
+      { id: 't-7', name: 'スイングの練習', categoryId: 'cat-5' }
+    ];
+
+    const COLOR_PALETTE = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1', '#6b7280'];
+
+    // --- State Management ---
+    let categories = JSON.parse(localStorage.getItem('app_categories')) || DEFAULT_CATEGORIES;
+    let taskMasters = JSON.parse(localStorage.getItem('app_task_masters')) || DEFAULT_TASKS;
+    let todayTasks = JSON.parse(localStorage.getItem('app_today_tasks')) || [];
+    
+    let activeCategoryFilter = 'ALL';
+    let selectedColor = COLOR_PALETTE[0];
+    let activeShoppingTaskId = null;
+    let masterSectionOpen = true;
+
+    // --- App Initializer ---
+    function init() {
+      renderCategoryTabs();
+      renderMasterChips();
+      renderTodayTasks();
+      updateProgress();
+    }
+
+    function saveData() {
+      localStorage.setItem('app_categories', JSON.stringify(categories));
+      localStorage.setItem('app_task_masters', JSON.stringify(taskMasters));
+      localStorage.setItem('app_today_tasks', JSON.stringify(todayTasks));
+    }
+
+    // --- Collapsible Toggle ---
+    function toggleMasterSection() {
+      masterSectionOpen = !masterSectionOpen;
+      const body = document.getElementById('master-section-body');
+      const arrow = document.getElementById('master-toggle-arrow');
+      
+      if (masterSectionOpen) {
+        body.classList.remove('hidden');
+        arrow.classList.remove('collapsed');
+      } else {
+        body.classList.add('hidden');
+        arrow.classList.add('collapsed');
+      }
+    }
+
+    // --- Category Tabs Render ---
+    function renderCategoryTabs() {
+      const container = document.getElementById('category-tabs');
+      container.innerHTML = '';
+
+      // "すべて" tab
+      const allBtn = document.createElement('button');
+      allBtn.className = `tab-btn ${activeCategoryFilter === 'ALL' ? 'active' : ''}`;
+      allBtn.textContent = 'すべて';
+      allBtn.onclick = () => { activeCategoryFilter = 'ALL'; renderCategoryTabs(); renderMasterChips(); };
+      container.appendChild(allBtn);
+
+      // Category Tabs
+      categories.forEach(cat => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn ${activeCategoryFilter === cat.id ? 'active' : ''}`;
+        btn.innerHTML = `<span class="cat-dot" style="background:${cat.color}"></span>${escapeHtml(cat.name)}`;
+        btn.onclick = () => { activeCategoryFilter = cat.id; renderCategoryTabs(); renderMasterChips(); };
+        container.appendChild(btn);
+      });
+    }
+
+    // --- Master Chips Render ---
+    function renderMasterChips() {
+      const container = document.getElementById('master-chips');
+      container.innerHTML = '';
+
+      const filtered = activeCategoryFilter === 'ALL'
+        ? taskMasters
+        : taskMasters.filter(t => t.categoryId === activeCategoryFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div style="font-size:0.8rem; color:var(--text-muted);">該当するタスクマスタがありません</div>';
+        return;
+      }
+
+      filtered.forEach(task => {
+        const cat = categories.find(c => c.id === task.categoryId) || { color: '#6b7280' };
+        const btn = document.createElement('button');
+        btn.className = 'chip-btn';
+        btn.innerHTML = `<span class="cat-dot" style="background:${cat.color}"></span>+ ${escapeHtml(task.name)}`;
+        btn.onclick = () => addToToday(task);
+        container.appendChild(btn);
+      });
+    }
+
+    // --- Today's List Operations ---
+    function addToToday(taskMaster) {
+      const newTask = {
+        id: 'today-' + Date.now() + Math.random().toString(36).substr(2, 4),
+        name: taskMaster.name,
+        categoryId: taskMaster.categoryId,
+        completed: false,
+        items: []
+      };
+      todayTasks.push(newTask);
+      saveData();
+      renderTodayTasks();
+      updateProgress();
+    }
+
+    function handleTaskClick(taskId) {
+      const task = todayTasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const cat = categories.find(c => c.id === task.categoryId);
+      const isShopping = cat && cat.name === '買い出し';
+
+      if (isShopping) {
+        openShoppingModal(taskId);
+      } else {
+        toggleComplete(taskId);
+      }
+    }
+
+    function toggleComplete(id) {
+      const task = todayTasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        saveData();
+        renderTodayTasks();
+        updateProgress();
+      }
+    }
+
+    function removeTodayTask(id) {
+      todayTasks = todayTasks.filter(t => t.id !== id);
+      saveData();
+      renderTodayTasks();
+      updateProgress();
+    }
+
+    function clearTodayTasks() {
+      if (todayTasks.length === 0) return;
+      if (confirm('今日のやりたいことリストをすべて消去しますか？')) {
+        todayTasks = [];
+        saveData();
+        renderTodayTasks();
+        updateProgress();
+      }
+    }
+
+    function moveTask(index, direction) {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= todayTasks.length) return;
+      const temp = todayTasks[index];
+      todayTasks[index] = todayTasks[targetIndex];
+      todayTasks[targetIndex] = temp;
+      saveData();
+      renderTodayTasks();
+    }
+
+    function renderTodayTasks() {
+      const container = document.getElementById('today-list');
+      container.innerHTML = '';
+
+      if (todayTasks.length === 0) {
+        container.innerHTML = '<li class="empty-state">上のマスタをタップして予定を追加しよう！</li>';
+        return;
+      }
+
+      todayTasks.forEach((task, index) => {
+        const cat = categories.find(c => c.id === task.categoryId) || { name: 'その他', color: '#6b7280' };
+        const isShopping = cat.name === '買い出し';
+
+        let shoppingInfo = '';
+        if (isShopping) {
+          const items = task.items || [];
+          const doneCount = items.filter(i => i.completed).length;
+          const totalCount = items.length;
+          shoppingInfo = `<span class="shopping-badge">🛒 リスト: ${doneCount}/${totalCount}</span>`;
+        }
+
+        const li = document.createElement('li');
+        li.className = `today-item ${task.completed ? 'completed' : ''}`;
+        li.innerHTML = `
+          <div class="item-left" onclick="handleTaskClick('${task.id}')">
+            <div class="custom-checkbox" onclick="event.stopPropagation(); toggleComplete('${task.id}')">${task.completed ? '✓' : ''}</div>
+            <div class="item-details">
+              <span class="item-text">${escapeHtml(task.name)}</span>
+              <span class="item-cat"><span class="cat-dot" style="background:${cat.color}"></span>${escapeHtml(cat.name)}</span>
+              ${shoppingInfo}
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="action-btn" onclick="moveTask(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.2"' : ''}>▲</button>
+            <button class="action-btn" onclick="moveTask(${index}, 1)" ${index === todayTasks.length - 1 ? 'disabled style="opacity:0.2"' : ''}>▼</button>
+            <button class="action-btn" onclick="removeTodayTask('${task.id}')" style="color:var(--danger)">✕</button>
+          </div>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    function updateProgress() {
+      const total = todayTasks.length;
+      const completed = todayTasks.filter(t => t.completed).length;
+      const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+      document.getElementById('progress-text').textContent = `${completed} / ${total} (${percent}%)`;
+      document.getElementById('progress-fill').style.width = `${percent}%`;
+    }
+
+    // --- Shopping List Modal Functions ---
+    function openShoppingModal(taskId) {
+      activeShoppingTaskId = taskId;
+      const task = todayTasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      document.getElementById('shopping-modal-title').textContent = `🛒 ${task.name}`;
+      document.getElementById('shopping-modal').classList.add('active');
+      renderShoppingItems();
+    }
+
+    function closeShoppingModal() {
+      document.getElementById('shopping-modal').classList.remove('active');
+      activeShoppingTaskId = null;
+    }
+
+    function addShoppingItem(e) {
+      e.preventDefault();
+      const input = document.getElementById('shopping-input');
+      const text = input.value.trim();
+      if (!text || !activeShoppingTaskId) return;
+
+      const task = todayTasks.find(t => t.id === activeShoppingTaskId);
+      if (task) {
+        if (!task.items) task.items = [];
+        task.items.push({ id: 'item-' + Date.now(), name: text, completed: false });
+        saveData();
+        renderShoppingItems();
+        renderTodayTasks();
+      }
+      input.value = '';
+    }
+
+    function toggleShoppingItem(itemId) {
+      const task = todayTasks.find(t => t.id === activeShoppingTaskId);
+      if (task && task.items) {
+        const item = task.items.find(i => i.id === itemId);
+        if (item) {
+          item.completed = !item.completed;
+          saveData();
+          renderShoppingItems();
+          renderTodayTasks();
+        }
+      }
+    }
+
+    function deleteShoppingItem(itemId) {
+      const task = todayTasks.find(t => t.id === activeShoppingTaskId);
+      if (task && task.items) {
+        task.items = task.items.filter(i => i.id !== itemId);
+        saveData();
+        renderShoppingItems();
+        renderTodayTasks();
+      }
+    }
+
+    function registerShoppingList() {
+      saveData();
+      renderTodayTasks();
+      closeShoppingModal();
+    }
+
+    function renderShoppingItems() {
+      const container = document.getElementById('shopping-items-list');
+      container.innerHTML = '';
+
+      const task = todayTasks.find(t => t.id === activeShoppingTaskId);
+      if (!task || !task.items || task.items.length === 0) {
+        container.innerHTML = '<li class="empty-state">購入するものを追加してください</li>';
+        return;
+      }
+
+      task.items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = `shopping-item-row ${item.completed ? 'done' : ''}`;
+        li.innerHTML = `
+          <div class="shopping-item-left" onclick="toggleShoppingItem('${item.id}')">
+            <div class="custom-checkbox">${item.completed ? '✓' : ''}</div>
+            <span class="shopping-item-text">${escapeHtml(item.name)}</span>
+          </div>
+          <button class="action-btn" onclick="deleteShoppingItem('${item.id}')" style="color:var(--danger)">✕</button>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    // --- Master Modal Functions ---
+    function openMasterModal() {
+      document.getElementById('master-modal').classList.add('active');
+      renderColorPicker();
+      renderModalSelect();
+      renderMasterTaskManageList();
+      renderMasterCatManageList();
+    }
+
+    function closeMasterModal() {
+      document.getElementById('master-modal').classList.remove('active');
+    }
+
+    function switchModalTab(tab) {
+      document.getElementById('btn-tab-task').classList.toggle('active', tab === 'task');
+      document.getElementById('btn-tab-cat').classList.toggle('active', tab === 'cat');
+      document.getElementById('modal-task-sec').style.display = tab === 'task' ? 'block' : 'none';
+      document.getElementById('modal-cat-sec').style.display = tab === 'cat' ? 'block' : 'none';
+    }
+
+    function renderColorPicker() {
+      const container = document.getElementById('color-picker');
+      container.innerHTML = '';
+      COLOR_PALETTE.forEach(color => {
+        const div = document.createElement('div');
+        div.className = `color-option ${selectedColor === color ? 'selected' : ''}`;
+        div.style.background = color;
+        div.onclick = () => {
+          selectedColor = color;
+          renderColorPicker();
+        };
+        container.appendChild(div);
+      });
+    }
+
+    function renderModalSelect() {
+      const select = document.getElementById('task-cat-select');
+      select.innerHTML = '';
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        select.appendChild(opt);
+      });
+    }
+
+    function saveTaskMaster(e) {
+      e.preventDefault();
+      const name = document.getElementById('task-name-input').value.trim();
+      const categoryId = document.getElementById('task-cat-select').value;
+
+      if (!name) return;
+
+      taskMasters.push({
+        id: 'tm-' + Date.now(),
+        name,
+        categoryId
+      });
+
+      saveData();
+      document.getElementById('task-name-input').value = '';
+      renderMasterChips();
+      renderMasterTaskManageList();
+    }
+
+    function saveCategoryMaster(e) {
+      e.preventDefault();
+      const name = document.getElementById('cat-name-input').value.trim();
+
+      if (!name) return;
+
+      categories.push({
+        id: 'cat-' + Date.now(),
+        name,
+        color: selectedColor
+      });
+
+      saveData();
+      document.getElementById('cat-name-input').value = '';
+      renderCategoryTabs();
+      renderMasterChips();
+      renderModalSelect();
+      renderMasterCatManageList();
+    }
+
+    function deleteMasterTask(id) {
+      taskMasters = taskMasters.filter(t => t.id !== id);
+      saveData();
+      renderMasterChips();
+      renderMasterTaskManageList();
+    }
+
+    function deleteMasterCategory(id) {
+      if (categories.length <= 1) {
+        alert('カテゴリは最低1つ必要です');
+        return;
+      }
+      categories = categories.filter(c => c.id !== id);
+      taskMasters.forEach(t => {
+        if (t.categoryId === id) t.categoryId = categories[0].id;
+      });
+
+      saveData();
+      renderCategoryTabs();
+      renderMasterChips();
+      renderModalSelect();
+      renderMasterCatManageList();
+      renderTodayTasks();
+    }
+
+    function renderMasterTaskManageList() {
+      const container = document.getElementById('task-master-list');
+      container.innerHTML = '';
+      taskMasters.forEach(tm => {
+        const cat = categories.find(c => c.id === tm.categoryId) || { name: 'その他' };
+        const li = document.createElement('li');
+        li.className = 'master-item-row';
+        li.innerHTML = `
+          <span>${escapeHtml(tm.name)} <small style="color:var(--text-muted)">(${escapeHtml(cat.name)})</small></span>
+          <button class="action-btn" onclick="deleteMasterTask('${tm.id}')" style="color:var(--danger)">削除</button>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    function renderMasterCatManageList() {
+      const container = document.getElementById('cat-master-list');
+      container.innerHTML = '';
+      categories.forEach(c => {
+        const li = document.createElement('li');
+        li.className = 'master-item-row';
+        li.innerHTML = `
+          <span><span class="cat-dot" style="background:${c.color}"></span> ${escapeHtml(c.name)}</span>
+          <button class="action-btn" onclick="deleteMasterCategory('${c.id}')" style="color:var(--danger)">削除</button>
+        `;
+        container.appendChild(li);
+      });
+    }
+
+    // --- Share / Copy Function ---
+    function copyShareText() {
+      if (todayTasks.length === 0) {
+        alert('共有する予定がありません');
+        return;
+      }
+
+      let text = `【今日のやりたいこと】\n`;
+      todayTasks.forEach(t => {
+        const status = t.completed ? '✅' : '⬜';
+        text += `${status} ${t.name}\n`;
+        if (t.items && t.items.length > 0) {
+          t.items.forEach(item => {
+            const itemStatus = item.completed ? '  ・[x]' : '  ・[ ]';
+            text += `${itemStatus} ${item.name}\n`;
+          });
+        }
+      });
+
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('share-toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      })[m]);
+    }
+
+    // Launch App
+    init();
+  </script>
+</body>
+</html>
