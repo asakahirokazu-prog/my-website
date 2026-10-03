@@ -58,8 +58,8 @@
     }
 
     h1 {
-      font-size: 1.25rem;
-      font-weight: 700;
+      font-size: 1.35rem;
+      font-weight: 800;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -67,7 +67,7 @@
 
     .header-actions {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       flex-shrink: 0;
     }
 
@@ -75,12 +75,12 @@
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 6px 8px;
-      font-size: 0.78rem;
+      padding: 6px 10px;
+      font-size: 0.8rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 3px;
+      gap: 4px;
       font-weight: 600;
       color: var(--text);
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -241,16 +241,18 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px;
-      border: 1px solid var(--border);
+      padding: 12px 14px;
       border-radius: 10px;
-      background: var(--card-bg);
       gap: 10px;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-left-width: 5px; /* Category Accent Border */
+      transition: all 0.2s;
     }
 
     .today-item.completed {
-      background: #f9fafb;
-      opacity: 0.6;
+      background-color: #f3f4f6 !important;
+      border-left-color: #9ca3af !important;
+      opacity: 0.65;
     }
 
     .today-item.completed .item-text {
@@ -271,6 +273,7 @@
       width: 22px;
       height: 22px;
       border: 2px solid var(--border);
+      background: #fff;
       border-radius: 6px;
       display: flex;
       align-items: center;
@@ -294,7 +297,7 @@
 
     .item-text {
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -306,19 +309,20 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      margin-top: 1px;
     }
 
     .shopping-badge {
       display: inline-flex;
       align-items: center;
       gap: 2px;
-      background: #eff6ff;
+      background: rgba(37, 99, 235, 0.1);
       color: #2563eb;
       font-size: 0.7rem;
       padding: 2px 6px;
       border-radius: 4px;
       font-weight: 600;
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .item-actions {
@@ -328,7 +332,7 @@
     }
 
     .action-btn {
-      background: none;
+      background: rgba(255, 255, 255, 0.6);
       border: none;
       padding: 6px;
       cursor: pointer;
@@ -504,26 +508,6 @@
       text-decoration: line-through;
       color: var(--text-muted);
     }
-
-    .share-toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #10b981;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      transition: transform 0.3s ease;
-      z-index: 2000;
-    }
-
-    .share-toast.show {
-      transform: translateX(-50%) translateY(0);
-    }
   </style>
 </head>
 <body>
@@ -535,7 +519,6 @@
           <h1>今日</h1>
         </div>
         <div class="header-actions">
-          <button class="icon-btn" onclick="copyShareText()">📋 コピー</button>
           <button class="icon-btn" onclick="openMasterModal()">⚙️ マスタ</button>
           <button class="icon-btn danger" onclick="clearTodayTasks()">🗑 クリア</button>
         </div>
@@ -652,8 +635,6 @@
     </div>
   </div>
 
-  <div class="share-toast" id="share-toast">クリップボードにコピーしました！</div>
-
   <script>
     // --- Initial Default Data ---
     const DEFAULT_CATEGORIES = [
@@ -675,6 +656,19 @@
     ];
 
     const COLOR_PALETTE = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1', '#6b7280'];
+
+    // --- Helper Function: Hex Color to Light RGBA ---
+    function hexToRgba(hex, alpha) {
+      hex = hex.replace('#', '');
+      if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+      }
+      const num = parseInt(hex, 16);
+      const r = (num >> 16) & 255;
+      const g = (num >> 8) & 255;
+      const b = num & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
 
     // --- State Management ---
     let categories = JSON.parse(localStorage.getItem('app_categories')) || DEFAULT_CATEGORIES;
@@ -848,8 +842,13 @@
           shoppingInfo = `<span class="shopping-badge">🛒 リスト: ${doneCount}/${totalCount}</span>`;
         }
 
+        const bgRgba = hexToRgba(cat.color, 0.08);
+
         const li = document.createElement('li');
         li.className = `today-item ${task.completed ? 'completed' : ''}`;
+        li.style.backgroundColor = bgRgba;
+        li.style.borderLeftColor = cat.color;
+
         li.innerHTML = `
           <div class="item-left" onclick="handleTaskClick('${task.id}')">
             <div class="custom-checkbox" onclick="event.stopPropagation(); toggleComplete('${task.id}')">${task.completed ? '✓' : ''}</div>
@@ -1100,32 +1099,6 @@
           <button class="action-btn" onclick="deleteMasterCategory('${c.id}')" style="color:var(--danger)">削除</button>
         `;
         container.appendChild(li);
-      });
-    }
-
-    // --- Share / Copy Function ---
-    function copyShareText() {
-      if (todayTasks.length === 0) {
-        alert('共有する予定がありません');
-        return;
-      }
-
-      let text = `【今日のやりたいこと】\n`;
-      todayTasks.forEach(t => {
-        const status = t.completed ? '✅' : '⬜';
-        text += `${status} ${t.name}\n`;
-        if (t.items && t.items.length > 0) {
-          t.items.forEach(item => {
-            const itemStatus = item.completed ? '  ・[x]' : '  ・[ ]';
-            text += `${itemStatus} ${item.name}\n`;
-          });
-        }
-      });
-
-      navigator.clipboard.writeText(text).then(() => {
-        const toast = document.getElementById('share-toast');
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
       });
     }
 
