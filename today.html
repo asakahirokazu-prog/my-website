@@ -40,7 +40,7 @@
       padding: 12px 16px;
     }
 
-    /* Header Styles (Single Line Layout) */
+    /* Header Styles */
     header {
       margin-bottom: 16px;
     }
@@ -91,6 +91,12 @@
       color: var(--danger);
     }
 
+    .icon-btn.primary {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
     /* Progress Bar */
     .progress-container {
       background: var(--card-bg);
@@ -131,6 +137,12 @@
       margin-bottom: 16px;
     }
 
+    .section-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     /* Collapsible Section Header */
     .section-header-collapsible {
       display: flex;
@@ -167,7 +179,7 @@
       display: none;
     }
 
-    /* Category Filter Tabs (Flex Wrap) */
+    /* Category Filter Tabs */
     .category-tabs {
       display: flex;
       flex-wrap: wrap;
@@ -195,7 +207,7 @@
       border-color: var(--text);
     }
 
-    /* Master Chips Area (Flex Wrap) */
+    /* Master Chips Area */
     .master-chips {
       display: flex;
       flex-wrap: wrap;
@@ -245,7 +257,7 @@
       border-radius: 10px;
       gap: 10px;
       border: 1px solid rgba(0,0,0,0.06);
-      border-left-width: 5px; /* Category Accent Border */
+      border-left-width: 5px;
       transition: all 0.2s;
     }
 
@@ -554,9 +566,29 @@
 
     <!-- Today's Tasks Section -->
     <section>
-      <h2>今日のやりたいことリスト</h2>
+      <div class="section-header-flex">
+        <h2>今日のやりたいことリスト</h2>
+        <button class="icon-btn primary" onclick="openDirectInputModal()">直接入力</button>
+      </div>
       <ul class="today-list" id="today-list"></ul>
     </section>
+  </div>
+
+  <!-- Direct Input Modal -->
+  <div class="modal-overlay" id="direct-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>タスクを直接入力</h2>
+        <button class="modal-close" onclick="closeDirectInputModal()">✕</button>
+      </div>
+      <form onsubmit="submitDirectInput(event)">
+        <div class="form-group">
+          <label>やりたいこと（カテゴリ: その他）</label>
+          <input type="text" id="direct-task-input" class="form-control" placeholder="例: 書類の整理、銀行へ行く" required autofocus>
+        </div>
+        <button type="submit" class="btn-submit">追加する</button>
+      </form>
+    </div>
   </div>
 
   <!-- Master Management Modal -->
@@ -642,7 +674,8 @@
       { id: 'cat-2', name: '家で', color: '#3b82f6' },
       { id: 'cat-3', name: '買い出し', color: '#10b981' },
       { id: 'cat-4', name: '読書', color: '#f59e0b' },
-      { id: 'cat-5', name: 'ゴルフ', color: '#8b5cf6' }
+      { id: 'cat-5', name: 'ゴルフ', color: '#8b5cf6' },
+      { id: 'cat-other', name: 'その他', color: '#6b7280' }
     ];
 
     const DEFAULT_TASKS = [
@@ -659,6 +692,7 @@
 
     // --- Helper Function: Hex Color to Light RGBA ---
     function hexToRgba(hex, alpha) {
+      if (!hex) return `rgba(107, 114, 128, ${alpha})`;
       hex = hex.replace('#', '');
       if (hex.length === 3) {
         hex = hex.split('').map(c => c + c).join('');
@@ -682,6 +716,9 @@
 
     // --- App Initializer ---
     function init() {
+      if (!categories.find(c => c.id === 'cat-other' || c.name === 'その他')) {
+        categories.push({ id: 'cat-other', name: 'その他', color: '#6b7280' });
+      }
       renderCategoryTabs();
       renderMasterChips();
       renderTodayTasks();
@@ -692,6 +729,46 @@
       localStorage.setItem('app_categories', JSON.stringify(categories));
       localStorage.setItem('app_task_masters', JSON.stringify(taskMasters));
       localStorage.setItem('app_today_tasks', JSON.stringify(todayTasks));
+    }
+
+    // --- Direct Input Modal ---
+    function openDirectInputModal() {
+      document.getElementById('direct-modal').classList.add('active');
+      const input = document.getElementById('direct-task-input');
+      input.value = '';
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function closeDirectInputModal() {
+      document.getElementById('direct-modal').classList.remove('active');
+    }
+
+    function submitDirectInput(e) {
+      e.preventDefault();
+      const input = document.getElementById('direct-task-input');
+      const taskName = input.value.trim();
+      if (!taskName) return;
+
+      let otherCat = categories.find(c => c.id === 'cat-other' || c.name === 'その他');
+      if (!otherCat) {
+        otherCat = { id: 'cat-other', name: 'その他', color: '#6b7280' };
+        categories.push(otherCat);
+      }
+
+      const newTask = {
+        id: 'today-' + Date.now() + Math.random().toString(36).substr(2, 4),
+        name: taskName,
+        categoryId: otherCat.id,
+        completed: false,
+        items: []
+      };
+
+      todayTasks.push(newTask);
+      sortTodayTasks();
+      saveData();
+      renderTodayTasks();
+      updateProgress();
+      closeDirectInputModal();
     }
 
     // --- Collapsible Toggle ---
@@ -714,14 +791,12 @@
       const container = document.getElementById('category-tabs');
       container.innerHTML = '';
 
-      // "すべて" tab
       const allBtn = document.createElement('button');
       allBtn.className = `tab-btn ${activeCategoryFilter === 'ALL' ? 'active' : ''}`;
       allBtn.textContent = 'すべて';
       allBtn.onclick = () => { activeCategoryFilter = 'ALL'; renderCategoryTabs(); renderMasterChips(); };
       container.appendChild(allBtn);
 
-      // Category Tabs
       categories.forEach(cat => {
         const btn = document.createElement('button');
         btn.className = `tab-btn ${activeCategoryFilter === cat.id ? 'active' : ''}`;
@@ -756,6 +831,10 @@
     }
 
     // --- Today's List Operations ---
+    function sortTodayTasks() {
+      todayTasks.sort((a, b) => (a.completed === b.completed ? 0 : a.completed ? 1 : -1));
+    }
+
     function addToToday(taskMaster) {
       const newTask = {
         id: 'today-' + Date.now() + Math.random().toString(36).substr(2, 4),
@@ -765,6 +844,7 @@
         items: []
       };
       todayTasks.push(newTask);
+      sortTodayTasks();
       saveData();
       renderTodayTasks();
       updateProgress();
@@ -788,6 +868,7 @@
       const task = todayTasks.find(t => t.id === id);
       if (task) {
         task.completed = !task.completed;
+        sortTodayTasks();
         saveData();
         renderTodayTasks();
         updateProgress();
@@ -814,6 +895,9 @@
     function moveTask(index, direction) {
       const targetIndex = index + direction;
       if (targetIndex < 0 || targetIndex >= todayTasks.length) return;
+      
+      if (todayTasks[index].completed !== todayTasks[targetIndex].completed) return;
+
       const temp = todayTasks[index];
       todayTasks[index] = todayTasks[targetIndex];
       todayTasks[targetIndex] = temp;
@@ -826,7 +910,7 @@
       container.innerHTML = '';
 
       if (todayTasks.length === 0) {
-        container.innerHTML = '<li class="empty-state">上のマスタをタップして予定を追加しよう！</li>';
+        container.innerHTML = '<li class="empty-state">上のマスタや「直接入力」から予定を追加しよう！</li>';
         return;
       }
 
