@@ -77,6 +77,34 @@
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 4px;
         }
+        /* detailsのカスタムスタイル */
+        details.card summary {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 0;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 4px;
+            cursor: pointer;
+            list-style: none; /* デフォルトの三角を消す場合など */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        details.card summary::-webkit-details-marker {
+            display: none;
+        }
+        details.card summary::after {
+            content: '▼';
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            transition: transform 0.2s;
+        }
+        details.card[open] summary::after {
+            transform: rotate(180deg);
+        }
+        details.card[open] summary {
+            margin-bottom: 12px;
+        }
         .form-group {
             margin-bottom: 12px;
         }
@@ -384,11 +412,12 @@
             <button class="action-btn" style="margin-top: 12px;" onclick="openSaveModal()">選択した内容を登録する</button>
         </div>
 
-        <div class="card">
-            <h2>食材を選ぶ</h2>
+        <!-- 食材を選ぶをデフォルトで閉じる (detailsタグに変更、open属性なし) -->
+        <details class="card">
+            <summary>食材を選ぶ</summary>
             
             <!-- カテゴリ絞り込みフィルター -->
-            <div class="filter-container" id="filterContainer">
+            <div class="filter-container" id="filterContainer" style="margin-top: 12px;">
                 <button class="filter-btn active" onclick="setCategoryFilter('すべて')">すべて</button>
                 <button class="filter-btn" onclick="setCategoryFilter('野菜')">野菜</button>
                 <button class="filter-btn" onclick="setCategoryFilter('肉')">肉</button>
@@ -400,7 +429,7 @@
             <div id="masterList">
                 <p style="color: #888; font-size: 0.9rem;">食材が登録されていません</p>
             </div>
-        </div>
+        </details>
 
         <div class="card">
             <h2>料理一覧</h2>
