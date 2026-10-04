@@ -28,6 +28,35 @@
       margin-bottom: 24px;
     }
 
+    /* Tab styles */
+    .tabs-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 8px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      color: #666;
+      background-color: #e9ecef;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
     .form-container {
       background: var(--card-bg);
       padding: 20px;
@@ -67,11 +96,12 @@
       gap: 10px;
     }
 
-    input {
+    input, select {
       padding: 10px;
       border: 1px solid var(--border-color);
       border-radius: 4px;
       font-size: 14px;
+      background-color: #fff;
     }
 
     button {
@@ -195,18 +225,6 @@
       flex-shrink: 0;
     }
 
-    .edit-btn {
-      background-color: #ffc107;
-      color: #333;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
     /* Modal Styles */
     .modal-overlay {
       position: fixed;
@@ -256,20 +274,39 @@
     .cancel-btn {
       background-color: #6c757d;
     }
+
+    .empty-message {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
 
   <h1>マイ リンク集</h1>
 
+  <!-- タブの切り替え部分 -->
+  <div class="tabs-container" id="tabs-container">
+    <button class="tab-btn active" data-category="いつも">いつも</button>
+    <button class="tab-btn" data-category="週末">週末</button>
+    <button class="tab-btn" data-category="たまに">たまに</button>
+  </div>
+
   <div class="form-container">
-    <button type="button" class="form-toggle-btn" id="form-toggle-btn" style="width: 100%; background: none; border: none; color: var(--primary-color); font-weight: bold; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 0;">
+    <button type="button" class="form-toggle-btn" id="form-toggle-btn">
       <span>＋ リンクを追加する</span>
       <span id="toggle-icon">▼</span>
     </button>
     <form id="link-form" class="input-group" style="display: none; margin-top: 16px;">
       <input type="text" id="title-input" placeholder="タイトル (例: Google)" required>
       <input type="url" id="url-input" placeholder="URL" value="https://asakahirokazu-prog.github.io/my-website/" required>
+      <select id="category-input">
+        <option value="いつも">いつも</option>
+        <option value="週末">週末</option>
+        <option value="たまに">たまに</option>
+      </select>
       <button type="submit">リンクを追加</button>
     </form>
   </div>
@@ -284,6 +321,11 @@
         <input type="hidden" id="edit-index">
         <input type="text" id="edit-title-input" placeholder="タイトル" required>
         <input type="url" id="edit-url-input" placeholder="URL" required>
+        <select id="edit-category-input">
+          <option value="いつも">いつも</option>
+          <option value="週末">週末</option>
+          <option value="たまに">たまに</option>
+        </select>
         <div class="modal-buttons">
           <button type="button" class="cancel-btn" onclick="closeEditModal()">キャンセル</button>
           <button type="submit">更新する</button>
@@ -298,16 +340,34 @@
     const linkForm = document.getElementById('link-form');
     const titleInput = document.getElementById('title-input');
     const urlInput = document.getElementById('url-input');
+    const categoryInput = document.getElementById('category-input');
     const linkList = document.getElementById('link-list');
+    const tabsContainer = document.getElementById('tabs-container');
 
     const editModal = document.getElementById('edit-modal');
     const editForm = document.getElementById('edit-form');
     const editIndexInput = document.getElementById('edit-index');
     const editTitleInput = document.getElementById('edit-title-input');
     const editUrlInput = document.getElementById('edit-url-input');
+    const editCategoryInput = document.getElementById('edit-category-input');
 
     let links = JSON.parse(localStorage.getItem('my_links')) || [];
+    let currentCategory = 'いつも';
     let draggedIndex = null;
+
+    // タブ切り替えイベント
+    tabsContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab-btn');
+      if (!btn) return;
+      
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCategory = btn.dataset.category;
+      
+      // 追加フォームのカテゴリも現在のタブに合わせる
+      categoryInput.value = currentCategory;
+      renderLinks();
+    });
 
     // 折りたたみトグル
     formToggleBtn.addEventListener('click', () => {
@@ -317,12 +377,29 @@
       formToggleBtn.querySelector('span:first-child').textContent = isOpen ? '＋ リンクを追加する' : '－ リンク追加を閉じる';
     });
 
+    // リンク一覧の描画（現在のカテゴリでフィルタリング）
     function renderLinks() {
       linkList.innerHTML = '';
-      links.forEach((link, index) => {
+      
+      // カテゴリに一致するリンクを抽出（元のインデックスも保持）
+      const filteredLinks = [];
+      links.forEach((link, originalIndex) => {
+        // デフォルトでカテゴリがない古いデータは「いつも」に振り分ける
+        const linkCat = link.category || 'いつも';
+        if (linkCat === currentCategory) {
+          filteredLinks.push({ ...link, originalIndex });
+        }
+      });
+
+      if (filteredLinks.length === 0) {
+        linkList.innerHTML = `<div class="empty-message">「${currentCategory}」のリンクはありません。</div>`;
+        return;
+      }
+
+      filteredLinks.forEach((link, displayIndex) => {
         const li = document.createElement('li');
         li.className = 'link-item';
-        li.dataset.index = index;
+        li.dataset.originalIndex = link.originalIndex;
 
         li.innerHTML = `
           <div class="link-left">
@@ -332,9 +409,9 @@
               <span class="link-url">${escapeHtml(link.url)}</span>
             </div>
           </div>
-          <div style="display: flex; gap: 6px; flex-shrink: 0;">
-            <button class="edit-btn" onclick="openEditModal(${index})">編集</button>
-            <button class="delete-btn" onclick="deleteLink(event, ${index})">削除</button>
+          <div class="action-buttons">
+            <button class="edit-btn" onclick="openEditModal(${link.originalIndex})">編集</button>
+            <button class="delete-btn" onclick="deleteLink(event, ${link.originalIndex})">削除</button>
           </div>
         `;
 
@@ -342,7 +419,7 @@
 
         handle.addEventListener('pointerdown', (e) => {
           e.preventDefault();
-          draggedIndex = index;
+          draggedIndex = link.originalIndex;
           li.classList.add('dragging');
           handle.setPointerCapture(e.pointerId);
         });
@@ -370,10 +447,10 @@
           document.querySelectorAll('.link-item').forEach(item => item.classList.remove('drag-over'));
 
           if (targetLi) {
-            const targetIndex = parseInt(targetLi.dataset.index);
-            if (draggedIndex !== targetIndex) {
+            const targetOriginalIndex = parseInt(targetLi.dataset.originalIndex);
+            if (draggedIndex !== targetOriginalIndex) {
               const movedItem = links.splice(draggedIndex, 1)[0];
-              links.splice(targetIndex, 0, movedItem);
+              links.splice(targetOriginalIndex, 0, movedItem);
               saveAndRender();
             }
           }
@@ -389,11 +466,13 @@
       e.preventDefault();
       const newLink = {
         title: titleInput.value.trim(),
-        url: urlInput.value.trim()
+        url: urlInput.value.trim(),
+        category: categoryInput.value
       };
-      // 配列の先頭に追加 (unshift)
+      // 配列の先頭に追加
       links.unshift(newLink);
       saveAndRender();
+      
       titleInput.value = '';
       urlInput.value = 'https://asakahirokazu-prog.github.io/my-website/';
       
@@ -408,6 +487,7 @@
       editIndexInput.value = index;
       editTitleInput.value = link.title;
       editUrlInput.value = link.url;
+      editCategoryInput.value = link.category || 'いつも';
       editModal.classList.add('open');
     }
 
@@ -420,8 +500,21 @@
       const index = parseInt(editIndexInput.value);
       links[index] = {
         title: editTitleInput.value.trim(),
-        url: editUrlInput.value.trim()
+        url: editUrlInput.value.trim(),
+        category: editCategoryInput.value
       };
+      
+      // 編集した項目が属するタブへ移動させる
+      currentCategory = editCategoryInput.value;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.dataset.category === currentCategory) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      categoryInput.value = currentCategory;
+
       saveAndRender();
       closeEditModal();
     });
@@ -450,6 +543,8 @@
       });
     }
 
+    // 初期表示時は現在選択されているタブのカテゴリにフォームを設定
+    categoryInput.value = currentCategory;
     renderLinks();
   </script>
 </body>
