@@ -197,7 +197,7 @@
             color: white;
             border-color: var(--primary-color);
         }
-        /* フィルタータンスタイル：スマホでスライドせず全て見られるようにwrapさせる */
+        /* フィルタータンスタイル */
         .filter-container {
             display: flex;
             flex-wrap: wrap;
@@ -547,6 +547,18 @@
         </div>
     </div>
 
+    <!-- カスタムメッセージ確認モーダル（削除確認用） -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 380px; text-align: center;">
+            <div class="modal-title" style="color: #d32f2f;">⚠️ 削除の確認</div>
+            <p id="confirmMessage" style="font-size: 0.95rem; color: #444; margin-bottom: 16px; line-height: 1.5;"></p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">キャンセル</button>
+                <button id="confirmSubmitBtn" class="modal-btn" style="background: #d32f2f; color: white;">削除する</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="toast">保存しました！</div>
 
     <script>
@@ -561,6 +573,30 @@
             { id: 5, name: 'わかめ (10g)', calorie: 16, category: '海藻' },
             { id: 6, name: 'ポン酢 (大さじ1)', calorie: 13, category: 'タレ系' }
         ];
+
+        // 削除確認カスタムメッセージ用のコールバック保持変数
+        let pendingDeleteAction = null;
+
+        // カスタム確認メッセージモーダルを開く
+        function showConfirmDialog(message, onConfirm) {
+            document.getElementById('confirmMessage').textContent = message;
+            pendingDeleteAction = onConfirm;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        // カスタム確認メッセージモーダルを閉じる
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.remove('active');
+            pendingDeleteAction = null;
+        }
+
+        // 確認モーダルの削除ボタン押下時のハンドラ
+        document.getElementById('confirmSubmitBtn').onclick = function() {
+            if (pendingDeleteAction) {
+                pendingDeleteAction();
+            }
+            closeConfirmModal();
+        };
 
         // IndexedDB初期化
         function initIndexedDB() {
@@ -763,7 +799,7 @@
             };
         }
 
-        // IndexedDBから保存された食事履歴を読み込む (カロリー低い順にソート)
+        // IndexedDBから保存された食事履歴を読み込む
         function loadSavedMeals() {
             if (!db) return;
 
@@ -820,8 +856,10 @@
 
             const deleteBtn = document.getElementById('detailDeleteBtn');
             deleteBtn.onclick = () => {
-                deleteMealFromIDB(meal.id);
-                closeDetailModal();
+                showConfirmDialog(`「${meal.name}」の記録を削除してもよろしいですか？`, () => {
+                    deleteMealFromIDB(meal.id);
+                    closeDetailModal();
+                });
             };
 
             document.getElementById('detailModal').classList.add('active');
@@ -887,12 +925,14 @@
             showToast('食材を登録しました！');
         }
 
-        // 食材マスタの削除
-        function deleteFoodMaster(id) {
-            foods = foods.filter(f => f.id !== id);
-            selectedFoodMap.delete(id);
-            saveAndRefresh();
-            showToast('食材を削除しました');
+        // 食材マスタの削除（確認メッセージ付き）
+        function confirmDeleteFoodMaster(id, foodName) {
+            showConfirmDialog(`食材「${foodName}」を削除しますか？`, () => {
+                foods = foods.filter(f => f.id !== id);
+                selectedFoodMap.delete(id);
+                saveAndRefresh();
+                showToast('食材を削除しました');
+            });
         }
 
         // 保存と画面更新
@@ -931,7 +971,7 @@
             }
         }
 
-        // リストの更新（食材リストはあいうえお順にソート）
+        // リストの更新
         function updateLists() {
             const calcContainer = document.getElementById('masterList');
             const deleteContainer = document.getElementById('deleteList');
@@ -943,7 +983,6 @@
                 return;
             }
 
-            // あいうえお順（日本語ロケール比較）でコピーをソート
             let sortedFoods = [...foods].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 
             calcContainer.innerHTML = '';
@@ -978,7 +1017,7 @@
                     <span><strong>${escapeHTML(f.name)}</strong> <span class="badge badge-${categoryName}">${categoryName}</span><br><small style="color:#666;">${f.calorie} kcal</small></span>
                     <div style="display: flex; gap: 6px;">
                         <button class="sub-action-btn" style="background: #1976d2; padding: 4px 8px; font-size: 0.75rem;" onclick="openEditFoodModal(${f.id})">編集</button>
-                        <button class="delete-btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteFoodMaster(${f.id})">削除</button>
+                        <button class="delete-btn" style="padding: 4px 8px; font-size: 0.75rem;" onclick="confirmDeleteFoodMaster(${f.id}, '${f.name.replace(/'/g, "\\'")}')">削除</button>
                     </div>
                 `;
                 deleteContainer.appendChild(div);
@@ -987,7 +1026,7 @@
             updateTotalAndTags();
         }
 
-        // 合計カロリーの計算と選択された食材ラベル（個数ボタン付き）の描画
+        // 合計カロリーの計算と選択された食材ラベルの描画
         function updateTotalAndTags() {
             let total = 0;
             const tagsContainer = document.getElementById('selectedTagsContainer');
