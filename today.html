@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>今日</title>
+  <title>Task Kickoff</title>
   <style>
     :root {
       --bg: #f4f6f9;
@@ -528,11 +528,11 @@
     <header>
       <div class="header-top">
         <div class="title-area">
-          <h1>今日</h1>
+          <h1>Task Kickoff</h1>
         </div>
         <div class="header-actions">
-          <button class="icon-btn" onclick="openMasterModal()">⚙️ マスタ</button>
-          <button class="icon-btn danger" onclick="clearTodayTasks()">🗑 クリア</button>
+          <button class="icon-btn" onclick="openMasterModal()" title="マスタ設定">⚙️</button>
+          <button class="icon-btn danger" onclick="clearTodayTasks()" title="クリア">🗑</button>
         </div>
       </div>
     </header>
@@ -584,7 +584,7 @@
       <form onsubmit="submitDirectInput(event)">
         <div class="form-group">
           <label>やりたいこと（カテゴリ: その他）</label>
-          <input type="text" id="direct-task-input" class="form-control" placeholder="例: 書類の整理、銀行へ行く" required autofocus>
+          <input type="text" id="direct-task-input" class="form-control" placeholder="例: 書類の整理、銀行へ行く" required>
         </div>
         <button type="submit" class="btn-submit">追加する</button>
       </form>
