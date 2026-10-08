@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>リバーサイドフェニックスGC 出発時間チェッカー</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter & Noto Sans JP -->
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@700;900&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            touch-action: manipulation;
+        }
+        .time-display {
+            font-family: 'Share Tech Mono', 'Inter', monospace;
+            letter-spacing: -0.025em;
+        }
+        /* Strongly pronounced pulse animation for active next action */
+        @keyframes pulse-border-intense {
+            0%, 100% { border-color: rgba(5, 150, 105, 1); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.5), 0 4px 12px rgba(5, 150, 105, 0.25); }
+            50% { border-color: rgba(52, 211, 153, 1); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3), 0 2px 6px rgba(5, 150, 105, 0.15); }
+        }
+        .active-action {
+            animation: pulse-border-intense 1.5s infinite ease-in-out;
+            background-color: #d1fae5 !important;
+            transform: scale(1.01);
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 h-screen overflow-hidden flex flex-col justify-between">
+
+    <header class="bg-emerald-800 text-white shadow-md shrink-0">
+        <div class="max-w-md mx-auto px-4 py-2 flex items-center justify-between">
+            <h1 class="font-black text-xs tracking-tight truncate">Build Up（リバーサイドフェニックスGC）</h1>
+            <button onclick="toggleMode()" id="modeToggleButton" class="bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-black px-2.5 py-1 rounded-lg border border-emerald-600 transition flex items-center space-x-1 shrink-0 active:scale-95 shadow-sm">
+                <i class="fa-solid fa-stopwatch text-emerald-300"></i>
+                <span id="modeToggleText">支度モード</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-md w-full mx-auto p-3 flex flex-col justify-between overflow-hidden">
+        
+        <section id="settingsSection" class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 shrink-0 transition-all duration-300">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-xs font-black text-slate-800 flex items-center">
+                    <i class="fa-regular fa-clock text-emerald-600 mr-1.5 text-sm"></i>スタート時間を選択
+                </h2>
+                <span class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">身支度 40分</span>
+            </div>
+
+            <!-- Quick preset buttons -->
+            <div class="grid grid-cols-4 gap-2 mb-2">
+                <button onclick="setStartTime('07:00')" class="bg-slate-100 hover:bg-emerald-100 text-slate-900 font-black py-1.5 rounded-lg text-xs border border-slate-300 transition shadow-sm active:scale-95">07:00</button>
+                <button onclick="setStartTime('07:30')" class="bg-slate-100 hover:bg-emerald-100 text-slate-900 font-black py-1.5 rounded-lg text-xs border border-slate-300 transition shadow-sm active:scale-95">07:30</button>
+                <button onclick="setStartTime('08:00')" class="bg-slate-100 hover:bg-emerald-100 text-slate-900 font-black py-1.5 rounded-lg text-xs border border-slate-300 transition shadow-sm active:scale-95">08:00</button>
+                <button onclick="setStartTime('08:30')" class="bg-slate-100 hover:bg-emerald-100 text-slate-900 font-black py-1.5 rounded-lg text-xs border border-slate-300 transition shadow-sm active:scale-95">08:30</button>
+            </div>
+
+            <!-- Selectors -->
+            <div class="flex items-center space-x-2">
+                <div class="flex-1">
+                    <select id="selectHour" onchange="calculateSchedule()" class="w-full bg-slate-50 border-2 border-slate-300 rounded-lg px-2.5 py-1.5 text-sm font-black text-slate-900 focus:outline-none focus:border-emerald-600">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="text-sm font-black text-slate-400">:</div>
+                <div class="flex-1">
+                    <select id="selectMinute" onchange="calculateSchedule()" class="w-full bg-slate-50 border-2 border-slate-300 rounded-lg px-2.5 py-1.5 text-sm font-black text-slate-900 focus:outline-none focus:border-emerald-600">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section id="liveClockSection" class="hidden bg-emerald-900 text-white rounded-xl p-3 shadow-md shrink-0 flex items-center justify-between border-2 border-emerald-500">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-9 h-9 rounded-full bg-emerald-800 text-emerald-300 flex items-center justify-center text-base shrink-0 border border-emerald-600">
+                    <i class="fa-solid fa-satellite-dish animate-pulse"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">現在時刻 (支度モード)</div>
+                    <div id="liveCurrentTime" class="time-display text-xl font-black text-white leading-none">--:--:--</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="text-[10px] bg-emerald-700 text-emerald-200 px-2 py-0.5 rounded font-black block mb-0.5">NEXT ACTION</span>
+                <span id="nextActionBadge" class="text-xs font-black text-emerald-100">判定中...</span>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 flex-1 flex flex-col justify-around my-1">
+            <div class="flex items-center justify-between pb-1.5 border-b border-slate-200">
+                <span class="text-xs font-black text-slate-800 flex items-center">
+                    <i class="fa-solid fa-list-check text-emerald-600 mr-1.5 text-sm"></i>おすすめタイムライン
+                </span>
+                <span id="displayStartTimeBadge" class="text-xs bg-emerald-100 text-emerald-900 font-black px-2.5 py-0.5 rounded-full border border-emerald-300">スタート --:--</span>
+            </div>
+
+            <!-- Timeline items with massively enlarged crisp fonts -->
+            <div class="space-y-2 py-1">
+                
+                <!-- Wake up -->
+                <div id="cardWake" class="flex items-center justify-between bg-amber-50/90 px-3 py-2 rounded-xl border-2 border-amber-200 shadow-sm transition-all duration-300">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center text-sm shrink-0 font-bold">
+                            <i class="fa-solid fa-bed"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black text-amber-950 leading-tight">起床時間</div>
+                            <div class="text-[10px] font-bold text-amber-800">身支度 40分</div>
+                        </div>
+                    </div>
+                    <span id="wakeTime" class="time-display text-2xl font-black text-amber-950 tracking-wider">--:--</span>
+                </div>
+
+                <!-- Leave Home -->
+                <div id="cardLeaveHome" class="flex items-center justify-between bg-sky-50/90 px-3 py-2 rounded-xl border-2 border-sky-200 shadow-sm transition-all duration-300">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-full bg-sky-200 text-sky-800 flex items-center justify-center text-sm shrink-0 font-bold">
+                            <i class="fa-solid fa-house-chimney-user"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black text-sky-950 leading-tight">家を出る時間</div>
+                            <div class="text-[10px] font-bold text-sky-800">徒歩で駐車場へ (5分)</div>
+                        </div>
+                    </div>
+                    <span id="leaveHomeTime" class="time-display text-2xl font-black text-sky-950 tracking-wider">--:--</span>
+                </div>
+
+                <!-- Depart by Car -->
+                <div id="cardDepartCar" class="flex items-center justify-between bg-indigo-50/90 px-3 py-2 rounded-xl border-2 border-indigo-200 shadow-sm transition-all duration-300">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-full bg-indigo-200 text-indigo-800 flex items-center justify-center text-sm shrink-0 font-bold">
+                            <i class="fa-solid fa-car-side"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black text-indigo-950 leading-tight">車で出発 (駐車場)</div>
+                            <div class="text-[10px] font-bold text-indigo-800">ゴルフ場30分 ＋ コンビニ10分</div>
+                        </div>
+                    </div>
+                    <span id="departCarTime" class="time-display text-2xl font-black text-indigo-950 tracking-wider">--:--</span>
+                </div>
+
+                <!-- Arrival -->
+                <div id="cardArrival" class="flex items-center justify-between bg-emerald-50/90 px-3 py-2 rounded-xl border-2 border-emerald-300 shadow-sm transition-all duration-300">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-8 h-8 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center text-sm shrink-0 font-bold">
+                            <i class="fa-solid fa-golf-ball-tee"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-black text-emerald-950 leading-tight">ゴルフ場到着</div>
+                            <div class="text-[10px] font-bold text-emerald-800">スタート40分前</div>
+                        </div>
+                    </div>
+                    <span id="arrivalTime" class="time-display text-2xl font-black text-emerald-950 tracking-wider">--:--</span>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="shrink-0 pt-1">
+            <button onclick="copySchedule()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-black py-2.5 px-4 rounded-xl text-sm flex items-center justify-center space-x-2 transition shadow active:scale-95">
+                <i class="fa-regular fa-copy text-base"></i>
+                <span>スケジュールをコピーする</span>
+            </button>
+        </section>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-1.5 text-center shrink-0">
+        <p class="text-[10px] font-bold text-slate-500">
+            リバーサイドフェニックスゴルフクラブ 逆算アシスタント
+        </p>
+    </footer>
+
+    <script>
+        let isPrepMode = false;
+        let liveTimer = null;
+        let lastCalculated = { wakeMins: 0, leaveHomeMins: 0, departCarMins: 0, arrivalMins: 0 };
+
+        function initSelectors() {
+            const hourSelect = document.getElementById('selectHour');
+            for (let h = 5; h <= 17; h++) {
+                const hourStr = String(h).padStart(2, '0');
+                const opt = document.createElement('option');
+                opt.value = hourStr;
+                opt.textContent = hourStr + '時';
+                if (h === 7) opt.selected = true;
+                hourSelect.appendChild(opt);
+            }
+
+            const minuteSelect = document.getElementById('selectMinute');
+            minuteSelect.innerHTML = '';
+            for (let m = 0; m < 60; m += 6) {
+                const minStr = String(m).padStart(2, '0');
+                const opt = document.createElement('option');
+                opt.value = minStr;
+                opt.textContent = minStr + '分';
+                if (m === 0) opt.selected = true;
+                minuteSelect.appendChild(opt);
+            }
+        }
+
+        function setStartTime(timeStr) {
+            const parts = timeStr.split(':');
+            document.getElementById('selectHour').value = parts[0];
+            document.getElementById('selectMinute').value = parts[1];
+            calculateSchedule();
+        }
+
+        function calculateSchedule() {
+            const hour = parseInt(document.getElementById('selectHour').value, 10);
+            const minute = parseInt(document.getElementById('selectMinute').value, 10);
+
+            const teeTotalMins = hour * 60 + minute;
+            const arrivalMins = teeTotalMins - 40;
+            const departCarMins = arrivalMins - 40;
+            const leaveHomeMins = departCarMins - 5;
+            const wakeMins = leaveHomeMins - 40;
+
+            lastCalculated = { wakeMins, leaveHomeMins, departCarMins, arrivalMins };
+
+            function formatTime(totalMins) {
+                let m = totalMins % 1440;
+                if (m < 0) m += 1440;
+                const h = Math.floor(m / 60);
+                const min = m % 60;
+                return String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+            }
+
+            const teeStr = formatTime(teeTotalMins);
+            const arrivalStr = formatTime(arrivalMins);
+            const departCarStr = formatTime(departCarMins);
+            const leaveHomeStr = formatTime(leaveHomeMins);
+            const wakeStr = formatTime(wakeMins);
+
+            document.getElementById('displayStartTimeBadge').textContent = 'スタート ' + teeStr;
+            document.getElementById('arrivalTime').textContent = arrivalStr;
+            document.getElementById('departCarTime').textContent = departCarStr;
+            document.getElementById('leaveHomeTime').textContent = leaveHomeStr;
+            document.getElementById('wakeTime').textContent = wakeStr;
+
+            if (isPrepMode) updateActiveHighlight();
+        }
+
+        function toggleMode() {
+            isPrepMode = !isPrepMode;
+            const settingsSec = document.getElementById('settingsSection');
+            const liveClockSec = document.getElementById('liveClockSection');
+            const btnText = document.getElementById('modeToggleText');
+            const btn = document.getElementById('modeToggleButton');
+
+            if (isPrepMode) {
+                settingsSec.classList.add('hidden');
+                liveClockSec.classList.remove('hidden');
+                btnText.textContent = '設定に戻る';
+                btn.className = 'bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-black px-2.5 py-1 rounded-lg border border-amber-500 transition flex items-center space-x-1 shrink-0 active:scale-95 shadow-sm';
+                
+                updateLiveClock();
+                liveTimer = setInterval(updateLiveClock, 1000);
+            } else {
+                settingsSec.classList.remove('hidden');
+                liveClockSec.classList.add('hidden');
+                btnText.textContent = '支度モード';
+                btn.className = 'bg-emerald-700 hover:bg-emerald-600 text-white text-[11px] font-black px-2.5 py-1 rounded-lg border border-emerald-600 transition flex items-center space-x-1 shrink-0 active:scale-95 shadow-sm';
+                
+                if (liveTimer) clearInterval(liveTimer);
+                clearHighlights();
+            }
+        }
+
+        function updateLiveClock() {
+            const now = new Date();
+            const h = now.getHours();
+            const m = now.getMinutes();
+            const s = now.getSeconds();
+            
+            const timeStr = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            document.getElementById('liveCurrentTime').textContent = timeStr;
+
+            updateActiveHighlight();
+        }
+
+        function clearHighlights() {
+            ['cardWake', 'cardLeaveHome', 'cardDepartCar', 'cardArrival'].forEach(id => {
+                document.getElementById(id).classList.remove('active-action');
+            });
+            document.getElementById('nextActionBadge').textContent = '待機中';
+        }
+
+        function updateActiveHighlight() {
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+
+            const { wakeMins, leaveHomeMins, departCarMins, arrivalMins } = lastCalculated;
+
+            ['cardWake', 'cardLeaveHome', 'cardDepartCar', 'cardArrival'].forEach(id => {
+                document.getElementById(id).classList.remove('active-action');
+            });
+
+            let nextActionName = 'ゴルフ場到着以降';
+            let activeId = 'cardArrival';
+
+            // Compare current time with schedule milestones
+            if (currentMins < wakeMins) {
+                activeId = 'cardWake';
+                nextActionName = 'まもなく起床時間';
+            } else if (currentMins >= wakeMins && currentMins < leaveHomeMins) {
+                activeId = 'cardWake';
+                nextActionName = '起床・身支度中';
+            } else if (currentMins >= leaveHomeMins && currentMins < departCarMins) {
+                activeId = 'cardLeaveHome';
+                nextActionName = '家を出て駐車場へ';
+            } else if (currentMins >= departCarMins && currentMins < arrivalMins) {
+                activeId = 'cardDepartCar';
+                nextActionName = '車で出発 (コンビニ込)';
+            } else {
+                activeId = 'cardArrival';
+                nextActionName = 'ゴルフ場到着・ラウンド前';
+            }
+
+            document.getElementById(activeId).classList.add('active-action');
+            document.getElementById('nextActionBadge').textContent = nextActionName;
+        }
+
+        function copySchedule() {
+            const tee = document.getElementById('displayStartTimeBadge').textContent;
+            const arrival = document.getElementById('arrivalTime').textContent;
+            const departCar = document.getElementById('departCarTime').textContent;
+            const leaveHome = document.getElementById('leaveHomeTime').textContent;
+            const wake = document.getElementById('wakeTime').textContent;
+
+            const text = `【リバーサイドフェニックスGC タイムスケジュール】\n` +
+                         `⛳ ${tee}\n` +
+                         `🏌️ 到着時間: ${arrival} (40分前)\n` +
+                         `🚗 車出発(駐車場): ${departCar} (ｺﾝﾋﾞﾆ込)\n` +
+                         `🏠 家を出る: ${leaveHome} (徒歩5分)\n` +
+                         `⏰ 起床時間: ${wake}`;
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('スケジュールをコピーしました！');
+            } catch (err) {
+                showToast('コピーに失敗しました');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showToast(message) {
+            const existing = document.getElementById('toast-notification');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'toast-notification';
+            toast.textContent = message;
+            toast.className = 'fixed bottom-14 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white font-bold text-xs px-4 py-2.5 rounded-full shadow-xl z-50 transition-all duration-300';
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        window.onload = function() {
+            initSelectors();
+            calculateSchedule();
+        };
+    </script>
+</body>
+</html>
