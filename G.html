@@ -81,9 +81,23 @@
         <div id="view-category" class="hidden flex flex-col h-full justify-between py-0.5">
             
             <div id="container-form" class="flex flex-col space-y-3 flex-1 justify-start pt-0">
-                <!-- Registration date indicator -->
-                <div id="form-date-indicator" class="text-xs font-semibold text-emerald-700 px-1 hidden">
-                    登録日時: <span id="form-date-text">-</span>
+                <!-- Registration date indicator & Actions Bar -->
+                <div class="flex items-center justify-between px-1 min-h-[28px]">
+                    <div id="form-date-indicator" class="text-xs font-semibold text-emerald-700 hidden">
+                        登録日時: <span id="form-date-text">-</span>
+                    </div>
+                    <div class="flex items-center space-x-2 ml-auto">
+                        <!-- Copy All From Previous Button (Shown on New Input Mode) -->
+                        <button id="btn-copy-previous" onclick="app.copyFromPreviousEntry()" type="button" class="bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-amber-300/80 transition-all shadow-xs flex items-center space-x-1">
+                            <span>⚡️</span>
+                            <span>前の回をコピー</span>
+                        </button>
+                        <!-- Delete Button (Shown on History Mode) -->
+                        <button id="btn-delete-entry" onclick="app.confirmDeleteCurrent()" type="button" class="hidden bg-rose-100 hover:bg-rose-200 active:scale-95 text-rose-800 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-rose-300/80 transition-all shadow-xs flex items-center space-x-1">
+                            <span>🗑</span>
+                            <span>削除</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Tab Navigation Buttons -->
@@ -164,12 +178,31 @@
                 </div>
             </div>
 
-            <!-- Bottom area placeholder since Home button was relocated to header right -->
+            <!-- Bottom area placeholder -->
             <div class="pt-1 flex items-center justify-between shrink-0"></div>
 
         </div>
 
     </main>
+
+    <!-- Custom Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-200 p-4">
+        <div class="bg-white rounded-2xl p-5 max-w-xs w-full shadow-xl border border-slate-100 flex flex-col space-y-4">
+            <div class="text-center">
+                <div class="text-3xl mb-2">🗑️</div>
+                <h3 class="text-base font-bold text-slate-800">履歴の削除</h3>
+                <p class="text-xs text-slate-500 mt-1">選択中の履歴データを削除してもよろしいですか？この操作は取り消せません。</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="app.closeDeleteModal()" class="flex-1 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-all">
+                    キャンセル
+                </button>
+                <button onclick="app.deleteCurrentEntry()" class="flex-1 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 active:scale-95 text-xs font-bold text-white transition-all shadow-xs">
+                    削除する
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg opacity-0 pointer-events-none transition-all duration-300 z-50 border border-emerald-400">
         登録しました！
@@ -275,6 +308,23 @@
                 const dateIndicator = document.getElementById('form-date-indicator');
                 dateIndicator.classList.add('hidden');
                 this.updateInputIndicator();
+            }
+
+            // Copy all fields from the latest previous history entry into current form
+            copyFromPreviousEntry() {
+                if (!this.histories || this.histories.length === 0) {
+                    this.showToast('コピーできる過去のデータがありません', true);
+                    return;
+                }
+
+                // Latest entry is at index 0 (sorted newest first)
+                const latest = this.histories[0];
+
+                document.getElementById('input-address').value = (latest.address === '（未入力）') ? '' : latest.address;
+                document.getElementById('input-swing').value = (latest.swing === '（未入力）') ? '' : latest.swing;
+                document.getElementById('input-diary').value = (latest.diary === '（未入力）' || !latest.diary) ? '' : latest.diary;
+
+                this.showToast('前回の記録を全項目にコピーしました！');
             }
 
             // Copy only address data
@@ -411,6 +461,54 @@
                 };
             }
 
+            // Show confirmation modal for deleting current entry
+            confirmDeleteCurrent() {
+                if (this.currentIndex === -1 || !this.histories[this.currentIndex]) {
+                    return;
+                }
+                const modal = document.getElementById('delete-modal');
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.add('opacity-100');
+            }
+
+            // Close confirmation modal
+            closeDeleteModal() {
+                const modal = document.getElementById('delete-modal');
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            }
+
+            // Delete currently selected entry from IndexedDB
+            deleteCurrentEntry() {
+                this.closeDeleteModal();
+                if (this.currentIndex === -1 || !this.histories[this.currentIndex]) return;
+
+                const itemToDelete = this.histories[this.currentIndex];
+
+                const transaction = this.db.transaction(['swings'], 'readwrite');
+                const store = transaction.objectStore('swings');
+                const request = store.delete(itemToDelete.id);
+
+                request.onsuccess = () => {
+                    this.showToast('データを削除しました');
+                    this.loadHistories(() => {
+                        if (this.histories.length === 0) {
+                            this.clearForm();
+                        } else {
+                            if (this.currentIndex >= this.histories.length) {
+                                this.currentIndex = this.histories.length - 1;
+                            }
+                            this.loadCurrentHistoryItemToForm();
+                        }
+                        this.updateInputIndicator();
+                    });
+                };
+
+                request.onerror = () => {
+                    this.showToast('削除に失敗しました', true);
+                };
+            }
+
             // Load histories for current category from IndexedDB
             loadHistories(callback) {
                 if (!this.db || !this.currentCategory) return;
@@ -490,7 +588,7 @@
                                 dateObj.getDate() === now.getDate();
 
                 if (isToday) {
-                    dateIndicator.className = 'text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-xl flex items-center justify-between shadow-sm';
+                    dateIndicator.className = 'text-xs font-bold text-white bg-blue-600 px-3 py-1 rounded-xl flex items-center justify-between shadow-xs';
                 } else {
                     dateIndicator.className = 'text-xs font-semibold text-emerald-700 px-1';
                 }
@@ -498,24 +596,31 @@
                 dateIndicator.classList.remove('hidden');
 
                 this.updateInputIndicator();
-                this.showToast(`[${dateStr}] のデータを読み込みました`);
             }
 
             // Update input mode record indicator text and n/n display
             updateInputIndicator() {
                 const total = this.histories.length;
                 const indexLabel = document.getElementById('label-history-index');
+                const btnDelete = document.getElementById('btn-delete-entry');
+                const btnCopyPrevious = document.getElementById('btn-copy-previous');
 
                 if (total === 0) {
                     if (indexLabel) indexLabel.textContent = '0/0';
+                    btnDelete.classList.add('hidden');
+                    btnCopyPrevious.classList.add('hidden');
                 } else if (this.currentIndex === -1) {
                     if (indexLabel) indexLabel.textContent = `新/${total}`;
+                    btnDelete.classList.add('hidden');
+                    btnCopyPrevious.classList.remove('hidden');
                 } else {
                     if (indexLabel) indexLabel.textContent = `${this.currentIndex + 1}/${total}`;
+                    btnDelete.classList.remove('hidden');
+                    btnCopyPrevious.classList.add('hidden');
                 }
             }
 
-            // Update total records count on home screen
+            // Show toast notification
             showToast(message, isError = false) {
                 const toast = document.getElementById('toast');
                 toast.textContent = message;
