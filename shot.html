@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ScreenSnap - キャプチャ整理メモ</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans JP"', '"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* iOS Safari touch momentum and overscroll fix */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea {
+      user-select: text;
+    }
+    /* Hide scrollbars for clean mobile feel */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Smooth transitions */
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans min-h-screen flex justify-center selection:bg-brand-500 selection:text-white">
+
+  <!-- Mobile Container (Max 480px width for authentic phone frame on desktop) -->
+  <div class="w-full max-w-md bg-white min-h-screen flex flex-col shadow-2xl relative pb-28">
+
+    <!-- App Header -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-4 pt-4 pb-3">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center space-x-2">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+            <i class="ph-bold ph-cards text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-bold tracking-tight text-slate-900 leading-none">ScreenSnap</h1>
+            <p class="text-[11px] text-slate-400 font-medium">キャプチャ＆アイデア保管庫</p>
+          </div>
+        </div>
+
+        <!-- Quick Info & Paste Trigger -->
+        <button id="quickPasteBtn" class="flex items-center space-x-1 text-xs font-semibold px-2.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 transition">
+          <i class="ph-bold ph-clipboard text-sm text-brand-600"></i>
+          <span>貼付</span>
+        </button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="relative">
+        <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base"></i>
+        <input 
+          id="searchInput"
+          type="text" 
+          placeholder="コメントやカテゴリで検索..." 
+          class="w-full bg-slate-100 text-slate-800 text-sm rounded-xl pl-10 pr-9 py-2 border-transparent focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none transition"
+        />
+        <button id="clearSearchBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+          <i class="ph-bold ph-x-circle text-base"></i>
+        </button>
+      </div>
+
+      <!-- Category Filter Pills (Horizontal Scroll) -->
+      <div class="flex items-center space-x-2 mt-3 overflow-x-auto no-scrollbar py-0.5" id="categoryFilterBar">
+        <!-- Injected via JavaScript -->
+      </div>
+    </header>
+
+    <!-- Main Content Stream -->
+    <main class="flex-1 p-4">
+      <!-- Item Counter Banner -->
+      <div class="flex items-center justify-between text-xs text-slate-400 mb-3 px-1">
+        <span id="itemsCountText">0 件の保存アイテム</span>
+        <button id="openCategoryManageBtn" class="text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1 active:opacity-75">
+          <i class="ph-bold ph-tag"></i>
+          <span>カテゴリ管理</span>
+        </button>
+      </div>
+
+      <!-- Card Grid: 2 columns mobile responsive -->
+      <div id="cardsGrid" class="grid grid-cols-2 gap-3">
+        <!-- Dynamically rendered items -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 px-4 text-center">
+        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 mb-4">
+          <i class="ph ph-image-square text-3xl"></i>
+        </div>
+        <h3 class="text-sm font-bold text-slate-700 mb-1">キャプチャがまだありません</h3>
+        <p class="text-xs text-slate-400 max-w-xs leading-relaxed">
+          画面下の「＋」ボタンからスクリーンショットを選択するか、クリップボードから貼り付けて登録できます。
+        </p>
+      </div>
+    </main>
+
+    <!-- Fixed Bottom Action Bar -->
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 backdrop-blur-lg border-t border-slate-200/80 px-6 py-2.5 z-40 flex items-center justify-around">
+      <button id="viewAllBtn" class="flex flex-col items-center gap-1 text-brand-600 font-semibold text-[11px] active:scale-95 transition">
+        <i class="ph-fill ph-squares-four text-2xl"></i>
+        <span>一覧</span>
+      </button>
+
+      <!-- Center Floating Plus Button -->
+      <div class="relative -top-5">
+        <button id="openUploadSheetBtn" class="w-14 h-14 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-300 active:scale-90 hover:brightness-105 transition transform">
+          <i class="ph-bold ph-plus text-2xl"></i>
+        </button>
+      </div>
+
+      <button id="quickCameraBtn" class="flex flex-col items-center gap-1 text-slate-500 hover:text-slate-800 font-semibold text-[11px] active:scale-95 transition">
+        <i class="ph-bold ph-camera text-2xl"></i>
+        <span>撮影</span>
+      </button>
+    </nav>
+
+    <!-- Hidden File Inputs -->
+    <input type="file" id="imageFileInput" accept="image/*" class="hidden">
+    <input type="file" id="cameraFileInput" accept="image/*" capture="environment" class="hidden">
+
+    <!-- Add/Edit Modal (Bottom Sheet style on Mobile) -->
+    <div id="itemModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center modal-backdrop hidden transition-opacity">
+      <div class="bg-white w-full max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-3xl flex flex-col shadow-2xl overflow-hidden animate-slideUp">
+        
+        <!-- Sheet Handle & Header -->
+        <div class="pt-3 px-5 pb-3 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span>
+            <h2 id="modalTitle" class="text-base font-bold text-slate-800">新規キャプチャ追加</h2>
+          </div>
+          <button id="closeModalBtn" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 active:bg-slate-200">
+            <i class="ph-bold ph-x text-base"></i>
+          </button>
+        </div>
+
+        <!-- Form Body -->
+        <div class="p-5 overflow-y-auto no-scrollbar space-y-4">
+          <!-- Image Preview Area / Upload Dropzone -->
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-slate-600">キャプチャ画像</label>
+            <div id="imagePickerContainer" class="border-2 border-dashed border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative group cursor-pointer aspect-video flex flex-col items-center justify-center transition hover:border-brand-500">
+              <img id="modalPreviewImg" src="" alt="Preview" class="w-full h-full object-contain hidden bg-slate-950/5">
+              
+              <div id="imagePlaceholder" class="flex flex-col items-center text-center p-4">
+                <div class="w-11 h-11 rounded-full bg-indigo-50 text-brand-600 flex items-center justify-center mb-2">
+                  <i class="ph-bold ph-image text-xl"></i>
+                </div>
+                <span class="text-xs font-semibold text-slate-700">画像をタップして選択</span>
+                <span class="text-[10px] text-slate-400 mt-0.5">またはクリップボードからペースト可能</span>
+              </div>
+
+              <!-- Retake / Replace Badge -->
+              <button id="changeImageBtn" class="hidden absolute top-2 right-2 px-2.5 py-1 bg-black/60 backdrop-blur-sm text-white text-[11px] font-medium rounded-full flex items-center gap-1 active:scale-95">
+                <i class="ph-bold ph-arrow-counter-clockwise"></i> 変更
+              </button>
+            </div>
+          </div>
+
+          <!-- Category Selector -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-slate-600">カテゴリ</label>
+              <button type="button" id="addNewCategoryInlineBtn" class="text-[11px] text-brand-600 font-semibold hover:underline">
+                ＋ カテゴリ作成
+              </button>
+            </div>
+            <div id="modalCategoryBadges" class="flex flex-wrap gap-2 pt-1">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Comment / Note Input -->
+          <div class="space-y-1.5">
+            <label for="modalComment" class="text-xs font-bold text-slate-600">コメント・気付きメモ</label>
+            <textarea 
+              id="modalComment" 
+              rows="3" 
+              placeholder="例: このUIデザインの余白感が参考になる。次回リニューアル案に採用したい。" 
+              class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none transition resize-none"
+            ></textarea>
+          </div>
+
+          <!-- Tags or Optional URL -->
+          <div class="space-y-1.5">
+            <label for="modalSourceUrl" class="text-xs font-bold text-slate-600">参照元URL / メモ（任意）</label>
+            <input 
+              id="modalSourceUrl" 
+              type="text" 
+              placeholder="https://example.com/ などの元リンク" 
+              class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-brand-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+          <button id="cancelModalBtn" class="w-1/3 py-3 rounded-xl bg-slate-200 text-slate-700 text-xs font-bold active:scale-95 transition">
+            キャンセル
+          </button>
+          <button id="saveItemBtn" class="w-2/3 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold flex items-center justify-center space-x-1.5 shadow-md shadow-brand-500/25 active:scale-95 transition">
+            <i class="ph-bold ph-check text-base"></i>
+            <span id="saveBtnText">保存する</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image Detail Viewer Modal -->
+    <div id="detailModal" class="fixed inset-0 z-50 modal-backdrop hidden flex flex-col justify-end sm:justify-center items-center">
+      <div class="bg-white w-full max-w-md max-h-[92vh] rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl">
+        <!-- Header -->
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span id="detailCategoryBadge" class="text-[11px] px-2.5 py-0.5 rounded-full font-medium"></span>
+            <span id="detailDate" class="text-[11px] text-slate-400"></span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <button id="detailEditBtn" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 active:scale-90">
+              <i class="ph-bold ph-pencil-simple text-sm"></i>
+            </button>
+            <button id="detailDeleteBtn" class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 hover:bg-rose-100 active:scale-90">
+              <i class="ph-bold ph-trash text-sm"></i>
+            </button>
+            <button id="detailCloseBtn" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 active:scale-90 ml-1">
+              <i class="ph-bold ph-x text-sm"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Image & Content -->
+        <div class="overflow-y-auto no-scrollbar p-4 space-y-4">
+          <!-- Main Screenshot with Zoom Aspect -->
+          <div class="rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-inner flex items-center justify-center max-h-80">
+            <img id="detailImg" src="" alt="Detail capture" class="w-full h-auto object-contain cursor-zoom-in">
+          </div>
+
+          <!-- Comment Section -->
+          <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 space-y-2">
+            <div class="flex items-center space-x-1.5 text-slate-500 text-xs font-semibold">
+              <i class="ph-bold ph-chat-circle-dots"></i>
+              <span>コメント / メモ</span>
+            </div>
+            <p id="detailComment" class="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed"></p>
+          </div>
+
+          <!-- URL Link Section (if exists) -->
+          <div id="detailUrlContainer" class="hidden bg-indigo-50/60 p-3 rounded-2xl border border-indigo-100 text-xs">
+            <span class="text-slate-400 text-[10px] block mb-0.5">参照先:</span>
+            <a id="detailUrlLink" href="#" target="_blank" rel="noopener noreferrer" class="text-brand-600 font-medium truncate block underline"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Management Modal -->
+    <div id="categoryManageModal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-base font-bold text-slate-800">カテゴリの管理・追加</h3>
+          <button id="closeCategoryManageBtn" class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+            <i class="ph-bold ph-x text-sm"></i>
+          </button>
+        </div>
+
+        <!-- Add Category Form -->
+        <div class="space-y-2">
+          <input id="newCategoryName" type="text" placeholder="新しいカテゴリ名" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:bg-white focus:border-brand-500 focus:outline-none">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">色:</span>
+            <div id="colorPickerList" class="flex gap-1.5 flex-1">
+              <!-- Colors injected via JS -->
+            </div>
+            <button id="addNewCategoryBtn" class="bg-brand-600 text-white text-xs font-bold px-3 py-2 rounded-xl active:scale-95 transition">
+              追加
+            </button>
+          </div>
+        </div>
+
+        <!-- Category list -->
+        <div class="border-t border-slate-100 pt-3">
+          <p class="text-xs font-bold text-slate-500 mb-2">登録中のカテゴリ</p>
+          <div id="existingCategoriesList" class="space-y-1.5 max-h-48 overflow-y-auto no-scrollbar">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast (No alert() used) -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg backdrop-blur-md flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+      <i id="toastIcon" class="ph-bold ph-check text-emerald-400"></i>
+      <span id="toastMsg">保存しました</span>
+    </div>
+
+  </div>
+
+  <script>
+    /* -------------------------------------------------------------
+       App Data State & Defaults
+    ------------------------------------------------------------- */
+    const STORAGE_KEY_ITEMS = 'screensnap_items_v1';
+    const STORAGE_KEY_CATS = 'screensnap_categories_v1';
+
+    // Preset Vibrant Category Colors
+    const PRESET_COLORS = [
+      { name: 'Indigo', bg: '#EEF2FF', text: '#4F46E5', dot: '#6366F1' },
+      { name: 'Emerald', bg: '#ECFDF5', text: '#059669', dot: '#10B981' },
+      { name: 'Amber', bg: '#FFFBEB', text: '#D97706', dot: '#F59E0B' },
+      { name: 'Rose', bg: '#FFF1F2', text: '#E11D48', dot: '#F43F5E' },
+      { name: 'Sky', bg: '#F0F9FF', text: '#0284C7', dot: '#0EA5E9' },
+      { name: 'Purple', bg: '#FAF5FF', text: '#7E22CE', dot: '#A855F7' },
+    ];
+
+    // Default Categories
+    const DEFAULT_CATEGORIES = [
+      { id: 'cat-ui', name: 'UI参考', color: PRESET_COLORS[0] },
+      { id: 'cat-work', name: '仕事・タスク', color: PRESET_COLORS[1] },
+      { id: 'cat-shopping', name: '欲しいもの', color: PRESET_COLORS[2] },
+      { id: 'cat-recipes', name: 'レシピ・お店', color: PRESET_COLORS[3] },
+      { id: 'cat-other', name: 'その他', color: PRESET_COLORS[4] },
+    ];
+
+    // Sample initial demo items (Clean lightweight base64/SVG placeholders)
+    const DEMO_ITEMS = [
+      {
+        id: 'sample-1',
+        imageData: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
+          <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#1e1b4b"/>
+            <circle cx="200" cy="110" r="45" fill="#6366f1" opacity="0.8"/>
+            <rect x="120" y="180" width="160" height="20" rx="10" fill="#a5b4fc"/>
+            <rect x="150" y="215" width="100" height="12" rx="6" fill="#818cf8" opacity="0.6"/>
+            <text x="200" y="270" font-family="sans-serif" font-size="14" fill="#e0e7ff" text-anchor="middle">Mobile Dashboard UI</text>
+          </svg>
+        `),
+        categoryId: 'cat-ui',
+        comment: 'ダッシュボードのカード配置とグラデーションが綺麗。次の開発で参考にしたいレイアウト。',
+        sourceUrl: 'https://dribbble.com',
+        timestamp: Date.now() - 3600000 * 24
+      },
+      {
+        id: 'sample-2',
+        imageData: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
+          <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#064e3b"/>
+            <path d="M140,210 L200,90 L260,210 Z" fill="#34d399"/>
+            <circle cx="200" cy="170" r="16" fill="#064e3b"/>
+            <text x="200" y="255" font-family="sans-serif" font-size="14" fill="#a7f3d0" text-anchor="middle">Tokyo Coffee Shop</text>
+          </svg>
+        `),
+        categoryId: 'cat-recipes',
+        comment: '渋谷に新しくオープンしたコーヒースタンド。週末に立ち寄ってみる！',
+        sourceUrl: 'https://instagram.com',
+        timestamp: Date.now() - 3600000 * 48
+      }
+    ];
+
+    let categories = [];
+    let items = [];
+    let activeFilter = 'all';
+    let currentEditItemId = null;
+    let selectedModalCategoryId = '';
+    let selectedNewCatColor = PRESET_COLORS[0];
+
+    // Load initial data
+    function loadData() {
+      try {
+        const storedCats = localStorage.getItem(STORAGE_KEY_CATS);
+        categories = storedCats ? JSON.parse(storedCats) : DEFAULT_CATEGORIES;
+
+        const storedItems = localStorage.getItem(STORAGE_KEY_ITEMS);
+        items = storedItems ? JSON.parse(storedItems) : DEMO_ITEMS;
+      } catch (err) {
+        console.error('Failed to parse localStorage', err);
+        categories = DEFAULT_CATEGORIES;
+        items = DEMO_ITEMS;
+      }
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(STORAGE_KEY_CATS, JSON.stringify(categories));
+        localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
+      } catch (err) {
+        showToast('容量上限または保存エラーが発生しました', true);
+      }
+    }
+
+    /* -------------------------------------------------------------
+       UI Notification Toast Helper
+    ------------------------------------------------------------- */
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const msg = document.getElementById('toastMsg');
+
+      msg.textContent = message;
+      if (isError) {
+        icon.className = 'ph-bold ph-warning-circle text-rose-400';
+      } else {
+        icon.className = 'ph-bold ph-check text-emerald-400';
+      }
+
+      toast.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 2500);
+    }
+
+    /* -------------------------------------------------------------
+       Category Helpers
+    ------------------------------------------------------------- */
+    function getCategory(catId) {
+      return categories.find(c => c.id === catId) || {
+        id: 'unknown',
+        name: '未分類',
+        color: { bg: '#F1F5F9', text: '#475569', dot: '#94A3B8' }
+      };
+    }
+
+    function renderCategoryFilterBar() {
+      const filterBar = document.getElementById('categoryFilterBar');
+      filterBar.innerHTML = '';
+
+      // All button
+      const allBtn = document.createElement('button');
+      allBtn.className = `px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition active:scale-95 flex items-center space-x-1.5 ${
+        activeFilter === 'all' 
+          ? 'bg-slate-900 text-white shadow-sm' 
+          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+      }`;
+      allBtn.innerHTML = `<span>すべて</span><span class="text-[10px] opacity-75 font-normal">(${items.length})</span>`;
+      allBtn.onclick = () => {
+        activeFilter = 'all';
+        renderCategoryFilterBar();
+        renderItems();
+      };
+      filterBar.appendChild(allBtn);
+
+      // Categories
+      categories.forEach(cat => {
+        const count = items.filter(it => it.categoryId === cat.id).length;
+        const btn = document.createElement('button');
+        const isActive = activeFilter === cat.id;
+
+        btn.className = `px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition active:scale-95 flex items-center space-x-1.5 ${
+          isActive 
+            ? 'bg-slate-900 text-white shadow-sm' 
+            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+        }`;
+        
+        btn.innerHTML = `
+          <span class="w-2 h-2 rounded-full inline-block" style="background-color: ${cat.color.dot}"></span>
+          <span>${cat.name}</span>
+          <span class="text-[10px] opacity-75 font-normal">(${count})</span>
+        `;
+
+        btn.onclick = () => {
+          activeFilter = cat.id;
+          renderCategoryFilterBar();
+          renderItems();
+        };
+
+        filterBar.appendChild(btn);
+      });
+    }
+
+    function renderItems() {
+      const grid = document.getElementById('cardsGrid');
+      const emptyState = document.getElementById('emptyState');
+      const counterText = document.getElementById('itemsCountText');
+      const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+
+      // Filtering
+      const filtered = items.filter(item => {
+        const matchFilter = activeFilter === 'all' || item.categoryId === activeFilter;
+        const cat = getCategory(item.categoryId);
+        const matchSearch = !searchTerm || 
+          item.comment.toLowerCase().includes(searchTerm) ||
+          cat.name.toLowerCase().includes(searchTerm) ||
+          (item.sourceUrl && item.sourceUrl.toLowerCase().includes(searchTerm));
+        return matchFilter && matchSearch;
+      });
+
+      counterText.textContent = `${filtered.length} 件のアイテム`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      grid.innerHTML = '';
+
+      filtered.forEach(item => {
+        const cat = getCategory(item.categoryId);
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm flex flex-col active:scale-[0.98] transition cursor-pointer";
+        
+        // Date format
+        const dateObj = new Date(item.timestamp);
+        const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+
+        card.innerHTML = `
+          <div class="relative w-full aspect-[4/3] bg-slate-900 overflow-hidden flex items-center justify-center">
+            <img src="${item.imageData}" alt="Screenshot" class="w-full h-full object-cover">
+            <div class="absolute top-2 left-2">
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm flex items-center gap-1" style="background-color: ${cat.color.bg}; color: ${cat.color.text}">
+                <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${cat.color.dot}"></span>
+                ${cat.name}
+              </span>
+            </div>
+          </div>
+          <div class="p-3 flex-1 flex flex-col justify-between">
+            <p class="text-xs text-slate-700 font-medium line-clamp-2 leading-snug mb-2">
+              ${item.comment ? escapeHtml(item.comment) : '<span class="text-slate-400 italic">コメントなし</span>'}
+            </p>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
+              <span>${dateStr}</span>
+              <span class="flex items-center text-slate-500 font-medium">
+                詳細 <i class="ph-bold ph-caret-right ml-0.5 text-[9px]"></i>
+              </span>
+            </div>
+          </div>
+        `;
+
+        card.onclick = () => openDetailModal(item.id);
+        grid.appendChild(card);
+      });
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[m];
+      });
+    }
+
+    const itemModal = document.getElementById('itemModal');
+    const modalPreviewImg = document.getElementById('modalPreviewImg');
+    const imagePlaceholder = document.getElementById('imagePlaceholder');
+    const changeImageBtn = document.getElementById('changeImageBtn');
+    const modalComment = document.getElementById('modalComment');
+    const modalSourceUrl = document.getElementById('modalSourceUrl');
+    const modalTitle = document.getElementById('modalTitle');
+    const saveBtnText = document.getElementById('saveBtnText');
+
+    let currentModalImageData = '';
+
+    function openAddModal(preloadedImage = '') {
+      currentEditItemId = null;
+      currentModalImageData = preloadedImage;
+      modalTitle.textContent = '新規キャプチャの取り込み';
+      saveBtnText.textContent = '保存する';
+      modalComment.value = '';
+      modalSourceUrl.value = '';
+      selectedModalCategoryId = categories[0]?.id || '';
+
+      updateModalImagePreview();
+      renderModalCategoryBadges();
+
+      itemModal.classList.remove('hidden');
+    }
+
+    function openEditModal(itemId) {
+      const item = items.find(i => i.id === itemId);
+      if (!item) return;
+
+      currentEditItemId = itemId;
+      currentModalImageData = item.imageData;
+      modalTitle.textContent = 'キャプチャ情報の編集';
+      saveBtnText.textContent = '更新する';
+      modalComment.value = item.comment || '';
+      modalSourceUrl.value = item.sourceUrl || '';
+      selectedModalCategoryId = item.categoryId;
+
+      updateModalImagePreview();
+      renderModalCategoryBadges();
+
+      // Close detail modal if open
+      document.getElementById('detailModal').classList.add('hidden');
+      itemModal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      itemModal.classList.add('hidden');
+      currentEditItemId = null;
+      currentModalImageData = '';
+    }
+
+    function updateModalImagePreview() {
+      if (currentModalImageData) {
+        modalPreviewImg.src = currentModalImageData;
+        modalPreviewImg.classList.remove('hidden');
+        imagePlaceholder.classList.add('hidden');
+        changeImageBtn.classList.remove('hidden');
+      } else {
+        modalPreviewImg.src = '';
+        modalPreviewImg.classList.add('hidden');
+        imagePlaceholder.classList.remove('hidden');
+        changeImageBtn.classList.add('hidden');
+      }
+    }
+
+    function renderModalCategoryBadges() {
+      const container = document.getElementById('modalCategoryBadges');
+      container.innerHTML = '';
+
+      categories.forEach(cat => {
+        const isSelected = selectedModalCategoryId === cat.id;
+        const badge = document.createElement('button');
+        badge.type = 'button';
+        badge.className = `px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95 ${
+          isSelected 
+            ? 'ring-2 ring-brand-500 shadow-sm' 
+            : 'border border-slate-200 opacity-80 hover:opacity-100'
+        }`;
+        badge.style.backgroundColor = cat.color.bg;
+        badge.style.color = cat.color.text;
+
+        badge.innerHTML = `
+          <span class="w-2 h-2 rounded-full" style="background-color: ${cat.color.dot}"></span>
+          <span>${cat.name}</span>
+          ${isSelected ? '<i class="ph-bold ph-check text-[11px] ml-0.5"></i>' : ''}
+        `;
+
+        badge.onclick = () => {
+          selectedModalCategoryId = cat.id;
+          renderModalCategoryBadges();
+        };
+
+        container.appendChild(badge);
+      });
+    }
+
+    function handleFileSelected(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('画像ファイルを選択してください', true);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // Max dimension downscale for browser storage responsiveness
+          const canvas = document.createElement('canvas');
+          const maxDim = 1200;
+          let w = img.width;
+          let h = img.height;
+
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          currentModalImageData = canvas.toDataURL('image/jpeg', 0.85);
+
+          updateModalImagePreview();
+          if (itemModal.classList.contains('hidden')) {
+            openAddModal(currentModalImageData);
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Trigger Clipboard Paste Event
+    async function handleClipboardPaste() {
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.read) {
+          showToast('クリップボードから画像を選択または画面に直接Cmd+V / 長押しペーストしてください', false);
+          openAddModal();
+          return;
+        }
+
+        const clipboardItems = await navigator.clipboard.read();
+        let foundImage = false;
+
+        for (const item of clipboardItems) {
+          const imageType = item.types.find(type => type.startsWith('image/'));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            handleFileSelected(blob);
+            showToast('キャプチャをクリップボードから貼り付けました！');
+            foundImage = true;
+            break;
+          }
+        }
+
+        if (!foundImage) {
+          showToast('クリップボードに画像が見つかりませんでした', true);
+          openAddModal();
+        }
+      } catch (err) {
+        // Fallback or permission blocked
+        showToast('貼り付けを許可するか画像を選択してください', true);
+        openAddModal();
+      }
+    }
+
+    // Global keyboard Cmd+V or Ctrl+V paste support
+    window.addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const blob = items[i].getAsFile();
+          handleFileSelected(blob);
+          showToast('画像を貼り付けました');
+          break;
+        }
+      }
+    });
+
+    function saveCurrentItem() {
+      if (!currentModalImageData) {
+        showToast('画像を設定してください', true);
+        return;
+      }
+
+      const comment = modalComment.value.trim();
+      const sourceUrl = modalSourceUrl.value.trim();
+      const categoryId = selectedModalCategoryId || categories[0]?.id || 'cat-other';
+
+      if (currentEditItemId) {
+        // Update
+        const idx = items.findIndex(i => i.id === currentEditItemId);
+        if (idx !== -1) {
+          items[idx] = {
+            ...items[idx],
+            imageData: currentModalImageData,
+            categoryId,
+            comment,
+            sourceUrl,
+          };
+          showToast('キャプチャを更新しました');
+        }
+      } else {
+        // Create new
+        const newItem = {
+          id: 'snap-' + Date.now(),
+          imageData: currentModalImageData,
+          categoryId,
+          comment,
+          sourceUrl,
+          timestamp: Date.now(),
+        };
+        items.unshift(newItem);
+        showToast('キャプチャを保存しました！');
+      }
+
+      saveData();
+      renderCategoryFilterBar();
+      renderItems();
+      closeModal();
+    }
+
+    // Detail View Logic
+    let currentDetailItemId = null;
+    function openDetailModal(itemId) {
+      const item = items.find(i => i.id === itemId);
+      if (!item) return;
+
+      currentDetailItemId = itemId;
+      const cat = getCategory(item.categoryId);
+      const detailModal = document.getElementById('detailModal');
+
+      document.getElementById('detailImg').src = item.imageData;
+      const catBadge = document.getElementById('detailCategoryBadge');
+      catBadge.textContent = cat.name;
+      catBadge.style.backgroundColor = cat.color.bg;
+      catBadge.style.color = cat.color.text;
+
+      const dateObj = new Date(item.timestamp);
+      document.getElementById('detailDate').textContent = `${dateObj.getFullYear()}/${dateObj.getMonth() + 1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
+      
+      document.getElementById('detailComment').textContent = item.comment || 'コメントはありません。';
+
+      const urlContainer = document.getElementById('detailUrlContainer');
+      const urlLink = document.getElementById('detailUrlLink');
+      if (item.sourceUrl) {
+        urlContainer.classList.remove('hidden');
+        urlLink.href = item.sourceUrl.startsWith('http') ? item.sourceUrl : `https://${item.sourceUrl}`;
+        urlLink.textContent = item.sourceUrl;
+      } else {
+        urlContainer.classList.add('hidden');
+      }
+
+      detailModal.classList.remove('hidden');
+    }
+
+    function deleteItem(itemId) {
+      items = items.filter(i => i.id !== itemId);
+      saveData();
+      renderCategoryFilterBar();
+      renderItems();
+      document.getElementById('detailModal').classList.add('hidden');
+      showToast('キャプチャを削除しました');
+    }
+
+    function renderCategoryManageUI() {
+      const colorPicker = document.getElementById('colorPickerList');
+      colorPicker.innerHTML = '';
+
+      PRESET_COLORS.forEach((col, idx) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = `w-6 h-6 rounded-full transition transform ${selectedNewCatColor.name === col.name ? 'ring-2 ring-slate-800 scale-110' : 'opacity-80'}`;
+        dot.style.backgroundColor = col.dot;
+        dot.onclick = () => {
+          selectedNewCatColor = col;
+          renderCategoryManageUI();
+        };
+        colorPicker.appendChild(dot);
+      });
+
+      const list = document.getElementById('existingCategoriesList');
+      list.innerHTML = '';
+
+      categories.forEach(cat => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100 text-xs";
+        
+        row.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full" style="background-color: ${cat.color.dot}"></span>
+            <span class="font-medium text-slate-800">${escapeHtml(cat.name)}</span>
+          </div>
+          <button class="delete-cat-btn text-slate-400 hover:text-rose-600 p-1" data-cat-id="${cat.id}">
+            <i class="ph-bold ph-trash"></i>
+          </button>
+        `;
+
+        row.querySelector('.delete-cat-btn').onclick = (e) => {
+          e.stopPropagation();
+          if (categories.length <= 1) {
+            showToast('最低1つのカテゴリが必要です', true);
+            return;
+          }
+          categories = categories.filter(c => c.id !== cat.id);
+          saveData();
+          renderCategoryFilterBar();
+          renderCategoryManageUI();
+          renderItems();
+          showToast(`「${cat.name}」を削除しました`);
+        };
+
+        list.appendChild(row);
+      });
+    }
+
+    function addNewCategory() {
+      const input = document.getElementById('newCategoryName');
+      const name = input.value.trim();
+      if (!name) {
+        showToast('カテゴリ名を入力してください', true);
+        return;
+      }
+
+      const newCat = {
+        id: 'cat-' + Date.now(),
+        name,
+        color: selectedNewCatColor
+      };
+
+      categories.push(newCat);
+      saveData();
+      input.value = '';
+      renderCategoryManageUI();
+      renderCategoryFilterBar();
+      renderModalCategoryBadges();
+      showToast(`カテゴリ「${name}」を追加しました`);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      renderCategoryFilterBar();
+      renderItems();
+
+      const imageFileInput = document.getElementById('imageFileInput');
+      const cameraFileInput = document.getElementById('cameraFileInput');
+
+      // Top search actions
+      const searchInput = document.getElementById('searchInput');
+      const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+      searchInput.addEventListener('input', () => {
+        if (searchInput.value.length > 0) {
+          clearSearchBtn.classList.remove('hidden');
+        } else {
+          clearSearchBtn.classList.add('hidden');
+        }
+        renderItems();
+      });
+
+      clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearSearchBtn.classList.add('hidden');
+        renderItems();
+      });
+
+      // Quick Paste & Action Buttons
+      document.getElementById('quickPasteBtn').onclick = handleClipboardPaste;
+      document.getElementById('openUploadSheetBtn').onclick = () => openAddModal();
+      document.getElementById('quickCameraBtn').onclick = () => cameraFileInput.click();
+      document.getElementById('viewAllBtn').onclick = () => {
+        activeFilter = 'all';
+        searchInput.value = '';
+        clearSearchBtn.classList.add('hidden');
+        renderCategoryFilterBar();
+        renderItems();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      // File input triggers
+      document.getElementById('imagePickerContainer').onclick = () => imageFileInput.click();
+      imageFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleFileSelected(e.target.files[0]);
+        }
+      });
+      cameraFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleFileSelected(e.target.files[0]);
+        }
+      });
+
+      // Modal buttons
+      document.getElementById('closeModalBtn').onclick = closeModal;
+      document.getElementById('cancelModalBtn').onclick = closeModal;
+      document.getElementById('saveItemBtn').onclick = saveCurrentItem;
+
+      // Detail Modal buttons
+      const detailModal = document.getElementById('detailModal');
+      document.getElementById('detailCloseBtn').onclick = () => detailModal.classList.add('hidden');
+      document.getElementById('detailEditBtn').onclick = () => {
+        if (currentDetailItemId) openEditModal(currentDetailItemId);
+      };
+      document.getElementById('detailDeleteBtn').onclick = () => {
+        if (currentDetailItemId) deleteItem(currentDetailItemId);
+      };
+
+      // Category Management Modal
+      const catModal = document.getElementById('categoryManageModal');
+      document.getElementById('openCategoryManageBtn').onclick = () => {
+        renderCategoryManageUI();
+        catModal.classList.remove('hidden');
+      };
+      document.getElementById('addNewCategoryInlineBtn').onclick = () => {
+        renderCategoryManageUI();
+        catModal.classList.remove('hidden');
+      };
+      document.getElementById('closeCategoryManageBtn').onclick = () => catModal.classList.add('hidden');
+      document.getElementById('addNewCategoryBtn').onclick = addNewCategory;
+
+      // Image modal full view click
+      document.getElementById('detailImg').onclick = () => {
+        const src = document.getElementById('detailImg').src;
+        if (src) {
+          const newTab = window.open();
+          if (newTab) {
+            newTab.document.body.innerHTML = `<body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh;"><img src="${src}" style="max-width:100%;max-height:100%;object-fit:contain;"></body>`;
+          }
+        }
+      };
+    });
+  </script>
+</body>
+</html>
