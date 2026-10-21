@@ -42,6 +42,7 @@
 
     <main class="flex-1 overflow-y-auto relative p-4 flex flex-col justify-center max-w-md mx-auto w-full">
 
+        <!-- ホームビュー：クラブカテゴリ選択画面 -->
         <div id="view-home" class="flex flex-col justify-center space-y-4 h-full py-2">
             <div class="text-center mb-1">
                 <p class="text-xs text-slate-600 font-medium">練習するクラブカテゴリを選択してください</p>
@@ -78,6 +79,7 @@
             </div>
         </div>
 
+        <!-- カテゴリ詳細ビュー：入力・履歴表示画面 -->
         <div id="view-category" class="hidden flex flex-col h-full justify-between py-0.5">
             
             <div id="container-form" class="flex flex-col space-y-3 flex-1 justify-start pt-0">
@@ -87,12 +89,22 @@
                         登録日時: <span id="form-date-text">-</span>
                     </div>
                     <div class="flex items-center space-x-2 ml-auto">
-                        <!-- Copy All From Previous Button (Shown on New Input Mode) -->
+                        <!-- New Entry Button (最新ページ時のみ登録の左に表示) -->
+                        <button id="btn-new-entry" onclick="app.requestNewEntry()" type="button" class="hidden bg-sky-500 hover:bg-sky-400 active:scale-95 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-sky-300 transition-all shadow-xs flex items-center space-x-1">
+                            <span>➕</span>
+                            <span>新規</span>
+                        </button>
+                        <!-- Register / Update Button placed directly to the left of "前の回をコピー" -->
+                        <button id="btn-register-top" onclick="app.registerData()" type="button" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-white text-[11px] font-bold px-3 py-1 rounded-lg border border-emerald-300/90 transition-all shadow-xs flex items-center space-x-1">
+                            <span>✨</span>
+                            <span id="btn-register-text">登録</span>
+                        </button>
+                        <!-- Copy All From Previous Button (新規作成中モード時のみ表示) -->
                         <button id="btn-copy-previous" onclick="app.copyFromPreviousEntry()" type="button" class="bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-amber-300/80 transition-all shadow-xs flex items-center space-x-1">
                             <span>⚡️</span>
                             <span>前の回をコピー</span>
                         </button>
-                        <!-- Delete Button (Shown on History Mode) -->
+                        <!-- Delete Button (履歴表示モード時のみ表示) -->
                         <button id="btn-delete-entry" onclick="app.confirmDeleteCurrent()" type="button" class="hidden bg-rose-100 hover:bg-rose-200 active:scale-95 text-rose-800 text-[11px] font-bold px-2.5 py-1 rounded-lg border border-rose-300/80 transition-all shadow-xs flex items-center space-x-1">
                             <span>🗑</span>
                             <span>削除</span>
@@ -107,22 +119,12 @@
                     <button type="button" id="tab-btn-diary" onclick="app.switchTab('diary')" class="flex-1 py-1.5 px-2 text-xs font-semibold rounded-lg text-slate-700 transition-all">日記</button>
                 </div>
 
-                <!-- Tab Contents -->
+                <!-- Tab Contents (個別ボタン削除済み) -->
                 <div id="tab-content-address" class="space-y-0.5 flex-1 flex flex-col">
                     <div class="flex items-center justify-between px-1 mb-1">
                         <label class="block text-xs font-semibold text-slate-700">
                             ■ アドレスの課題・意識
                         </label>
-                        <div class="flex items-center space-x-1.5">
-                            <button onclick="app.registerData()" type="button" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-emerald-300 transition-all shadow-xs flex items-center space-x-1">
-                                <span>登録</span>
-                                <span>✨</span>
-                            </button>
-                            <button onclick="app.copyAddressData()" type="button" class="bg-emerald-100 hover:bg-emerald-200 active:scale-95 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-300 transition-all shadow-xs flex items-center space-x-1">
-                                <span>📋</span>
-                                <span>コピー</span>
-                            </button>
-                        </div>
                     </div>
                     <textarea id="input-address" rows="5" placeholder="例：ボール位置が左すぎないか確認。スタンス幅を肩幅に。" class="w-full flex-1 bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
                 </div>
@@ -132,16 +134,6 @@
                         <label class="block text-xs font-semibold text-slate-700">
                             ■ スイングの課題・意識
                         </label>
-                        <div class="flex items-center space-x-1.5">
-                            <button onclick="app.registerData()" type="button" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-emerald-300 transition-all shadow-xs flex items-center space-x-1">
-                                <span>登録</span>
-                                <span>✨</span>
-                            </button>
-                            <button onclick="app.copySwingData()" type="button" class="bg-emerald-100 hover:bg-emerald-200 active:scale-95 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-300 transition-all shadow-xs flex items-center space-x-1">
-                                <span>📋</span>
-                                <span>コピー</span>
-                            </button>
-                        </div>
                     </div>
                     <textarea id="input-swing" rows="5" placeholder="例：トップで右脇が開かないように回す。フィニッシュまで振り切る。" class="w-full flex-1 bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
                 </div>
@@ -151,16 +143,6 @@
                         <label class="block text-xs font-semibold text-slate-700">
                             ■ 日記
                         </label>
-                        <div class="flex items-center space-x-1.5">
-                            <button onclick="app.registerData()" type="button" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-md border border-emerald-300 transition-all shadow-xs flex items-center space-x-1">
-                                <span>登録</span>
-                                <span>✨</span>
-                            </button>
-                            <button onclick="app.copyDiaryData()" type="button" class="bg-emerald-100 hover:bg-emerald-200 active:scale-95 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-300 transition-all shadow-xs flex items-center space-x-1">
-                                <span>📋</span>
-                                <span>コピー</span>
-                            </button>
-                        </div>
                     </div>
                     <textarea id="input-diary" rows="5" placeholder="例：今日はドライバーの捕まりが良くて飛距離が伸びた。" class="w-full flex-1 bg-white border border-slate-200/80 rounded-2xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300/40 resize-none shadow-[0_6px_20px_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] transition-all"></textarea>
                 </div>
@@ -178,7 +160,6 @@
                 </div>
             </div>
 
-            <!-- Bottom area placeholder -->
             <div class="pt-1 flex items-center justify-between shrink-0"></div>
 
         </div>
@@ -204,6 +185,25 @@
         </div>
     </div>
 
+    <!-- Custom New Entry Confirmation Modal -->
+    <div id="new-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 opacity-0 pointer-events-none transition-opacity duration-200 p-4">
+        <div class="bg-white rounded-2xl p-5 max-w-xs w-full shadow-xl border border-slate-100 flex flex-col space-y-4">
+            <div class="text-center">
+                <div class="text-3xl mb-2">📝</div>
+                <h3 class="text-base font-bold text-slate-800">新規ページの作成</h3>
+                <p class="text-xs text-slate-500 mt-1">新しい練習記録ページを作成しますか？</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="app.closeNewModal()" class="flex-1 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-all">
+                    キャンセル
+                </button>
+                <button onclick="app.createNewPage()" class="flex-1 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 active:scale-95 text-xs font-bold text-white transition-all shadow-xs">
+                    作成する
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg opacity-0 pointer-events-none transition-all duration-300 z-50 border border-emerald-400">
         登録しました！
     </div>
@@ -213,8 +213,8 @@
             constructor() {
                 this.db = null;
                 this.currentCategory = null;
-                this.histories = [];
-                this.currentIndex = -1; // -1 means currently viewing the new blank input state
+                this.histories = []; // timestamp昇順 (古い順: 0が最も古く、最後が最新)
+                this.currentIndex = -1; // -1: 完全新規入力状態, 0以上: 履歴インデックス
                 this.currentTab = 'address'; // 'address', 'swing', 'diary'
                 
                 this.initDB();
@@ -281,8 +281,14 @@
                 
                 this.clearForm();
                 this.loadHistories(() => {
-                    this.currentIndex = -1;
-                    this.updateInputIndicator();
+                    // データがある場合は最新のページ（最後の要素）を表示、なければ新規画面
+                    if (this.histories.length > 0) {
+                        this.currentIndex = this.histories.length - 1;
+                        this.loadCurrentHistoryItemToForm();
+                    } else {
+                        this.currentIndex = -1;
+                        this.updateInputIndicator();
+                    }
                 });
             }
 
@@ -317,81 +323,39 @@
                     return;
                 }
 
-                // Latest entry is at index 0 (sorted newest first)
-                const latest = this.histories[0];
+                // 最も新しいデータ（配列の末尾）を取得
+                const latest = this.histories[this.histories.length - 1];
 
                 document.getElementById('input-address').value = (latest.address === '（未入力）') ? '' : latest.address;
                 document.getElementById('input-swing').value = (latest.swing === '（未入力）') ? '' : latest.swing;
                 document.getElementById('input-diary').value = (latest.diary === '（未入力）' || !latest.diary) ? '' : latest.diary;
 
-                this.showToast('前回の記録を全項目にコピーしました！');
+                this.showToast('最新の記録を全項目にコピーしました！');
             }
 
-            // Copy only address data
-            copyAddressData() {
-                const address = document.getElementById('input-address').value.trim();
-                if (!address) {
-                    this.showToast('コピーするアドレス内容がありません', true);
-                    return;
-                }
-                this.executeCopy(address);
+            // Request creation of new entry with confirmation modal
+            requestNewEntry() {
+                const modal = document.getElementById('new-modal');
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.add('opacity-100');
             }
 
-            // Copy only swing data
-            copySwingData() {
-                const swing = document.getElementById('input-swing').value.trim();
-                if (!swing) {
-                    this.showToast('コピーするスイング内容がありません', true);
-                    return;
-                }
-                this.executeCopy(swing);
+            closeNewModal() {
+                const modal = document.getElementById('new-modal');
+                modal.classList.remove('opacity-100');
+                modal.classList.add('opacity-0', 'pointer-events-none');
             }
 
-            // Copy only diary data
-            copyDiaryData() {
-                const diary = document.getElementById('input-diary').value.trim();
-                if (!diary) {
-                    this.showToast('コピーする日記内容がありません', true);
-                    return;
-                }
-                this.executeCopy(diary);
+            // Create blank new page after modal confirm
+            createNewPage() {
+                this.closeNewModal();
+                this.clearForm();
+                this.currentIndex = -1;
+                this.updateInputIndicator();
+                this.showToast('新規作成画面を表示しました');
             }
 
-            // Execute copy action
-            executeCopy(textToCopy) {
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(textToCopy).then(() => {
-                        this.showToast('クリップボードにコピーしました！');
-                    }).catch(() => {
-                        this.fallbackCopyText(textToCopy);
-                    });
-                } else {
-                    this.fallbackCopyText(textToCopy);
-                }
-            }
-
-            // Fallback copy method using execCommand
-            fallbackCopyText(text) {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";  // Avoid scrolling to bottom
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    const successful = document.execCommand('copy');
-                    if (successful) {
-                        this.showToast('クリップボードにコピーしました！');
-                    } else {
-                        this.showToast('コピーに失敗しました', true);
-                    }
-                } catch (err) {
-                    this.showToast('コピーに失敗しました', true);
-                }
-                document.body.removeChild(textArea);
-            }
-
-            // Register data to IndexedDB
+            // Register or update data to IndexedDB
             registerData() {
                 if (document.activeElement && typeof document.activeElement.blur === 'function') {
                     document.activeElement.blur();
@@ -411,6 +375,7 @@
                     return;
                 }
 
+                // 既存ページ（最新ページを含む）を閲覧中の場合は、新規作成せず上書き更新
                 if (this.currentIndex !== -1 && this.histories[this.currentIndex]) {
                     const item = this.histories[this.currentIndex];
                     item.address = address || '（未入力）';
@@ -422,9 +387,9 @@
                     const request = store.put(item);
 
                     request.onsuccess = () => {
-                        this.showToast('更新しました！');
+                        this.showToast('データを更新しました！');
                         this.loadHistories(() => {
-                            this.updateInputIndicator();
+                            this.loadCurrentHistoryItemToForm();
                         });
                     };
                     request.onerror = () => {
@@ -433,6 +398,7 @@
                     return;
                 }
 
+                // 「新規」ボタンから開いた新規作成モード（currentIndex === -1）のみ新規追加
                 const record = {
                     category: this.currentCategory,
                     address: address || '（未入力）',
@@ -447,11 +413,11 @@
                 const request = store.add(record);
 
                 request.onsuccess = () => {
-                    this.clearForm();
                     this.showToast('登録しました！');
                     this.loadHistories(() => {
-                        this.currentIndex = -1;
-                        this.updateInputIndicator();
+                        // 新規登録後はその最新ページを表示
+                        this.currentIndex = this.histories.length - 1;
+                        this.loadCurrentHistoryItemToForm();
                     });
                 };
 
@@ -509,7 +475,7 @@
                 };
             }
 
-            // Load histories for current category from IndexedDB
+            // Load histories for current category from IndexedDB (古い順にソート)
             loadHistories(callback) {
                 if (!this.db || !this.currentCategory) return;
 
@@ -519,56 +485,65 @@
                 const request = index.getAll(this.currentCategory);
 
                 request.onsuccess = (event) => {
-                    this.histories = event.target.result.sort((a, b) => b.timestamp - a.timestamp);
+                    // 古い順 (昇順: 0が最も古く、最後が最新)
+                    this.histories = event.target.result.sort((a, b) => a.timestamp - b.timestamp);
                     if (callback) callback();
                 };
             }
 
-            // Previous history item (<) clicked from input screen
+            // Previous history item (＜): 日時が1つ前のものを表示
             prevHistoryFromInput() {
                 if (this.histories.length === 0) {
                     this.showToast('保存されたデータがありません', true);
                     return;
                 }
-                
+
+                // 新規入力状態から「＜」を押した場合は、最新の履歴へ戻る
                 if (this.currentIndex === -1) {
-                    this.currentIndex = 0;
-                } else {
-                    if (this.currentIndex >= this.histories.length - 1) {
-                        this.showToast('一番古い履歴です', true);
-                        return;
-                    }
-                    this.currentIndex++;
+                    this.currentIndex = this.histories.length - 1;
+                    this.loadCurrentHistoryItemToForm();
+                    return;
                 }
 
+                // 既に最古のデータ（インデックス0）の場合
+                if (this.currentIndex <= 0) {
+                    this.showToast('これ以上前のデータはありません', true);
+                    return;
+                }
+
+                // 1つ前のデータへ
+                this.currentIndex--;
                 this.loadCurrentHistoryItemToForm();
             }
 
-            // Next history item (>) clicked from input screen
+            // Next history item (＞): 日時が1つ新しいものを表示
             nextHistoryFromInput() {
                 if (this.histories.length === 0) {
                     this.showToast('保存されたデータがありません', true);
                     return;
                 }
-                
+
+                // 新規入力状態のときはこれ以上新しいものはない
                 if (this.currentIndex === -1) {
-                    this.showToast('一番新しい履歴です', true);
+                    this.showToast('これ以上新しいデータはありません', true);
                     return;
                 }
 
-                if (this.currentIndex > 0) {
-                    this.currentIndex--;
-                    this.loadCurrentHistoryItemToForm();
-                } else {
-                    this.currentIndex = -1;
-                    this.clearForm();
-                    this.updateInputIndicator();
-                    this.showToast('新しい入力画面に戻りました');
+                // 既に最新のデータ（配列末尾）の場合
+                if (this.currentIndex >= this.histories.length - 1) {
+                    this.showToast('これ以上新しいデータはありません', true);
+                    return;
                 }
+
+                // 1つ新しいデータへ
+                this.currentIndex++;
+                this.loadCurrentHistoryItemToForm();
             }
 
             // Helper to populate form fields with selected history item
             loadCurrentHistoryItemToForm() {
+                if (this.currentIndex < 0 || this.currentIndex >= this.histories.length) return;
+
                 const item = this.histories[this.currentIndex];
                 const dateObj = new Date(item.timestamp);
                 const dateStr = dateObj.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -598,25 +573,45 @@
                 this.updateInputIndicator();
             }
 
-            // Update input mode record indicator text and n/n display
+            // Update input mode record indicator text and buttons state
             updateInputIndicator() {
                 const total = this.histories.length;
                 const indexLabel = document.getElementById('label-history-index');
                 const btnDelete = document.getElementById('btn-delete-entry');
                 const btnCopyPrevious = document.getElementById('btn-copy-previous');
+                const btnRegisterText = document.getElementById('btn-register-text');
+                const btnNewEntry = document.getElementById('btn-new-entry');
+
+                // 最新ページ判定 (履歴が存在し、currentIndexが末尾)
+                const isLatestEntry = (total > 0 && this.currentIndex === total - 1);
 
                 if (total === 0) {
+                    // データが一切ない場合
                     if (indexLabel) indexLabel.textContent = '0/0';
                     btnDelete.classList.add('hidden');
                     btnCopyPrevious.classList.add('hidden');
+                    btnNewEntry.classList.add('hidden');
+                    if (btnRegisterText) btnRegisterText.textContent = '登録';
                 } else if (this.currentIndex === -1) {
-                    if (indexLabel) indexLabel.textContent = `新/${total}`;
+                    // 新規作成中モード
+                    if (indexLabel) indexLabel.textContent = `新規/${total}`;
                     btnDelete.classList.add('hidden');
                     btnCopyPrevious.classList.remove('hidden');
+                    btnNewEntry.classList.add('hidden');
+                    if (btnRegisterText) btnRegisterText.textContent = '登録';
                 } else {
+                    // 履歴表示モード (1〜total)
                     if (indexLabel) indexLabel.textContent = `${this.currentIndex + 1}/${total}`;
                     btnDelete.classList.remove('hidden');
                     btnCopyPrevious.classList.add('hidden');
+                    if (btnRegisterText) btnRegisterText.textContent = '更新';
+
+                    // 最新のページのみ「新規」ボタンを表示
+                    if (isLatestEntry) {
+                        btnNewEntry.classList.remove('hidden');
+                    } else {
+                        btnNewEntry.classList.add('hidden');
+                    }
                 }
             }
 
