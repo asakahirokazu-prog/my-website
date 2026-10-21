@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ScreenSnap - キャプチャ整理メモ</title>
+  <title>ScreenSnap - キャプチャ整理メモ (容量表示付き)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Phosphor Icons -->
@@ -106,6 +106,24 @@
 
     <!-- Main Content Stream -->
     <main class="flex-1 p-4">
+      <!-- Storage Usage Info Widget -->
+      <div class="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3 mb-3 text-xs space-y-1.5 shadow-sm">
+        <div class="flex items-center justify-between text-indigo-900 font-bold">
+          <span class="flex items-center gap-1.5">
+            <i class="ph-bold ph-hard-drives text-brand-600 text-sm"></i> ストレージ使用量 (IndexedDB)
+          </span>
+          <span id="storageUsageText" class="text-brand-600 font-extrabold">計算中...</span>
+        </div>
+        <!-- Progress bar -->
+        <div class="w-full bg-indigo-200/50 rounded-full h-2 overflow-hidden">
+          <div id="storageProgressBar" class="bg-brand-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-400">
+          <span id="storageDetailSubText">使用: 0 MB / 割当: 0 MB</span>
+          <span id="storagePercentText">0%</span>
+        </div>
+      </div>
+
       <!-- Item Counter Banner -->
       <div class="flex items-center justify-between text-xs text-slate-400 mb-3 px-1">
         <span id="itemsCountText">0 件の保存アイテム</span>
@@ -334,12 +352,100 @@
 
   <script>
     /* -------------------------------------------------------------
+       IndexedDB Setup & Helpers
+    ------------------------------------------------------------- */
+    const DB_NAME = 'ScreenSnapDB';
+    const DB_VERSION = 1;
+    let db = null;
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        if (db) return resolve(db);
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          db = request.result;
+          resolve(db);
+        };
+        request.onupgradeneeded = (e) => {
+          const database = e.target.result;
+          if (!database.objectStoreNames.contains('items')) {
+            database.createObjectStore('items', { keyPath: 'id' });
+          }
+          if (!database.objectStoreNames.contains('categories')) {
+            database.createObjectStore('categories', { keyPath: 'id' });
+          }
+        };
+      });
+    }
+
+    async function dbGetAll(storeName) {
+      const database = await openDB();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function dbPut(storeName, value) {
+      const database = await openDB();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.put(value);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function dbDelete(storeName, id) {
+      const database = await openDB();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.delete(id);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    /* -------------------------------------------------------------
+       Storage Usage Calculation
+    ------------------------------------------------------------- */
+    async function updateStorageUsageUI() {
+      const usageText = document.getElementById('storageUsageText');
+      const detailSubText = document.getElementById('storageDetailSubText');
+      const percentText = document.getElementById('storagePercentText');
+      const progressBar = document.getElementById('storageProgressBar');
+
+      if (navigator.storage && navigator.storage.estimate) {
+        try {
+          const estimate = await navigator.storage.estimate();
+          const used = estimate.usage || 0; // Bytes
+          const quota = estimate.quota || 0; // Bytes
+
+          const usedMB = (used / (1024 * 1024)).toFixed(2);
+          const quotaMB = (quota / (1024 * 1024)).toFixed(0);
+          const percent = quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0;
+
+          usageText.textContent = `${usedMB} MB`;
+          detailSubText.textContent = `使用: ${usedMB} MB / 割当目安: ${quotaMB} MB`;
+          percentText.textContent = `${percent}%`;
+          progressBar.style.width = `${percent}%`;
+        } catch (err) {
+          usageText.textContent = '取得失敗';
+        }
+      } else {
+        usageText.textContent = '非対応ブラウザ';
+      }
+    }
+
+    /* -------------------------------------------------------------
        App Data State & Defaults
     ------------------------------------------------------------- */
-    const STORAGE_KEY_ITEMS = 'screensnap_items_v1';
-    const STORAGE_KEY_CATS = 'screensnap_categories_v1';
-
-    // Preset Vibrant Category Colors
     const PRESET_COLORS = [
       { name: 'Indigo', bg: '#EEF2FF', text: '#4F46E5', dot: '#6366F1' },
       { name: 'Emerald', bg: '#ECFDF5', text: '#059669', dot: '#10B981' },
@@ -349,7 +455,6 @@
       { name: 'Purple', bg: '#FAF5FF', text: '#7E22CE', dot: '#A855F7' },
     ];
 
-    // Default Categories
     const DEFAULT_CATEGORIES = [
       { id: 'cat-ui', name: 'UI参考', color: PRESET_COLORS[0] },
       { id: 'cat-work', name: '仕事・タスク', color: PRESET_COLORS[1] },
@@ -358,7 +463,6 @@
       { id: 'cat-other', name: 'その他', color: PRESET_COLORS[4] },
     ];
 
-    // Sample initial demo items (Clean lightweight base64/SVG placeholders)
     const DEMO_ITEMS = [
       {
         id: 'sample-1',
@@ -400,28 +504,33 @@
     let selectedModalCategoryId = '';
     let selectedNewCatColor = PRESET_COLORS[0];
 
-    // Load initial data
-    function loadData() {
+    async function loadData() {
       try {
-        const storedCats = localStorage.getItem(STORAGE_KEY_CATS);
-        categories = storedCats ? JSON.parse(storedCats) : DEFAULT_CATEGORIES;
+        const storedCats = await dbGetAll('categories');
+        if (storedCats && storedCats.length > 0) {
+          categories = storedCats;
+        } else {
+          for (const cat of DEFAULT_CATEGORIES) {
+            await dbPut('categories', cat);
+          }
+          categories = DEFAULT_CATEGORIES;
+        }
 
-        const storedItems = localStorage.getItem(STORAGE_KEY_ITEMS);
-        items = storedItems ? JSON.parse(storedItems) : DEMO_ITEMS;
+        const storedItems = await dbGetAll('items');
+        if (storedItems && storedItems.length > 0) {
+          items = storedItems.sort((a, b) => b.timestamp - a.timestamp);
+        } else {
+          for (const item of DEMO_ITEMS) {
+            await dbPut('items', item);
+          }
+          items = DEMO_ITEMS;
+        }
       } catch (err) {
-        console.error('Failed to parse localStorage', err);
+        console.error('Failed to load from IndexedDB', err);
         categories = DEFAULT_CATEGORIES;
         items = DEMO_ITEMS;
       }
-    }
-
-    function saveData() {
-      try {
-        localStorage.setItem(STORAGE_KEY_CATS, JSON.stringify(categories));
-        localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(items));
-      } catch (err) {
-        showToast('容量上限または保存エラーが発生しました', true);
-      }
+      updateStorageUsageUI();
     }
 
     /* -------------------------------------------------------------
@@ -463,7 +572,6 @@
       const filterBar = document.getElementById('categoryFilterBar');
       filterBar.innerHTML = '';
 
-      // All button
       const allBtn = document.createElement('button');
       allBtn.className = `px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition active:scale-95 flex items-center space-x-1.5 ${
         activeFilter === 'all' 
@@ -478,7 +586,6 @@
       };
       filterBar.appendChild(allBtn);
 
-      // Categories
       categories.forEach(cat => {
         const count = items.filter(it => it.categoryId === cat.id).length;
         const btn = document.createElement('button');
@@ -512,7 +619,6 @@
       const counterText = document.getElementById('itemsCountText');
       const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
 
-      // Filtering
       const filtered = items.filter(item => {
         const matchFilter = activeFilter === 'all' || item.categoryId === activeFilter;
         const cat = getCategory(item.categoryId);
@@ -539,7 +645,6 @@
         const card = document.createElement('div');
         card.className = "bg-white rounded-2xl overflow-hidden border border-slate-200/80 shadow-sm flex flex-col active:scale-[0.98] transition cursor-pointer";
         
-        // Date format
         const dateObj = new Date(item.timestamp);
         const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
 
@@ -624,7 +729,6 @@
       updateModalImagePreview();
       renderModalCategoryBadges();
 
-      // Close detail modal if open
       document.getElementById('detailModal').classList.add('hidden');
       itemModal.classList.remove('hidden');
     }
@@ -690,7 +794,6 @@
       reader.onload = (e) => {
         const img = new Image();
         img.onload = () => {
-          // Max dimension downscale for browser storage responsiveness
           const canvas = document.createElement('canvas');
           const maxDim = 1200;
           let w = img.width;
@@ -722,11 +825,10 @@
       reader.readAsDataURL(file);
     }
 
-    // Trigger Clipboard Paste Event
     async function handleClipboardPaste() {
       try {
         if (!navigator.clipboard || !navigator.clipboard.read) {
-          showToast('クリップボードから画像を選択または画面に直接Cmd+V / 長押しペーストしてください', false);
+          showToast('クリップボードから画像を選択または画面に直接ペーストしてください', false);
           openAddModal();
           return;
         }
@@ -750,13 +852,11 @@
           openAddModal();
         }
       } catch (err) {
-        // Fallback or permission blocked
         showToast('貼り付けを許可するか画像を選択してください', true);
         openAddModal();
       }
     }
 
-    // Global keyboard Cmd+V or Ctrl+V paste support
     window.addEventListener('paste', (e) => {
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -770,7 +870,7 @@
       }
     });
 
-    function saveCurrentItem() {
+    async function saveCurrentItem() {
       if (!currentModalImageData) {
         showToast('画像を設定してください', true);
         return;
@@ -780,40 +880,43 @@
       const sourceUrl = modalSourceUrl.value.trim();
       const categoryId = selectedModalCategoryId || categories[0]?.id || 'cat-other';
 
-      if (currentEditItemId) {
-        // Update
-        const idx = items.findIndex(i => i.id === currentEditItemId);
-        if (idx !== -1) {
-          items[idx] = {
-            ...items[idx],
+      try {
+        if (currentEditItemId) {
+          const idx = items.findIndex(i => i.id === currentEditItemId);
+          if (idx !== -1) {
+            items[idx] = {
+              ...items[idx],
+              imageData: currentModalImageData,
+              categoryId,
+              comment,
+              sourceUrl,
+            };
+            await dbPut('items', items[idx]);
+            showToast('キャプチャを更新しました');
+          }
+        } else {
+          const newItem = {
+            id: 'snap-' + Date.now(),
             imageData: currentModalImageData,
             categoryId,
             comment,
             sourceUrl,
+            timestamp: Date.now(),
           };
-          showToast('キャプチャを更新しました');
+          items.unshift(newItem);
+          await dbPut('items', newItem);
+          showToast('キャプチャを保存しました！');
         }
-      } else {
-        // Create new
-        const newItem = {
-          id: 'snap-' + Date.now(),
-          imageData: currentModalImageData,
-          categoryId,
-          comment,
-          sourceUrl,
-          timestamp: Date.now(),
-        };
-        items.unshift(newItem);
-        showToast('キャプチャを保存しました！');
-      }
 
-      saveData();
-      renderCategoryFilterBar();
-      renderItems();
-      closeModal();
+        renderCategoryFilterBar();
+        renderItems();
+        closeModal();
+        updateStorageUsageUI();
+      } catch (err) {
+        showToast('データの保存中にエラーが発生しました', true);
+      }
     }
 
-    // Detail View Logic
     let currentDetailItemId = null;
     function openDetailModal(itemId) {
       const item = items.find(i => i.id === itemId);
@@ -847,20 +950,25 @@
       detailModal.classList.remove('hidden');
     }
 
-    function deleteItem(itemId) {
-      items = items.filter(i => i.id !== itemId);
-      saveData();
-      renderCategoryFilterBar();
-      renderItems();
-      document.getElementById('detailModal').classList.add('hidden');
-      showToast('キャプチャを削除しました');
+    async function deleteItem(itemId) {
+      try {
+        await dbDelete('items', itemId);
+        items = items.filter(i => i.id !== itemId);
+        renderCategoryFilterBar();
+        renderItems();
+        document.getElementById('detailModal').classList.add('hidden');
+        showToast('キャプチャを削除しました');
+        updateStorageUsageUI();
+      } catch (err) {
+        showToast('削除に失敗しました', true);
+      }
     }
 
     function renderCategoryManageUI() {
       const colorPicker = document.getElementById('colorPickerList');
       colorPicker.innerHTML = '';
 
-      PRESET_COLORS.forEach((col, idx) => {
+      PRESET_COLORS.forEach((col) => {
         const dot = document.createElement('button');
         dot.type = 'button';
         dot.className = `w-6 h-6 rounded-full transition transform ${selectedNewCatColor.name === col.name ? 'ring-2 ring-slate-800 scale-110' : 'opacity-80'}`;
@@ -889,25 +997,29 @@
           </button>
         `;
 
-        row.querySelector('.delete-cat-btn').onclick = (e) => {
+        row.querySelector('.delete-cat-btn').onclick = async (e) => {
           e.stopPropagation();
           if (categories.length <= 1) {
             showToast('最低1つのカテゴリが必要です', true);
             return;
           }
-          categories = categories.filter(c => c.id !== cat.id);
-          saveData();
-          renderCategoryFilterBar();
-          renderCategoryManageUI();
-          renderItems();
-          showToast(`「${cat.name}」を削除しました`);
+          try {
+            await dbDelete('categories', cat.id);
+            categories = categories.filter(c => c.id !== cat.id);
+            renderCategoryFilterBar();
+            renderCategoryManageUI();
+            renderItems();
+            showToast(`「${cat.name}」を削除しました`);
+          } catch (err) {
+            showToast('カテゴリの削除に失敗しました', true);
+          }
         };
 
         list.appendChild(row);
       });
     }
 
-    function addNewCategory() {
+    async function addNewCategory() {
       const input = document.getElementById('newCategoryName');
       const name = input.value.trim();
       if (!name) {
@@ -921,24 +1033,27 @@
         color: selectedNewCatColor
       };
 
-      categories.push(newCat);
-      saveData();
-      input.value = '';
-      renderCategoryManageUI();
-      renderCategoryFilterBar();
-      renderModalCategoryBadges();
-      showToast(`カテゴリ「${name}」を追加しました`);
+      try {
+        await dbPut('categories', newCat);
+        categories.push(newCat);
+        input.value = '';
+        renderCategoryManageUI();
+        renderCategoryFilterBar();
+        renderModalCategoryBadges();
+        showToast(`カテゴリ「${name}」を追加しました`);
+      } catch (err) {
+        showToast('カテゴリの追加に失敗しました', true);
+      }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      loadData();
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadData();
       renderCategoryFilterBar();
       renderItems();
 
       const imageFileInput = document.getElementById('imageFileInput');
       const cameraFileInput = document.getElementById('cameraFileInput');
 
-      // Top search actions
       const searchInput = document.getElementById('searchInput');
       const clearSearchBtn = document.getElementById('clearSearchBtn');
 
@@ -957,7 +1072,6 @@
         renderItems();
       });
 
-      // Quick Paste & Action Buttons
       document.getElementById('quickPasteBtn').onclick = handleClipboardPaste;
       document.getElementById('openUploadSheetBtn').onclick = () => openAddModal();
       document.getElementById('quickCameraBtn').onclick = () => cameraFileInput.click();
@@ -970,7 +1084,6 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       };
 
-      // File input triggers
       document.getElementById('imagePickerContainer').onclick = () => imageFileInput.click();
       imageFileInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -983,12 +1096,10 @@
         }
       });
 
-      // Modal buttons
       document.getElementById('closeModalBtn').onclick = closeModal;
       document.getElementById('cancelModalBtn').onclick = closeModal;
       document.getElementById('saveItemBtn').onclick = saveCurrentItem;
 
-      // Detail Modal buttons
       const detailModal = document.getElementById('detailModal');
       document.getElementById('detailCloseBtn').onclick = () => detailModal.classList.add('hidden');
       document.getElementById('detailEditBtn').onclick = () => {
@@ -998,7 +1109,6 @@
         if (currentDetailItemId) deleteItem(currentDetailItemId);
       };
 
-      // Category Management Modal
       const catModal = document.getElementById('categoryManageModal');
       document.getElementById('openCategoryManageBtn').onclick = () => {
         renderCategoryManageUI();
@@ -1011,7 +1121,6 @@
       document.getElementById('closeCategoryManageBtn').onclick = () => catModal.classList.add('hidden');
       document.getElementById('addNewCategoryBtn').onclick = addNewCategory;
 
-      // Image modal full view click
       document.getElementById('detailImg').onclick = () => {
         const src = document.getElementById('detailImg').src;
         if (src) {
