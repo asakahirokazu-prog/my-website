@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ドライブ経費 2段階精算・割り勘ナビ</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f3f4f6;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.25s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 入力フォーカス時のスマホズーム防止 */
+        input[type="text"], input[type="number"] {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col justify-between antialiased">
+
+    <!-- ヘッダー -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-base sm:text-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-car-side"></i> ドライブ精算ナビ
+            </h1>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] bg-indigo-700 px-2.5 py-1 rounded-full text-indigo-100 font-medium hidden sm:inline">
+                    全5台・百円単位切り上げ
+                </span>
+                <!-- 保存・リセットボタン -->
+                <button onclick="resetData()" title="全データをリセット" class="text-xs bg-indigo-800 hover:bg-rose-600 active:bg-rose-700 px-2.5 py-1.5 rounded-lg text-indigo-100 transition flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-left"></i> リセット
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 w-full flex-grow">
+
+        <!-- ステップインジケーター（1〜5台の入力プログレス） -->
+        <div id="progress-container" class="mb-4 sm:mb-6 bg-white p-3.5 sm:p-4 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-1.5 sm:mb-2">
+                <span class="text-xs sm:text-sm font-semibold text-gray-700" id="step-label">ステップ 1 / 5：車両情報の入力</span>
+                <span class="text-xs sm:text-sm font-bold text-indigo-600" id="step-percentage">20%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 20%"></div>
+            </div>
+            <!-- 車両ステップアイコン（スマホでは横スクロール可能なチップ表示） -->
+            <div class="flex justify-between mt-3 text-xs text-gray-500 gap-1 overflow-x-auto pb-1">
+                <div id="step-node-1" class="font-bold text-indigo-600 cursor-pointer min-w-[48px] text-center py-1 rounded bg-indigo-50" onclick="goToStep(1)">車 1</div>
+                <div id="step-node-2" class="cursor-pointer min-w-[48px] text-center py-1 rounded" onclick="goToStep(2)">車 2</div>
+                <div id="step-node-3" class="cursor-pointer min-w-[48px] text-center py-1 rounded" onclick="goToStep(3)">車 3</div>
+                <div id="step-node-4" class="cursor-pointer min-w-[48px] text-center py-1 rounded" onclick="goToStep(4)">車 4</div>
+                <div id="step-node-5" class="cursor-pointer min-w-[48px] text-center py-1 rounded" onclick="goToStep(5)">車 5</div>
+            </div>
+        </div>
+
+        <!-- ================= ステップ 1 〜 5 : 各車入力フォーム ================= -->
+        <div id="input-steps-wrapper" class="animate-fade-in">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6">
+                <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3 mb-4">
+                    <h2 class="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-car text-indigo-600"></i>
+                        <span id="car-form-title">車 1 の情報入力</span>
+                    </h2>
+                    <div class="flex items-center gap-1.5">
+                        <span id="save-status-badge" class="hidden text-[11px] bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded">
+                            <i class="fa-solid fa-floppy-disk"></i> 保存済
+                        </span>
+                        <span id="car-badge" class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">1台目 / 5台</span>
+                    </div>
+                </div>
+
+                <form id="car-form" onsubmit="event.preventDefault();">
+                    <!-- 車両名 -->
+                    <div class="mb-4">
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">車両名（識別用）</label>
+                        <input type="text" id="car-name-input" oninput="autoSaveCurrentStep()" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="例: 車1 (田中アルファード)">
+                    </div>
+
+                    <!-- 運転者（1名） -->
+                    <div class="mb-4 bg-indigo-50/60 p-3.5 sm:p-4 rounded-xl border border-indigo-100">
+                        <label class="block text-xs sm:text-sm font-semibold text-indigo-900 mb-0.5">
+                            <i class="fa-solid fa-user-tie text-indigo-600 mr-1"></i> 運転者（代表1名）
+                        </label>
+                        <p class="text-[11px] text-gray-500 mb-2">※切り上げ端数（おつり）還元対象となります</p>
+                        <input type="text" id="driver-name-input" oninput="autoSaveCurrentStep()" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white" placeholder="運転者の名前を入力">
+                    </div>
+
+                    <!-- 同乗者（複数名） -->
+                    <div class="mb-5">
+                        <label class="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+                            <i class="fa-solid fa-users text-gray-600 mr-1"></i> 同乗者（複数名登録可能）
+                        </label>
+                        
+                        <!-- モバイルフレンドリーな追加入力グループ（縦配置・幅いっぱい対応） -->
+                        <div class="flex flex-col sm:flex-row gap-2 mb-3">
+                            <input type="text" id="passenger-input" onkeydown="if(event.key==='Enter'){addPassenger(); event.preventDefault();}" class="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="同乗者の名前を入力">
+                            <button type="button" id="add-passenger-btn" onclick="addPassenger()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium px-5 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shrink-0 shadow-sm">
+                                <i class="fa-solid fa-plus"></i> 同乗者を追加
+                            </button>
+                        </div>
+
+                        <!-- 同乗者タグ表示エリア -->
+                        <div id="passenger-list" class="flex flex-wrap gap-2 min-h-[48px] p-2.5 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                            <!-- JSで追加された同乗者がここに表示される -->
+                        </div>
+                    </div>
+
+                    <!-- ナビゲーションボタン（スマホ対応レスポンシブ配置） -->
+                    <div class="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2.5 pt-4 border-t border-gray-100">
+                        <button type="button" id="prev-btn" onclick="goToStep(currentStep - 1)" class="w-full sm:w-auto px-5 py-2.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-700 font-medium rounded-xl transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i> 前へ
+                        </button>
+                        
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button type="button" onclick="manualSave()" class="w-1/2 sm:w-auto px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 font-medium rounded-xl border border-emerald-200 transition flex items-center justify-center gap-1.5 text-xs sm:text-sm" title="下書き保存">
+                                <i class="fa-solid fa-floppy-disk"></i> 保存
+                            </button>
+                            <button type="button" id="next-btn" onclick="nextStep()" class="w-1/2 sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium rounded-xl transition flex items-center justify-center gap-2 shadow-sm">
+                                次へ <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= ステップ 6 : 一覧確認 ＆ 経費入力・割り勘画面 ================= -->
+        <div id="summary-section" class="hidden animate-fade-in">
+            
+            <!-- 2. 入力結果リスト表示 -->
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 mb-6">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-4 border-b pb-3">
+                    <h2 class="text-base sm:text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-600"></i> 乗車メンバー・経費入力（全5台）
+                    </h2>
+                    <button onclick="goToStep(1)" class="text-xs bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-200 font-medium flex items-center gap-1 transition">
+                        <i class="fa-solid fa-pen"></i> メンバー再編集
+                    </button>
+                </div>
+
+                <!-- 5台の概要＆経費入力カードリスト -->
+                <div id="cars-summary-list" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 mb-6">
+                    <!-- JSで5台分のカードを生成 -->
+                </div>
+
+                <!-- 全体統計 ＆ 4. 割り勘ボタン -->
+                <div class="bg-slate-50 p-4 sm:p-5 rounded-xl border border-slate-200">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 mb-4 text-center">
+                        <div class="bg-white p-2.5 sm:p-3 rounded-xl shadow-sm border border-gray-100">
+                            <span class="text-[11px] sm:text-xs text-gray-500 block">総参加人数</span>
+                            <span id="total-people-count" class="text-lg sm:text-xl font-bold text-gray-800">0 名</span>
+                        </div>
+                        <div class="bg-white p-2.5 sm:p-3 rounded-xl shadow-sm border border-gray-100">
+                            <span class="text-[11px] sm:text-xs text-gray-500 block">総経費合計</span>
+                            <span id="total-expense-amount" class="text-lg sm:text-xl font-bold text-indigo-600">￥0</span>
+                        </div>
+                        <div class="bg-white p-2.5 sm:p-3 rounded-xl shadow-sm border border-gray-100">
+                            <span class="text-[11px] sm:text-xs text-gray-500 block">同乗者負担額 (1人・100円切り上げ)</span>
+                            <span id="per-person-amount" class="text-lg sm:text-xl font-bold text-emerald-600">￥0</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
+                        <button onclick="calculateSplit()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold py-3 px-5 rounded-xl transition shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
+                            <i class="fa-solid fa-calculator"></i> 割り勘計算（100円単位切り上げ）
+                        </button>
+                        <button onclick="executeSettlement()" id="settle-btn" disabled class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-5 rounded-xl transition shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
+                            <i class="fa-solid fa-coins"></i> 精算を実行（車内→車間）
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= 5. 精算ロジック ＆ LINE共有セクション ================= -->
+            <div id="settlement-results-section" class="hidden space-y-4 sm:space-y-6 animate-fade-in">
+
+                <!-- タイトルヘッダー ＆ 端数（運転手還元）の説明 -->
+                <div class="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-4 sm:p-6 rounded-2xl shadow-lg">
+                    <div class="text-center mb-3">
+                        <h2 class="text-xl sm:text-2xl font-bold mb-1">精算結果ナビゲーション</h2>
+                        <p class="text-indigo-100 text-xs sm:text-sm">100円単位切り上げの端数（おつり）は運転手の手間賃として均等還元されます</p>
+                    </div>
+
+                    <!-- 端数（余剰金）還元ステータス -->
+                    <div id="surplus-info-box" class="bg-indigo-900/60 border border-indigo-400/40 rounded-xl p-3 text-xs sm:text-sm text-indigo-100 flex flex-col sm:flex-row justify-between items-center gap-2">
+                        <!-- JSで動的出力 -->
+                    </div>
+                </div>
+
+                <!-- ★ LINEで精算共有アクション領域 ★ -->
+                <div class="bg-emerald-50 border-2 border-emerald-400 p-4 sm:p-5 rounded-2xl shadow-md text-center">
+                    <h3 class="font-bold text-gray-800 text-base sm:text-lg mb-1 flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-line text-emerald-500 text-2xl"></i> 精算結果をグループLINE等で共有
+                    </h3>
+                    <p class="text-xs text-gray-600 mb-3.5">
+                        車内精算・車間精算のわかりやすい手順テキストを生成します。ボタン一つでLINEアプリへ送れます。
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-2.5 justify-center max-w-lg mx-auto">
+                        <button onclick="shareToLINE()" class="w-full bg-[#06C755] hover:bg-[#05b34c] active:bg-[#049a41] text-white font-bold py-3 px-5 rounded-xl transition shadow flex items-center justify-center gap-2 text-sm sm:text-base">
+                            <i class="fa-brands fa-line text-xl"></i> LINEアプリで送信する
+                        </button>
+                        <button onclick="copySettlementText()" class="w-full sm:w-auto bg-white hover:bg-gray-100 active:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl border border-gray-300 transition shadow-sm flex items-center justify-center gap-2 text-sm shrink-0">
+                            <i class="fa-regular fa-copy text-indigo-600"></i> テキストをコピー
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ステップ1：車内精算カード -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6">
+                    <div class="flex items-center gap-2.5 border-b pb-3 mb-4">
+                        <span class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs sm:text-sm shrink-0">1</span>
+                        <div>
+                            <h3 class="font-bold text-base sm:text-lg text-gray-800">【ステップ1】車内精算（各車ごとの集金・過不足）</h3>
+                            <p class="text-[11px] sm:text-xs text-gray-500">同乗者は切り上げ後の1人定額を自分の車の運転手へ支払います</p>
+                        </div>
+                    </div>
+
+                    <div id="in-car-settlement-list" class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <!-- JSで各車の車内精算カードを出力 -->
+                    </div>
+                </div>
+
+                <!-- ステップ2：車間精算カード -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6">
+                    <div class="flex items-center gap-2.5 border-b pb-3 mb-4">
+                        <span class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-xs sm:text-sm shrink-0">2</span>
+                        <div>
+                            <h3 class="font-bold text-base sm:text-lg text-gray-800">【ステップ2】車間精算（運転者同士の最終送金ルート）</h3>
+                            <p class="text-[11px] sm:text-xs text-gray-500">過剰となった車から不足車へ送金し、運転手還元分も含めて完了させます</p>
+                        </div>
+                    </div>
+
+                    <!-- 送金ルート表示リスト -->
+                    <div id="inter-car-transfers" class="space-y-3 mb-4">
+                        <!-- JSで送金ルート矢印カードを出力 -->
+                    </div>
+
+                    <!-- 最終実質負担まとめ -->
+                    <div class="border-t border-gray-200 pt-4 mt-4">
+                        <h4 class="font-bold text-xs sm:text-sm text-gray-700 mb-3 flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-pie text-indigo-600"></i> 各運転手の最終実質負担額（還元後）
+                        </h4>
+                        <div id="driver-final-shares" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                            <!-- JSでドライバーごとの最終実質負担額を表示 -->
+                        </div>
+                    </div>
+
+                    <!-- 完了メッセージ -->
+                    <div class="mt-5 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-emerald-800 text-xs sm:text-sm font-semibold flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-600 text-base sm:text-lg shrink-0"></i>
+                        上記の送金が完了すれば精算完了です！
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t border-gray-200 py-3 text-center text-[11px] text-gray-500">
+        <p>ドライブ経費 2段階精算・割り勘ツール &copy; 2026</p>
+    </footer>
+
+    <!-- カスタム通知アラートモーダル/メッセージ用 -->
+    <div id="toast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 bg-gray-800 text-white px-4 py-3 rounded-xl shadow-2xl opacity-0 pointer-events-none transition-all duration-300 z-50 text-xs sm:text-sm flex items-center gap-2">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400 shrink-0"></i>
+        <span id="toast-message">メッセージ</span>
+    </div>
+
+    <!-- アプリケーションロジック JavaScript -->
+    <script>
+        const TOTAL_CARS = 5;
+        const STORAGE_KEY = 'drive_settlement_app_data_v2';
+        let currentStep = 1;
+
+        // 初期データ構造
+        let carsData = Array.from({ length: TOTAL_CARS }, (_, i) => ({
+            id: i + 1,
+            name: `車 ${i + 1}`,
+            driver: '',
+            passengers: [],
+            expense: 0
+        }));
+
+        let perPersonShare = 0;   // 同乗者の一律負担額（100円切り上げ）
+        let rawPerPerson = 0;     // 端数処理前の正確な平均値
+        let totalPeople = 0;       // 総人数
+        let totalExpense = 0;      // 総経費
+        let totalCollected = 0;    // 全員から回収される想定総額
+        let totalSurplus = 0;      // 切り上げにより生じた総余剰金（おつり）
+        let driverBonusPerCar = 0; // 運転手1人あたりの還元額（端数）
+
+        let lastCalculatedTransfers = []; // LINE送信用保持
+
+        // 初期化処理（Local Storageからの読み込み）
+        window.onload = function() {
+            loadFromLocalStorage();
+            renderStepInput();
+        };
+
+        // ================= 1. LocalStorage 保存・復元機能 =================
+
+        function saveToLocalStorage() {
+            try {
+                const payload = {
+                    carsData,
+                    currentStep,
+                    updatedAt: new Date().toISOString()
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                showSaveBadge();
+            } catch (e) {
+                console.error("Storage save error", e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && Array.isArray(parsed.carsData) && parsed.carsData.length === TOTAL_CARS) {
+                        carsData = parsed.carsData;
+                        currentStep = parsed.currentStep || 1;
+                        showToast('保存データを読み込みました', 'fa-circle-check text-emerald-400');
+                    }
+                }
+            } catch (e) {
+                console.error("Storage load error", e);
+            }
+        }
+
+        function resetData() {
+            if (confirm('すべての登録情報と経費データを初期化しますか？')) {
+                localStorage.removeItem(STORAGE_KEY);
+                carsData = Array.from({ length: TOTAL_CARS }, (_, i) => ({
+                    id: i + 1,
+                    name: `車 ${i + 1}`,
+                    driver: '',
+                    passengers: [],
+                    expense: 0
+                }));
+                currentStep = 1;
+                document.getElementById('summary-section').classList.add('hidden');
+                document.getElementById('progress-container').classList.remove('hidden');
+                document.getElementById('input-steps-wrapper').classList.remove('hidden');
+                renderStepInput();
+                showToast('データを初期化しました', 'fa-arrow-rotate-left text-indigo-400');
+            }
+        }
+
+        function showSaveBadge() {
+            const badge = document.getElementById('save-status-badge');
+            if (badge) {
+                badge.classList.remove('hidden');
+                setTimeout(() => {
+                    badge.classList.add('hidden');
+                }, 1500);
+            }
+        }
+
+        function manualSave() {
+            saveCurrentStepData();
+            saveToLocalStorage();
+            showToast('下書きを保存しました', 'fa-floppy-disk text-emerald-400');
+        }
+
+        function autoSaveCurrentStep() {
+            saveCurrentStepData();
+            saveToLocalStorage();
+        }
+
+        // ================= ステップ入力処理 (1~5台) =================
+
+        function renderStepInput() {
+            const car = carsData[currentStep - 1];
+
+            // プログレスバー・ラベル更新
+            const progressPercent = (currentStep / TOTAL_CARS) * 100;
+            document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+            document.getElementById('step-percentage').innerText = `${Math.round(progressPercent)}%`;
+            document.getElementById('step-label').innerText = `ステップ ${currentStep} / ${TOTAL_CARS}：${car.name}`;
+
+            // ステップインジケーターの強調
+            for (let i = 1; i <= TOTAL_CARS; i++) {
+                const node = document.getElementById(`step-node-${i}`);
+                if (i === currentStep) {
+                    node.className = 'font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 cursor-pointer min-w-[48px] text-center py-1 rounded transition';
+                } else if (i < currentStep) {
+                    node.className = 'text-emerald-600 font-medium cursor-pointer min-w-[48px] text-center py-1 rounded';
+                } else {
+                    node.className = 'text-gray-400 cursor-pointer min-w-[48px] text-center py-1 rounded';
+                }
+            }
+
+            // フォーム表示値のセット
+            document.getElementById('car-form-title').innerText = `${car.name} の情報入力`;
+            document.getElementById('car-badge').innerText = `${currentStep}台目 / ${TOTAL_CARS}台`;
+            document.getElementById('car-name-input').value = car.name;
+            document.getElementById('driver-name-input').value = car.driver;
+            document.getElementById('passenger-input').value = '';
+
+            // ボタン表示切り替え
+            const prevBtn = document.getElementById('prev-btn');
+            if (currentStep === 1) {
+                prevBtn.classList.add('hidden');
+            } else {
+                prevBtn.classList.remove('hidden');
+            }
+
+            const nextBtn = document.getElementById('next-btn');
+            if (currentStep === TOTAL_CARS) {
+                nextBtn.innerHTML = '確認画面へ <i class="fa-solid fa-check"></i>';
+                nextBtn.className = 'w-full sm:w-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium rounded-xl transition flex items-center justify-center gap-2 shadow-sm';
+            } else {
+                nextBtn.innerHTML = '次へ <i class="fa-solid fa-arrow-right"></i>';
+                nextBtn.className = 'w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-medium rounded-xl transition flex items-center justify-center gap-2 shadow-sm';
+            }
+
+            renderPassengerTags();
+        }
+
+        function saveCurrentStepData() {
+            const car = carsData[currentStep - 1];
+            const nameInput = document.getElementById('car-name-input').value.trim();
+            const driverInput = document.getElementById('driver-name-input').value.trim();
+
+            car.name = nameInput || `車 ${currentStep}`;
+            car.driver = driverInput;
+        }
+
+        function nextStep() {
+            saveCurrentStepData();
+
+            const car = carsData[currentStep - 1];
+            if (!car.driver) {
+                showToast('運転者の名前を入力してください');
+                return;
+            }
+
+            saveToLocalStorage();
+
+            if (currentStep < TOTAL_CARS) {
+                currentStep++;
+                renderStepInput();
+            } else {
+                showSummarySection();
+            }
+        }
+
+        function goToStep(step) {
+            if (step >= 1 && step <= TOTAL_CARS) {
+                saveCurrentStepData();
+                saveToLocalStorage();
+                currentStep = step;
+                document.getElementById('progress-container').classList.remove('hidden');
+                document.getElementById('input-steps-wrapper').classList.remove('hidden');
+                document.getElementById('summary-section').classList.add('hidden');
+                renderStepInput();
+            }
+        }
+
+        function addPassenger() {
+            const input = document.getElementById('passenger-input');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const car = carsData[currentStep - 1];
+            if (car.driver === name || car.passengers.includes(name)) {
+                showToast('すでに登録されている名前です');
+                return;
+            }
+
+            car.passengers.push(name);
+            input.value = '';
+            renderPassengerTags();
+            autoSaveCurrentStep();
+        }
+
+        function removePassenger(index) {
+            const car = carsData[currentStep - 1];
+            car.passengers.splice(index, 1);
+            renderPassengerTags();
+            autoSaveCurrentStep();
+        }
+
+        function renderPassengerTags() {
+            const car = carsData[currentStep - 1];
+            const container = document.getElementById('passenger-list');
+            container.innerHTML = '';
+
+            if (car.passengers.length === 0) {
+                container.innerHTML = `<span class="text-xs text-gray-400 p-1">同乗者はまだ追加されていません</span>`;
+                return;
+            }
+
+            car.passengers.forEach((passenger, idx) => {
+                const tag = document.createElement('div');
+                tag.className = 'bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 max-w-full';
+                tag.innerHTML = `
+                    <span class="truncate">${escapeHTML(passenger)}</span>
+                    <button type="button" onclick="removePassenger(${idx})" class="text-indigo-500 hover:text-indigo-800 focus:outline-none p-0.5">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                container.appendChild(tag);
+            });
+        }
+
+        // ================= 2 & 3. サマリー表示 & 経費入力 =================
+
+        function showSummarySection() {
+            document.getElementById('progress-container').classList.add('hidden');
+            document.getElementById('input-steps-wrapper').classList.add('hidden');
+            document.getElementById('summary-section').classList.remove('hidden');
+
+            renderCarsSummaryCards();
+            updateTotalCalculations();
+        }
+
+        function renderCarsSummaryCards() {
+            const container = document.getElementById('cars-summary-list');
+            container.innerHTML = '';
+
+            carsData.forEach((car, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 border border-gray-200 rounded-xl p-3.5 sm:p-4 shadow-sm flex flex-col justify-between';
+
+                const totalInCar = 1 + car.passengers.length;
+                const passengerText = car.passengers.length > 0 ? car.passengers.map(p => escapeHTML(p)).join(', ') : 'なし';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-bold text-gray-800 text-sm sm:text-base flex items-center gap-1.5 truncate">
+                                <span class="bg-indigo-600 text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px] shrink-0">${car.id}</span>
+                                <span class="truncate">${escapeHTML(car.name)}</span>
+                            </h3>
+                            <span class="text-[11px] bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-medium shrink-0">${totalInCar}名</span>
+                        </div>
+                        <div class="text-xs space-y-1 text-gray-600 mb-3 bg-white p-2.5 rounded-lg border border-gray-100">
+                            <div class="truncate"><strong class="text-indigo-900">運転者:</strong> ${escapeHTML(car.driver)}</div>
+                            <div class="truncate"><strong class="text-gray-700">同乗者:</strong> ${passengerText}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                            かかった経費 (円) <span class="text-gray-400 font-normal">ガソリン・高速代等</span>
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 text-xs">￥</span>
+                            <input type="number" min="0" value="${car.expense || ''}" oninput="updateCarExpense(${index}, this.value)" 
+                                class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                                placeholder="0">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateCarExpense(index, value) {
+            carsData[index].expense = parseFloat(value) || 0;
+            saveToLocalStorage();
+            updateTotalCalculations();
+            document.getElementById('settlement-results-section').classList.add('hidden');
+            document.getElementById('settle-btn').disabled = true;
+        }
+
+        function updateTotalCalculations() {
+            totalPeople = carsData.reduce((acc, car) => acc + 1 + car.passengers.length, 0);
+            totalExpense = carsData.reduce((acc, car) => acc + car.expense, 0);
+
+            document.getElementById('total-people-count').innerText = `${totalPeople} 名`;
+            document.getElementById('total-expense-amount').innerText = `￥${totalExpense.toLocaleString()}`;
+            document.getElementById('per-person-amount').innerText = `未計算`;
+        }
+
+        // ================= 4. 割り勘計算 (100円単位切り上げ) =================
+
+        function calculateSplit() {
+            if (totalPeople === 0) {
+                showToast('参加者が設定されていません');
+                return;
+            }
+
+            rawPerPerson = totalExpense / totalPeople;
+            
+            // 100円単位で切り上げ (例: 1234円 -> 1300円)
+            perPersonShare = Math.ceil(totalExpense / totalPeople / 100) * 100;
+
+            totalCollected = perPersonShare * totalPeople;
+            totalSurplus = totalCollected - totalExpense;
+
+            // 5台の運転手へ還元される1台あたりのおつり額
+            driverBonusPerCar = Math.floor(totalSurplus / TOTAL_CARS);
+
+            document.getElementById('per-person-amount').innerText = `￥${perPersonShare.toLocaleString()}`;
+            document.getElementById('settle-btn').disabled = false;
+
+            showToast('100円単位切り上げで割り勘計算しました！', 'fa-circle-check text-emerald-400');
+        }
+
+        // ================= 5. 精算ロジック (運転手還元付き) =================
+
+        function executeSettlement() {
+            if (perPersonShare === 0 && totalExpense === 0) {
+                showToast('経費を入力してください');
+                return;
+            }
+
+            let inCarResults = [];
+            let driverBalances = [];
+
+            carsData.forEach(car => {
+                const numPassengers = car.passengers.length;
+                const collectedFromPassengers = numPassengers * perPersonShare;
+                const driverTotalHeld = (numPassengers + 1) * perPersonShare;
+                const balance = driverTotalHeld - car.expense;
+
+                inCarResults.push({
+                    car,
+                    collectedFromPassengers,
+                    balance
+                });
+
+                driverBalances.push({
+                    carId: car.id,
+                    carName: car.name,
+                    driver: car.driver,
+                    balance: balance,
+                    expense: car.expense,
+                    passengerCount: numPassengers
+                });
+            });
+
+            renderSurplusInfo();
+            renderInCarSettlement(inCarResults);
+
+            lastCalculatedTransfers = calculateInterCarTransfers(driverBalances);
+            renderInterCarTransfers(lastCalculatedTransfers);
+
+            renderDriverFinalShares(driverBalances);
+
+            const resultSec = document.getElementById('settlement-results-section');
+            resultSec.classList.remove('hidden');
+            resultSec.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderSurplusInfo() {
+            const container = document.getElementById('surplus-info-box');
+            
+            container.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-gift text-amber-300 text-base sm:text-lg shrink-0"></i>
+                    <div>
+                        <span class="font-bold">100円切り上げ端数還元:</span> 
+                        平均 ￥${Math.round(rawPerPerson).toLocaleString()} → <strong class="text-amber-300">￥${perPersonShare.toLocaleString()}</strong> 徴収
+                    </div>
+                </div>
+                <div class="bg-indigo-800 px-3 py-1 rounded-lg border border-indigo-500/30 text-[11px] sm:text-xs text-center sm:text-right w-full sm:w-auto">
+                    おつり総額 <strong class="text-emerald-300 text-xs sm:text-sm">￥${totalSurplus.toLocaleString()}</strong> 
+                    （運転手実質 <strong class="text-amber-300">￥${driverBonusPerCar.toLocaleString()}</strong> 優遇還元）
+                </div>
+            `;
+        }
+
+        // 車内精算UI
+        function renderInCarSettlement(results) {
+            const container = document.getElementById('in-car-settlement-list');
+            container.innerHTML = '';
+
+            results.forEach(res => {
+                const car = res.car;
+                const isSurplus = res.balance > 0;
+                const isDeficit = res.balance < 0;
+
+                let balanceBadge = '';
+                if (isSurplus) {
+                    balanceBadge = `<span class="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0"><i class="fa-solid fa-arrow-up"></i> ￥${Math.abs(res.balance).toLocaleString()} 余り</span>`;
+                } else if (isDeficit) {
+                    balanceBadge = `<span class="bg-rose-100 text-rose-800 text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0"><i class="fa-solid fa-arrow-down"></i> ￥${Math.abs(res.balance).toLocaleString()} 不足</span>`;
+                } else {
+                    balanceBadge = `<span class="bg-gray-100 text-gray-700 text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0">過不足なし</span>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'border border-gray-200 rounded-xl p-3.5 sm:p-4 bg-gray-50 flex flex-col justify-between';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start gap-2 mb-2.5">
+                            <div class="truncate">
+                                <h4 class="font-bold text-gray-800 text-sm sm:text-base truncate">${escapeHTML(car.name)}</h4>
+                                <span class="text-xs text-gray-500 truncate block">運転者: <strong>${escapeHTML(car.driver)}</strong></span>
+                            </div>
+                            ${balanceBadge}
+                        </div>
+
+                        <div class="space-y-2 text-xs text-gray-600 mb-3">
+                            <div class="bg-white p-2.5 rounded-lg border border-gray-100">
+                                <div class="font-semibold text-gray-700 mb-1">【車内やり取り】</div>
+                                ${car.passengers.length > 0 ? `
+                                    <p class="text-indigo-700 font-medium">・同乗者 (${car.passengers.length}名) → 運転者 (${escapeHTML(car.driver)}): 1人 ￥${perPersonShare.toLocaleString()} (計 ￥${res.collectedFromPassengers.toLocaleString()}) を集金</p>
+                                ` : '<p class="text-gray-400">・同乗者なし</p>'}
+                                <p class="text-gray-600 mt-0.5">・運転手立替費: ￥${car.expense.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-xs p-2.5 rounded-lg ${isSurplus ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : isDeficit ? 'bg-rose-50 text-rose-900 border border-rose-200' : 'bg-gray-100 text-gray-700'}">
+                        <strong>運転手状態:</strong> 
+                        ${isSurplus ? `集金分と自身の負担分で立替費を超過。<strong>￥${Math.abs(res.balance).toLocaleString()}</strong> を他車へ送金。` : ''}
+                        ${isDeficit ? `立替費用が高いため、<strong>￥${Math.abs(res.balance).toLocaleString()}</strong> 不足中。他車から受領します。` : ''}
+                        ${!isSurplus && !isDeficit ? `ピッタリ清算完了です。` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 車間精算（最小移動計算アルゴリズム）
+        function calculateInterCarTransfers(balances) {
+            let givers = balances
+                .filter(b => b.balance > 0)
+                .map(b => ({ ...b, amount: b.balance }));
+
+            let receivers = balances
+                .filter(b => b.balance < 0)
+                .map(b => ({ ...b, amount: Math.abs(b.balance) }));
+
+            let transfers = [];
+            let i = 0;
+            let j = 0;
+
+            while (i < givers.length && j < receivers.length) {
+                let giver = givers[i];
+                let receiver = receivers[j];
+
+                let transferAmount = Math.min(giver.amount, receiver.amount);
+
+                if (transferAmount > 0) {
+                    transfers.push({
+                        fromCar: giver.carName,
+                        fromDriver: giver.driver,
+                        toCar: receiver.carName,
+                        toDriver: receiver.driver,
+                        amount: transferAmount
+                    });
+                }
+
+                giver.amount -= transferAmount;
+                receiver.amount -= transferAmount;
+
+                if (giver.amount === 0) i++;
+                if (receiver.amount === 0) j++;
+            }
+
+            return transfers;
+        }
+
+        // 車間精算UI
+        function renderInterCarTransfers(transfers) {
+            const container = document.getElementById('inter-car-transfers');
+            container.innerHTML = '';
+
+            if (transfers.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5 bg-gray-50 rounded-xl text-gray-500 text-xs sm:text-sm">
+                        <i class="fa-solid fa-check-circle text-emerald-500 text-lg mb-1 block"></i>
+                        車間での送金移動は不要です！（各車の費用バランス完了）
+                    </div>
+                `;
+                return;
+            }
+
+            transfers.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-4 shadow-sm';
+
+                card.innerHTML = `
+                    <!-- 送金元 -->
+                    <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        <div class="truncate">
+                            <span class="text-[10px] sm:text-xs text-amber-700 font-semibold block">【送金する人】</span>
+                            <span class="font-bold text-gray-800 text-xs sm:text-sm truncate block">${escapeHTML(t.fromDriver)}</span>
+                            <span class="text-[10px] text-gray-500 truncate block">(${escapeHTML(t.fromCar)})</span>
+                        </div>
+                    </div>
+
+                    <!-- 矢印 & 金額 -->
+                    <div class="flex flex-row sm:flex-col items-center justify-between sm:justify-center py-1 px-3 bg-white rounded-lg border border-amber-200 shadow-xs w-full sm:w-auto">
+                        <span class="text-[10px] sm:text-xs text-gray-400 font-medium">送金額</span>
+                        <span class="text-base sm:text-lg font-extrabold text-amber-600">￥${t.amount.toLocaleString()}</span>
+                        <div class="text-amber-500 text-xs sm:text-sm">
+                            <i class="fa-solid fa-arrow-down sm:hidden"></i>
+                            <i class="fa-solid fa-arrow-right hidden sm:inline"></i>
+                        </div>
+                    </div>
+
+                    <!-- 受取元 -->
+                    <div class="flex items-center gap-2.5 w-full sm:w-auto justify-start sm:justify-end">
+                        <div class="text-left sm:text-right truncate">
+                            <span class="text-[10px] sm:text-xs text-emerald-700 font-semibold block">【受け取る人】</span>
+                            <span class="font-bold text-gray-800 text-xs sm:text-sm truncate block">${escapeHTML(t.toDriver)}</span>
+                            <span class="text-[10px] text-gray-500 truncate block">(${escapeHTML(t.toCar)})</span>
+                        </div>
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 order-first sm:order-last">
+                            <i class="fa-solid fa-hand-holding-dollar"></i>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 各ドライバーの最終実質負担額カード
+        function renderDriverFinalShares(driverBalances) {
+            const container = document.getElementById('driver-final-shares');
+            container.innerHTML = '';
+
+            driverBalances.forEach(d => {
+                const finalNetShare = perPersonShare - driverBonusPerCar;
+
+                const card = document.createElement('div');
+                card.className = 'bg-slate-100 p-2 sm:p-2.5 rounded-lg border border-slate-200 text-center';
+
+                card.innerHTML = `
+                    <span class="text-[10px] sm:text-xs text-gray-500 block truncate">${escapeHTML(d.driver)} (${escapeHTML(d.carName)})</span>
+                    <span class="text-xs sm:text-sm font-bold text-indigo-900 block">￥${finalNetShare.toLocaleString()}</span>
+                    <span class="text-[9px] sm:text-[10px] text-emerald-600 font-medium block truncate">（還元 ￥${driverBonusPerCar.toLocaleString()}引）</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // ================= ★ LINE共有テキスト生成機能 ★ =================
+
+        function buildSettlementSummaryText() {
+            let text = `🚗【ドライブ精算結果のお知らせ】🚗\n\n`;
+            text += `💰 総経費: ￥${totalExpense.toLocaleString()}\n`;
+            text += `👥 総人数: ${totalPeople}名\n`;
+            text += `💵 同乗者一律: ￥${perPersonShare.toLocaleString()} (※100円単位切り上げ)\n\n`;
+
+            text += `------------------------------\n`;
+            text += `【ステップ1】車内精算（同乗者→運転手）\n`;
+            text += `------------------------------\n`;
+            carsData.forEach(car => {
+                text += `■ ${car.name} (運転手: ${car.driver})\n`;
+                if (car.passengers.length > 0) {
+                    text += `  ・同乗者 (${car.passengers.join(', ')}): 1人 ￥${perPersonShare.toLocaleString()} を ${car.driver} へ支払い\n`;
+                } else {
+                    text += `  ・同乗者なし\n`;
+                }
+            });
+
+            text += `\n------------------------------\n`;
+            text += `【ステップ2】車間精算（運転手同士の送金）\n`;
+            text += `------------------------------\n`;
+            if (lastCalculatedTransfers.length === 0) {
+                text += `・車間での送金は不要です！\n`;
+            } else {
+                lastCalculatedTransfers.forEach(t => {
+                    text += `・${t.fromDriver} (${t.fromCar}) → ${t.toDriver} (${t.toCar})\n  └ 送金額: ￥${t.amount.toLocaleString()}\n`;
+                });
+            }
+
+            text += `\n------------------------------\n`;
+            text += `※切り上げ端数はおつりとして運転手へ還元されています。\nよろしくお願いいたします！`;
+
+            return text;
+        }
+
+        function shareToLINE() {
+            const summaryText = buildSettlementSummaryText();
+            const lineUrl = `https://line.me/R/share?text=${encodeURIComponent(summaryText)}`;
+            window.open(lineUrl, '_blank');
+        }
+
+        function copySettlementText() {
+            const summaryText = buildSettlementSummaryText();
+            
+            // クリップボードコピー処理 (iFrame互換)
+            const textArea = document.createElement("textarea");
+            textArea.value = summaryText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast('精算テキストをコピーしました！', 'fa-copy text-emerald-400');
+            } catch (err) {
+                showToast('コピーに失敗しました');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showToast(msg, icon = 'fa-circle-exclamation text-amber-400') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.innerText = msg;
+            toastIcon.className = `fa-solid ${icon}`;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function escapeHTML(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>
