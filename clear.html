@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ストレージ・クレーナー & リフレッシュ ツール</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        code, pre, .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar for tables & pre elements */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(107, 114, 128, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen transition-colors duration-200">
+
+    <!-- Header Navigation -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-tr from-sky-500 to-indigo-600 rounded-lg shadow-lg">
+                    <i class="fa-solid me-0 fa-database text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-sky-400 to-indigo-300 bg-clip-text text-transparent">
+                        Web Storage Purger
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">ローカルストレージ & IndexedDB 完全クリアツール</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="refreshAllBtn" title="全情報を最新化" class="px-3 py-2 text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg flex items-center gap-2 transition active:scale-95">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                    <span>最新表示に更新</span>
+                </button>
+                <button id="purgeAndRefreshBtn" class="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 rounded-lg shadow-lg shadow-red-900/30 flex items-center gap-2 transition transform active:scale-95">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>完全リフレッシュ</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Top Alert / Notice Banner -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+                <div class="p-2 bg-amber-500/10 text-amber-400 rounded-lg shrink-0 mt-0.5">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-200">オリジン別ストレージ管理機能</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        現在のオリジン (<span id="originLabel" class="font-mono text-sky-400 underline"></span>) に保存されている全キャッシュとデータベースを管理・削除できます。
+                    </p>
+                </div>
+            </div>
+            <!-- Quick Stats -->
+            <div class="flex items-center gap-2 text-xs self-stretch md:self-auto justify-between md:justify-end border-t md:border-t-0 border-slate-700/50 pt-3 md:pt-0">
+                <div class="px-3 py-1.5 bg-slate-900/80 rounded-md border border-slate-700 text-center">
+                    <span class="text-slate-400 block text-[10px]">LocalStorage</span>
+                    <span id="lsCountBadge" class="font-bold text-sky-400">0 件</span>
+                </div>
+                <div class="px-3 py-1.5 bg-slate-900/80 rounded-md border border-slate-700 text-center">
+                    <span class="text-slate-400 block text-[10px]">IndexedDB</span>
+                    <span id="idbCountBadge" class="font-bold text-purple-400">0 件</span>
+                </div>
+                <div class="px-3 py-1.5 bg-slate-900/80 rounded-md border border-slate-700 text-center">
+                    <span class="text-slate-400 block text-[10px]">SessionStorage</span>
+                    <span id="ssCountBadge" class="font-bold text-emerald-400">0 件</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generator Section (Dummy Data Creator) -->
+        <section class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-bold text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-flask text-indigo-400"></i>
+                    テスト用データ生成 (ダミーデータ作成)
+                </h3>
+                <span class="text-xs text-slate-400">動作確認用のデータをストレージに流し込みます</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <button id="addDummyLsBtn" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700/80 border border-sky-500/30 hover:border-sky-500/60 text-sky-300 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-plus text-sky-400"></i>
+                    <span>LocalStorage 追加 (+3)</span>
+                </button>
+                <button id="addDummySsBtn" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700/80 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-300 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-plus text-emerald-400"></i>
+                    <span>SessionStorage 追加 (+2)</span>
+                </button>
+                <button id="addDummyIdbBtn" class="px-3 py-2.5 bg-slate-800 hover:bg-slate-700/80 border border-purple-500/30 hover:border-purple-500/60 text-purple-300 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-database text-purple-400"></i>
+                    <span>IndexedDB 生成 (1 DB)</span>
+                </button>
+                <button id="fillAllDummyBtn" class="px-3 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/50 text-indigo-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition">
+                    <i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i>
+                    <span>全ストレージ一括テスト生成</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Main Content Area: Tabs / Section Grids -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- LocalStorage Manager Section -->
+            <section class="bg-slate-800/40 border border-slate-700/60 rounded-xl flex flex-col h-[520px]">
+                <!-- Panel Header -->
+                <div class="p-4 border-b border-slate-700/60 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-hard-drive text-sky-400"></i>
+                        <h3 class="font-bold text-slate-200 text-sm">LocalStorage</h3>
+                        <span id="lsHeaderBadge" class="text-xs px-2 py-0.5 bg-sky-900/50 text-sky-300 rounded-full border border-sky-700/50">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="clearLsBtn" class="px-2.5 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-500/30 rounded transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>すべてクリア</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="p-4 flex-1 overflow-y-auto">
+                    <div id="lsEmptyState" class="hidden h-full flex flex-col items-center justify-center text-slate-500 text-center py-12">
+                        <i class="fa-solid fa-box-open text-4xl mb-3 opacity-40"></i>
+                        <p class="text-sm">LocalStorage にデータが存在しません</p>
+                        <p class="text-xs text-slate-600 mt-1">「テスト用データ生成」ボタンで項目を追加できます</p>
+                    </div>
+
+                    <div id="lsTableContainer" class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300 border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-700 text-slate-400 uppercase text-[10px] tracking-wider">
+                                    <th class="py-2 px-3">キー (Key)</th>
+                                    <th class="py-2 px-3">値 (Value)</th>
+                                    <th class="py-2 px-3 text-right">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lsTableBody" class="divide-y divide-slate-700/40">
+                                <!-- Dynamic LocalStorage Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- IndexedDB Manager Section -->
+            <section class="bg-slate-800/40 border border-slate-700/60 rounded-xl flex flex-col h-[520px]">
+                <!-- Panel Header -->
+                <div class="p-4 border-b border-slate-700/60 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-server text-purple-400"></i>
+                        <h3 class="font-bold text-slate-200 text-sm">IndexedDB データベース</h3>
+                        <span id="idbHeaderBadge" class="text-xs px-2 py-0.5 bg-purple-900/50 text-purple-300 rounded-full border border-purple-700/50">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="clearIdbBtn" class="px-2.5 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-500/30 rounded transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-dumpster"></i>
+                            <span>全DB削除</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="p-4 flex-1 overflow-y-auto">
+                    <div id="idbNotSupported" class="hidden bg-amber-900/20 border border-amber-800 text-amber-300 text-xs p-3 rounded-lg mb-3">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                        このブラウザは indexedDB.databases() API をサポートしていないか、環境でブロックされています。
+                    </div>
+
+                    <div id="idbEmptyState" class="hidden h-full flex flex-col items-center justify-center text-slate-500 text-center py-12">
+                        <i class="fa-solid fa-folder-open text-4xl mb-3 opacity-40"></i>
+                        <p class="text-sm">IndexedDB が検出されませんでした</p>
+                        <p class="text-xs text-slate-600 mt-1">「テスト用データ生成」ボタンで新しく生成できます</p>
+                    </div>
+
+                    <div id="idbListContainer" class="space-y-3">
+                        <!-- Dynamic IndexedDB Cards -->
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Session Storage & Cache Extra Status Section -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Session Storage -->
+            <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-400"></i>
+                        <h4 class="text-sm font-bold text-slate-200">SessionStorage</h4>
+                    </div>
+                    <button id="clearSsBtn" class="text-xs text-red-400 hover:underline">クリア</button>
+                </div>
+                <div id="ssList" class="space-y-1 text-xs font-mono max-h-36 overflow-y-auto bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40">
+                    <!-- SessionStorage items -->
+                </div>
+            </div>
+
+            <!-- Service Worker & Cache Status -->
+            <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-gears text-amber-400"></i>
+                        <h4 class="text-sm font-bold text-slate-200">Service Workers & Caches</h4>
+                    </div>
+                    <button id="clearCachesBtn" class="text-xs text-red-400 hover:underline">キャッシュクリア</button>
+                </div>
+                <div class="space-y-2 text-xs text-slate-300">
+                    <div class="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40">
+                        <span class="text-slate-400">登録済み SW 数:</span>
+                        <span id="swCount" class="font-bold font-mono text-slate-200">確認中...</span>
+                    </div>
+                    <div class="flex justify-between items-center bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40">
+                        <span class="text-slate-400">CacheStorage 名:</span>
+                        <span id="cacheNames" class="font-bold font-mono text-slate-200 truncate max-w-[200px]">確認中...</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal Dialog for Purge Confirmation / Countdown -->
+    <div id="purgeModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <div id="purgeStepConfirm" class="space-y-4">
+                <div class="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto text-2xl">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-bold text-white">完全リフレッシュを実行しますか？</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        現在のドメインに保存されている全データを消去してページを再読み込みします。<br>
+                        <span class="text-red-400 font-semibold">・ LocalStorage 全削除</span><br>
+                        <span class="text-red-400 font-semibold">・ SessionStorage 全削除</span><br>
+                        <span class="text-red-400 font-semibold">・ 全 IndexedDB データベース削除</span><br>
+                        <span class="text-red-400 font-semibold">・ Cache Storage / Service Worker 解除</span>
+                    </p>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button id="cancelPurgeBtn" class="flex-1 py-2.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition">
+                        キャンセル
+                    </button>
+                    <button id="confirmPurgeBtn" class="flex-1 py-2.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-xl shadow-lg shadow-red-900/40 transition">
+                        すべて消去してリフレッシュ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Purge Progress View -->
+            <div id="purgeStepProgress" class="hidden space-y-5 text-center py-4">
+                <div class="relative w-20 h-20 mx-auto flex items-center justify-center">
+                    <svg class="animate-spin w-full h-full text-red-600" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="countdownText" class="absolute text-xl font-bold text-white">3</span>
+                </div>
+                <div>
+                    <h4 id="purgeStatusTitle" class="text-base font-bold text-white">ストレージ消去中...</h4>
+                    <p id="purgeStatusDetail" class="text-xs text-slate-400 mt-1">LocalStorage & IndexedDB をクリアしています</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-40 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // --- State & Initial load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('originLabel').textContent = window.location.origin;
+            refreshAllData();
+            setupEventListeners();
+        });
+
+        // --- Notification Toast Utility ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2 transition-all transform translate-y-2 opacity-0 text-white border ${
+                type === 'success' ? 'bg-emerald-900/90 border-emerald-500/50' :
+                type === 'error' ? 'bg-red-900/90 border-red-500/50' :
+                'bg-slate-800/90 border-slate-600'
+            }`;
+            
+            const iconClass = type === 'success' ? 'fa-circle-check text-emerald-400' :
+                              type === 'error' ? 'fa-circle-xmark text-red-400' : 'fa-circle-info text-sky-400';
+
+            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Refresh All Dashboard Data ---
+        async function refreshAllData() {
+            renderLocalStorage();
+            renderSessionStorage();
+            await renderIndexedDB();
+            await renderServiceWorkersAndCaches();
+        }
+
+        // --- Helper: Escape HTML string ---
+        function escapeHtml(str) {
+            if (typeof str !== 'string') str = String(str);
+            return str.replace(/[&<>"']/g, match => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[match]));
+        }
+
+        // --- 1. LocalStorage Management ---
+        function renderLocalStorage() {
+            const tbody = document.getElementById('lsTableBody');
+            const emptyState = document.getElementById('lsEmptyState');
+            const tableContainer = document.getElementById('lsTableContainer');
+            const countBadge = document.getElementById('lsCountBadge');
+            const headerBadge = document.getElementById('lsHeaderBadge');
+
+            tbody.innerHTML = '';
+            const keys = Object.keys(localStorage);
+
+            countBadge.textContent = `${keys.length} 件`;
+            headerBadge.textContent = keys.length;
+
+            if (keys.length === 0) {
+                emptyState.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+
+            keys.forEach(key => {
+                const val = localStorage.getItem(key);
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-700/30 transition';
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-mono text-sky-300 max-w-[150px] truncate" title="${escapeHtml(key)}">
+                        ${escapeHtml(key)}
+                    </td>
+                    <td class="py-2.5 px-3 font-mono text-slate-300 max-w-[220px] truncate" title="${escapeHtml(val)}">
+                        ${escapeHtml(val)}
+                    </td>
+                    <td class="py-2.5 px-3 text-right">
+                        <button onclick="deleteLsItem('${escapeHtml(key)}')" class="text-slate-400 hover:text-red-400 p-1 transition" title="この項目を削除">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.deleteLsItem = function(key) {
+            localStorage.removeItem(key);
+            showToast(`LocalStorage "${key}" を削除しました`, 'success');
+            renderLocalStorage();
+        };
+
+        function clearAllLocalStorage() {
+            if (localStorage.length === 0) return;
+            localStorage.clear();
+            showToast('LocalStorage をすべて消去しました', 'success');
+            renderLocalStorage();
+        }
+
+        // --- 2. SessionStorage Management ---
+        function renderSessionStorage() {
+            const ssList = document.getElementById('ssList');
+            const countBadge = document.getElementById('ssCountBadge');
+            const keys = Object.keys(sessionStorage);
+
+            countBadge.textContent = `${keys.length} 件`;
+            ssList.innerHTML = '';
+
+            if (keys.length === 0) {
+                ssList.innerHTML = '<span class="text-slate-500 italic">SessionStorage は空です</span>';
+                return;
+            }
+
+            keys.forEach(k => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center border-b border-slate-800 last:border-0 py-1';
+                item.innerHTML = `
+                    <span class="text-emerald-400 truncate max-w-[150px]">${escapeHtml(k)}</span>
+                    <span class="text-slate-400 truncate max-w-[150px]">${escapeHtml(sessionStorage.getItem(k))}</span>
+                `;
+                ssList.appendChild(item);
+            });
+        }
+
+        function clearAllSessionStorage() {
+            sessionStorage.clear();
+            showToast('SessionStorage を消去しました', 'success');
+            renderSessionStorage();
+        }
+
+        // --- 3. IndexedDB Management ---
+        async function renderIndexedDB() {
+            const container = document.getElementById('idbListContainer');
+            const emptyState = document.getElementById('idbEmptyState');
+            const countBadge = document.getElementById('idbCountBadge');
+            const headerBadge = document.getElementById('idbHeaderBadge');
+            const notSupported = document.getElementById('idbNotSupported');
+
+            container.innerHTML = '';
+
+            if (!('databases' in indexedDB)) {
+                notSupported.classList.remove('hidden');
+                countBadge.textContent = '不明';
+                headerBadge.textContent = '!';
+                return;
+            }
+
+            try {
+                const dbs = await indexedDB.databases();
+                countBadge.textContent = `${dbs.length} 件`;
+                headerBadge.textContent = dbs.length;
+
+                if (dbs.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+
+                for (const dbInfo of dbs) {
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-900/60 border border-slate-700/50 rounded-lg p-3.5 flex flex-col gap-2';
+
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-database text-purple-400 text-sm"></i>
+                                <span class="font-mono text-xs font-bold text-slate-200">${escapeHtml(dbInfo.name)}</span>
+                                <span class="text-[10px] px-1.5 py-0.5 bg-slate-800 text-purple-300 rounded border border-purple-500/30">v${dbInfo.version}</span>
+                            </div>
+                            <button onclick="deleteSingleIdb('${escapeHtml(dbInfo.name)}')" class="px-2 py-1 bg-red-900/30 hover:bg-red-800/50 text-red-300 border border-red-500/30 rounded text-[11px] transition flex items-center gap-1">
+                                <i class="fa-solid fa-trash-can"></i> 削除
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                }
+            } catch (err) {
+                console.error("IndexedDB リスト取得失敗:", err);
+                showToast("IndexedDB 情報の取得に失敗しました", "error");
+            }
+        }
+
+        window.deleteSingleIdb = function(dbName) {
+            const req = indexedDB.deleteDatabase(dbName);
+            req.onsuccess = () => {
+                showToast(`IndexedDB "${dbName}" を削除しました`, 'success');
+                renderIndexedDB();
+            };
+            req.onerror = () => {
+                showToast(`IndexedDB "${dbName}" の削除に失敗しました`, 'error');
+            };
+            req.onblocked = () => {
+                showToast(`IndexedDB "${dbName}" 削除がブロックされました (接続が開いたままです)`, 'error');
+            };
+        };
+
+        async function clearAllIndexedDB() {
+            if (!('databases' in indexedDB)) {
+                showToast('indexedDB.databases() がサポートされていません', 'error');
+                return;
+            }
+            try {
+                const dbs = await indexedDB.databases();
+                if (dbs.length === 0) return;
+
+                let deletedCount = 0;
+                for (const db of dbs) {
+                    await new Promise((resolve) => {
+                        const req = indexedDB.deleteDatabase(db.name);
+                        req.onsuccess = req.onerror = req.onblocked = () => {
+                            deletedCount++;
+                            resolve();
+                        };
+                    });
+                }
+                showToast(`IndexedDB (${deletedCount}個) を削除しました`, 'success');
+                renderIndexedDB();
+            } catch (err) {
+                console.error(err);
+                showToast('IndexedDB 一括削除でエラーが発生しました', 'error');
+            }
+        }
+
+        // --- 4. Service Worker & Cache Storage Management ---
+        async function renderServiceWorkersAndCaches() {
+            const swCountEl = document.getElementById('swCount');
+            const cacheNamesEl = document.getElementById('cacheNames');
+
+            // Service workers
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                swCountEl.textContent = `${regs.length} 件`;
+            } else {
+                swCountEl.textContent = '非対応';
+            }
+
+            // Cache API
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                cacheNamesEl.textContent = keys.length > 0 ? keys.join(', ') : 'なし';
+            } else {
+                cacheNamesEl.textContent = '非対応';
+            }
+        }
+
+        async function clearCachesAndSW() {
+            let clearedCaches = 0;
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                for (const k of keys) {
+                    await caches.delete(k);
+                    clearedCaches++;
+                }
+            }
+
+            let unregisteredSW = 0;
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (const reg of regs) {
+                    await reg.unregister();
+                    unregisteredSW++;
+                }
+            }
+
+            showToast(`Cache Storage (${clearedCaches}) と SW (${unregisteredSW}) を削除しました`, 'success');
+            renderServiceWorkersAndCaches();
+        }
+
+        // --- 5. Interactive Test Data Generator ---
+        function addDummyLocalStorage() {
+            const now = new Date().toLocaleTimeString('ja-JP');
+            const rand = Math.floor(Math.random() * 1000);
+            localStorage.setItem(`user_session_${rand}`, `token_abc_${rand}`);
+            localStorage.setItem(`settings_theme_${rand}`, rand % 2 === 0 ? 'dark' : 'light');
+            localStorage.setItem(`last_visit_${rand}`, now);
+            showToast('LocalStorage にダミーデータを追加しました', 'success');
+            renderLocalStorage();
+        }
+
+        function addDummySessionStorage() {
+            const rand = Math.floor(Math.random() * 9000) + 1000;
+            sessionStorage.setItem(`temp_auth_${rand}`, `session_key_${rand}`);
+            sessionStorage.setItem(`draft_message`, `こんにちは、テストメッセージです (${rand})`);
+            showToast('SessionStorage にダミーデータを追加しました', 'success');
+            renderSessionStorage();
+        }
+
+        function createDummyIndexedDB() {
+            const dbName = `TestDB_${Math.floor(Math.random() * 899) + 100}`;
+            const request = indexedDB.open(dbName, 1);
+
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                const store = db.createObjectStore('users', { keyPath: 'id' });
+                store.add({ id: 101, name: '山田太郎', email: 'yamada@example.com' });
+                store.add({ id: 102, name: '佐藤花子', email: 'sato@example.com' });
+            };
+
+            request.onsuccess = (e) => {
+                const db = e.target.result;
+                db.close(); // Close so it won't block deletion
+                showToast(`IndexedDB "${dbName}" を作成しました`, 'success');
+                renderIndexedDB();
+            };
+
+            request.onerror = (e) => {
+                showToast('IndexedDB 作成に失敗しました', 'error');
+            };
+        }
+
+        // --- 6. Complete Clean & Purge Operation ---
+        async function executeFullPurge() {
+            const stepConfirm = document.getElementById('purgeStepConfirm');
+            const stepProgress = document.getElementById('purgeStepProgress');
+            const countdownText = document.getElementById('countdownText');
+
+            stepConfirm.classList.add('hidden');
+            stepProgress.classList.remove('hidden');
+
+            // 1. Clear LocalStorage
+            localStorage.clear();
+
+            // 2. Clear SessionStorage
+            sessionStorage.clear();
+
+            // 3. Clear IndexedDB
+            if ('databases' in indexedDB) {
+                try {
+                    const dbs = await indexedDB.databases();
+                    for (const db of dbs) {
+                        indexedDB.deleteDatabase(db.name);
+                    }
+                } catch(e) { console.error(e); }
+            }
+
+            // 4. Clear Service Workers & Cache API
+            if ('caches' in window) {
+                const keys = await caches.keys();
+                for (const k of keys) await caches.delete(k);
+            }
+            if ('serviceWorker' in navigator) {
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (const reg of regs) await reg.unregister();
+            }
+
+            // Countdown to reload
+            let count = 3;
+            countdownText.textContent = count;
+
+            const interval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countdownText.textContent = count;
+                } else {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }, 800);
+        }
+
+        // --- 7. Event Listeners ---
+        function setupEventListeners() {
+            // General Refresh Button
+            document.getElementById('refreshAllBtn').addEventListener('click', () => {
+                refreshAllData();
+                showToast('画面表示を最新状態に更新しました', 'info');
+            });
+
+            // LocalStorage Clear
+            document.getElementById('clearLsBtn').addEventListener('click', clearAllLocalStorage);
+
+            // SessionStorage Clear
+            document.getElementById('clearSsBtn').addEventListener('click', clearAllSessionStorage);
+
+            // IndexedDB Clear
+            document.getElementById('clearIdbBtn').addEventListener('click', clearAllIndexedDB);
+
+            // Cache/SW Clear
+            document.getElementById('clearCachesBtn').addEventListener('click', clearCachesAndSW);
+
+            // Dummy Buttons
+            document.getElementById('addDummyLsBtn').addEventListener('click', addDummyLocalStorage);
+            document.getElementById('addDummySsBtn').addEventListener('click', addDummySessionStorage);
+            document.getElementById('addDummyIdbBtn').addEventListener('click', createDummyIndexedDB);
+            document.getElementById('fillAllDummyBtn').addEventListener('click', () => {
+                addDummyLocalStorage();
+                addDummySessionStorage();
+                createDummyIndexedDB();
+            });
+
+            // Modal Handlers
+            const modal = document.getElementById('purgeModal');
+            document.getElementById('purgeAndRefreshBtn').addEventListener('click', () => {
+                document.getElementById('purgeStepConfirm').classList.remove('hidden');
+                document.getElementById('purgeStepProgress').classList.add('hidden');
+                modal.classList.remove('hidden');
+            });
+
+            document.getElementById('cancelPurgeBtn').addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+
+            document.getElementById('confirmPurgeBtn').addEventListener('click', () => {
+                executeFullPurge();
+            });
+        }
+    </script>
+</body>
+</html>
