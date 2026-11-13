@@ -625,18 +625,21 @@
             const legacyRecs = JSON.parse(localStorage.getItem('recommended_foods'));
 
             if (savedPresets) {
-                return savedPresets;
+                return savedPresets.map(item => ({
+                    ...item,
+                    count: typeof item.count === 'number' ? item.count : (item.useCount || 0)
+                }));
             }
 
             const defaultPresets = [
-                { name: 'プロテイン', calorie: 120 },
-                { name: 'ゆで卵', calorie: 90 },
-                { name: 'バナナ', calorie: 80 },
-                { name: 'おにぎり（1個）', calorie: 180 },
-                { name: 'サラダチキン', calorie: 135 },
-                { name: '味噌汁', calorie: 45 },
-                { name: 'オートミール（1食）', calorie: 110 },
-                { name: 'ミックスナッツ（1袋）', calorie: 200 }
+                { name: 'プロテイン', calorie: 120, count: 0 },
+                { name: 'ゆで卵', calorie: 90, count: 0 },
+                { name: 'バナナ', calorie: 80, count: 0 },
+                { name: 'おにぎり（1個）', calorie: 180, count: 0 },
+                { name: 'サラダチキン', calorie: 135, count: 0 },
+                { name: '味噌汁', calorie: 45, count: 0 },
+                { name: 'オートミール（1食）', calorie: 110, count: 0 },
+                { name: 'ミックスナッツ（1袋）', calorie: 200, count: 0 }
             ];
 
             // 既存の個別データがある場合は統合して重複を排除
@@ -647,7 +650,10 @@
                 combined.forEach(item => {
                     if (item && item.name && !seen.has(item.name)) {
                         seen.add(item.name);
-                        unique.push(item);
+                        unique.push({
+                            ...item,
+                            count: typeof item.count === 'number' ? item.count : (item.useCount || 0)
+                        });
                     }
                 });
                 const result = unique.length > 0 ? unique : defaultPresets;
@@ -880,7 +886,27 @@
 
         function closeCalorieModal() { hideModal('calorie-modal'); }
 
-        // 統合されたプリセット食品リストを描画（手動並び替え順を優先、未指定時は使用頻度順）
+        // カウンターが多い順にソートしたプリセット一覧を取得
+        function getSortedPresetsWithIndex() {
+            return presetFoods
+                .map((item, idx) => ({
+                    item,
+                    idx,
+                    count: typeof item.count === 'number' ? item.count : 0,
+                    lastUsed: item.lastUsed || 0
+                }))
+                .sort((a, b) => {
+                    if (b.count !== a.count) {
+                        return b.count - a.count;
+                    }
+                    if (b.lastUsed !== a.lastUsed) {
+                        return b.lastUsed - a.lastUsed;
+                    }
+                    return a.idx - b.idx;
+                });
+        }
+
+        // プリセット食品リストを描画（カウンター数が多い順に表示上位へ）
         function renderPresetFoods() {
             const container = document.getElementById('preset-foods-container');
             if (!presetFoods || presetFoods.length === 0) {
@@ -888,49 +914,16 @@
                 return;
             }
 
-            const hasCustomOrder = localStorage.getItem('preset_custom_order') === 'true';
-
-            // 記録履歴（records）から各食品の使用回数と最新使用日時を集計
-            const statsMap = new Map();
-            records.forEach(r => {
-                const stat = statsMap.get(r.name) || { count: 0, lastUsed: 0 };
-                stat.count += 1;
-                const time = r.timestamp ? new Date(r.timestamp).getTime() : 0;
-                if (time > stat.lastUsed) {
-                    stat.lastUsed = time;
-                }
-                statsMap.set(r.name, stat);
-            });
-
-            // 元のインデックスを保持
-            const sortedWithIndex = presetFoods.map((item, idx) => {
-                const recordStat = statsMap.get(item.name) || { count: 0, lastUsed: 0 };
-                const totalCount = (item.useCount || 0) + recordStat.count;
-                const latestTime = Math.max(item.lastUsed || 0, recordStat.lastUsed);
-                return { item, idx, totalCount, latestTime };
-            });
-
-            if (!hasCustomOrder) {
-                sortedWithIndex.sort((a, b) => {
-                    // 使用回数が多い順を優先
-                    if (b.totalCount !== a.totalCount) {
-                        return b.totalCount - a.totalCount;
-                    }
-                    // 回数が同じ場合は最近使った順
-                    if (b.latestTime !== a.latestTime) {
-                        return b.latestTime - a.latestTime;
-                    }
-                    return a.idx - b.idx;
-                });
-            }
+            const sortedWithIndex = getSortedPresetsWithIndex();
 
             let html = '';
-            sortedWithIndex.forEach(({ item, idx }) => {
+            sortedWithIndex.forEach(({ item, idx, count }) => {
                 html += `
                     <div class="inline-flex items-center gap-1 bg-white border border-emerald-200 hover:border-emerald-400 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
                         <button type="button" onclick="registerFoodDirectly('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1 hover:text-emerald-600 transition">
                             <span>⚡ ${escapeHtml(item.name)}</span>
                             <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
+                            <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5">${count}</span>
                         </button>
                         <button type="button" onclick="confirmRemovePresetFood(${idx}, '${escapeHtml(item.name)}')" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
                             <i data-lucide="x" class="w-3 h-3"></i>
@@ -959,15 +952,16 @@
             records.unshift({ id: now.toString(), name, calorie, timestamp: new Date(now).toISOString() });
             localStorage.setItem('calorie_records', JSON.stringify(records));
 
-            // プリセット側の使用回数・最終使用日時も更新して次回以降の並びに反映
+            // 押下されたチップのカウンターをカウントアップして保存・再描画
             const presetIndex = presetFoods.findIndex(f => f.name === name);
             if (presetIndex !== -1) {
-                presetFoods[presetIndex].useCount = (presetFoods[presetIndex].useCount || 0) + 1;
+                presetFoods[presetIndex].count = (presetFoods[presetIndex].count || 0) + 1;
                 presetFoods[presetIndex].lastUsed = now;
                 localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
             }
 
             renderApp();
+            renderPresetFoods();
             showToast("追加しました！");
         }
 
@@ -1004,42 +998,9 @@
         // チップ一覧編集モーダル用の状態と処理
         let editingPresetDraft = [];
 
-        function getOrderedPresetsForEdit() {
-            const hasCustomOrder = localStorage.getItem('preset_custom_order') === 'true';
-            if (hasCustomOrder) {
-                return presetFoods.map(item => ({ ...item }));
-            }
-
-            const statsMap = new Map();
-            records.forEach(r => {
-                const stat = statsMap.get(r.name) || { count: 0, lastUsed: 0 };
-                stat.count += 1;
-                const time = r.timestamp ? new Date(r.timestamp).getTime() : 0;
-                if (time > stat.lastUsed) stat.lastUsed = time;
-                statsMap.set(r.name, stat);
-            });
-
-            return presetFoods
-                .map((item, idx) => {
-                    const recordStat = statsMap.get(item.name) || { count: 0, lastUsed: 0 };
-                    return {
-                        item: { ...item },
-                        idx,
-                        totalCount: (item.useCount || 0) + recordStat.count,
-                        latestTime: Math.max(item.lastUsed || 0, recordStat.lastUsed)
-                    };
-                })
-                .sort((a, b) => {
-                    if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount;
-                    if (b.latestTime !== a.latestTime) return b.latestTime - a.latestTime;
-                    return a.idx - b.idx;
-                })
-                .map(entry => entry.item);
-        }
-
         function openPresetEditModal() {
-            // 現在の表示順を保持したまま編集用ドラフトを作成
-            editingPresetDraft = getOrderedPresetsForEdit();
+            // カウンター順を保持したまま編集用ドラフトを作成
+            editingPresetDraft = getSortedPresetsWithIndex().map(entry => ({ ...entry.item }));
             document.getElementById('new-preset-name').value = '';
             document.getElementById('new-preset-calorie').value = '';
             renderPresetEditList();
@@ -1048,15 +1009,6 @@
 
         function closePresetEditModal() {
             hideModal('preset-edit-modal');
-        }
-
-        function moveDraftPreset(index, direction) {
-            const targetIndex = index + direction;
-            if (targetIndex < 0 || targetIndex >= editingPresetDraft.length) return;
-            const temp = editingPresetDraft[index];
-            editingPresetDraft[index] = editingPresetDraft[targetIndex];
-            editingPresetDraft[targetIndex] = temp;
-            renderPresetEditList();
         }
 
         function renderPresetEditList() {
@@ -1068,18 +1020,10 @@
 
             let html = '';
             editingPresetDraft.forEach((item, index) => {
-                const isFirst = index === 0;
-                const isLast = index === editingPresetDraft.length - 1;
+                const count = typeof item.count === 'number' ? item.count : 0;
                 html += `
-                    <div class="flex items-center gap-1 bg-slate-50 p-2 rounded-2xl border border-slate-200">
-                        <div class="flex flex-col gap-0.5 shrink-0">
-                            <button type="button" onclick="moveDraftPreset(${index}, -1)" ${isFirst ? 'disabled' : ''} class="p-1 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-30 disabled:pointer-events-none transition" title="上へ移動">
-                                <i data-lucide="chevron-up" class="w-3 h-3"></i>
-                            </button>
-                            <button type="button" onclick="moveDraftPreset(${index}, 1)" ${isLast ? 'disabled' : ''} class="p-1 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-30 disabled:pointer-events-none transition" title="下へ移動">
-                                <i data-lucide="chevron-down" class="w-3 h-3"></i>
-                            </button>
-                        </div>
+                    <div class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                        <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg shrink-0" title="使用回数">${count}回</span>
                         <input type="text" value="${escapeHtml(item.name)}" onchange="updateDraftPresetField(${index}, 'name', this.value)" placeholder="食品名" class="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                         <div class="flex items-center gap-1 shrink-0">
                             <input type="number" value="${item.calorie}" min="0" onchange="updateDraftPresetField(${index}, 'calorie', this.value)" class="w-16 px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-right font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -1123,7 +1067,7 @@
             if (existingIdx !== -1) {
                 editingPresetDraft[existingIdx].calorie = calorie;
             } else {
-                editingPresetDraft.unshift({ name, calorie, useCount: 0, lastUsed: Date.now() });
+                editingPresetDraft.push({ name, calorie, count: 0, lastUsed: Date.now() });
             }
 
             nameInput.value = '';
@@ -1143,12 +1087,12 @@
                 .map(item => ({
                     ...item,
                     name: item.name.trim(),
-                    calorie: isNaN(parseInt(item.calorie, 10)) ? 0 : Math.max(0, parseInt(item.calorie, 10))
+                    calorie: isNaN(parseInt(item.calorie, 10)) ? 0 : Math.max(0, parseInt(item.calorie, 10)),
+                    count: typeof item.count === 'number' ? item.count : 0
                 }));
 
             presetFoods = cleaned;
             localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
-            localStorage.setItem('preset_custom_order', 'true');
             renderPresetFoods();
             closePresetEditModal();
             showToast("チップ一覧を更新しました");
@@ -1415,7 +1359,10 @@
                     
                     // 新形式と旧形式の両方のバックアップからの復元に対応
                     if (imported.preset_foods) {
-                        presetFoods = imported.preset_foods;
+                        presetFoods = imported.preset_foods.map(item => ({
+                            ...item,
+                            count: typeof item.count === 'number' ? item.count : (item.useCount || 0)
+                        }));
                         localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
                     } else if (imported.favorite_foods || imported.recommended_foods) {
                         const combined = [...(imported.favorite_foods || []), ...(imported.recommended_foods || [])];
@@ -1424,7 +1371,10 @@
                         combined.forEach(item => {
                             if (item && item.name && !seen.has(item.name)) {
                                 seen.add(item.name);
-                                unique.push(item);
+                                unique.push({
+                                    ...item,
+                                    count: typeof item.count === 'number' ? item.count : (item.useCount || 0)
+                                });
                             }
                         });
                         presetFoods = unique;
@@ -1514,13 +1464,13 @@
             records.unshift({ id: now.toString(), name, calorie, timestamp: new Date(now).toISOString() });
             localStorage.setItem('calorie_records', JSON.stringify(records));
 
-            // いつもの・おすすめリストに未登録であれば自動追加（既存の場合はカロリーと使用実績を更新）
+            // いつもの・おすすめリストに未登録であれば自動追加（既存の場合はカロリーとカウンターを更新）
             const existingIndex = presetFoods.findIndex(f => f.name === name);
             if (existingIndex === -1) {
-                presetFoods.unshift({ name, calorie, useCount: 1, lastUsed: now });
+                presetFoods.push({ name, calorie, count: 1, lastUsed: now });
             } else {
                 presetFoods[existingIndex].calorie = calorie;
-                presetFoods[existingIndex].useCount = (presetFoods[existingIndex].useCount || 0) + 1;
+                presetFoods[existingIndex].count = (presetFoods[existingIndex].count || 0) + 1;
                 presetFoods[existingIndex].lastUsed = now;
             }
             localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
