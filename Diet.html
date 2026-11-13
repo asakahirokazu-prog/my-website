@@ -400,24 +400,14 @@
                 </button>
             </div>
 
-            <!-- タブ切り替えボタン -->
-            <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
-                <button type="button" id="tab-btn-recommended" onclick="switchFoodTab('recommended')" class="flex-1 py-2 rounded-lg bg-white text-slate-800 shadow-sm transition flex items-center justify-center gap-1">
-                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> おすすめ
-                </button>
-                <button type="button" id="tab-btn-favorite" onclick="switchFoodTab('favorite')" class="flex-1 py-2 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1">
-                    <i data-lucide="star" class="w-3.5 h-3.5 text-emerald-500"></i> いつもの
-                </button>
-            </div>
-
-            <!-- おすすめタブコンテンツ -->
-            <div id="tab-content-recommended" class="space-y-1.5 bg-amber-300/80 p-3 rounded-2xl border border-amber-400 shadow-inner">
-                <div id="recommended-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
-            </div>
-
-            <!-- いつもの食品タブコンテンツ -->
-            <div id="tab-content-favorite" class="space-y-1.5 bg-sky-300/80 p-3 rounded-2xl border border-sky-400 shadow-inner hidden">
-                <div id="favorite-foods-container" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pt-1"></div>
+            <!-- 統合された「いつもの・おすすめ」プリセットセクション -->
+            <div class="space-y-1.5 bg-emerald-50/90 p-3 rounded-2xl border border-emerald-200 shadow-inner">
+                <div class="flex justify-end">
+                    <button type="button" onclick="openPresetEditModal()" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-white/80 hover:bg-white px-2 py-0.5 rounded-lg border border-emerald-200 transition flex items-center gap-1 shadow-2xs">
+                        <i data-lucide="edit-3" class="w-3 h-3"></i> 一覧を編集
+                    </button>
+                </div>
+                <div id="preset-foods-container" class="flex flex-wrap gap-1.5 max-h-56 overflow-y-auto"></div>
             </div>
 
             <form id="calorie-form" onsubmit="handleFormSubmit(event)" class="space-y-3 text-xs pt-2 border-t border-slate-100">
@@ -427,18 +417,7 @@
                     <input type="text" id="item-name" required placeholder="例: 鶏胸肉サラダ、昼食等" onkeydown="handleItemNameKeydown(event)" onblur="handleItemNameBlur(event)" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block font-semibold text-slate-600 uppercase text-[10px]">カロリー (kcal)</label>
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="saveAsRecommended()" class="text-[10px] text-amber-800 hover:text-amber-900 font-bold flex items-center gap-0.5">
-                                <i data-lucide="plus" class="w-3 h-3"></i> おすすめに登録
-                            </button>
-                            <span class="text-slate-300">|</span>
-                            <button type="button" onclick="saveAsFavorite()" class="text-[10px] text-emerald-800 hover:text-emerald-900 font-bold flex items-center gap-0.5">
-                                <i data-lucide="plus" class="w-3 h-3"></i> いつものに登録
-                            </button>
-                        </div>
-                    </div>
+                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">カロリー (kcal)</label>
                     <input type="number" id="item-calorie" required min="0" placeholder="例: 350" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div class="flex items-center gap-2 pt-2">
@@ -448,6 +427,42 @@
                     <button type="button" onclick="closeCalorieModal()" class="bg-slate-100 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition">閉じる</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- プリセット食品チップ一覧 編集モーダル -->
+    <div id="preset-edit-modal" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="bg-emerald-100 text-emerald-600 p-2 rounded-xl">
+                        <i data-lucide="list-checks" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">チップ一覧を編集</h3>
+                </div>
+                <button type="button" onclick="closePresetEditModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- 新規追加フォーム -->
+            <form onsubmit="handleAddPresetInEditModal(event)" class="flex items-center gap-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shrink-0">
+                <input type="text" id="new-preset-name" required placeholder="新しい食品名" class="flex-1 min-w-0 px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="number" id="new-preset-calorie" required min="0" placeholder="kcal" class="w-20 px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-3 py-2 rounded-xl text-xs transition shrink-0 flex items-center gap-1">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> 追加
+                </button>
+            </form>
+
+            <!-- 編集可能なリスト本体 -->
+            <div id="preset-edit-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
+
+            <div class="flex items-center gap-2 pt-2 border-t border-slate-100 shrink-0">
+                <button type="button" onclick="savePresetEdits()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-xs">
+                    <i data-lucide="check" class="w-4 h-4"></i> <span>変更を保存する</span>
+                </button>
+                <button type="button" onclick="closePresetEditModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition text-xs">キャンセル</button>
+            </div>
         </div>
     </div>
 
@@ -603,19 +618,47 @@
         let weightRecords = JSON.parse(localStorage.getItem('weight_records')) || [];
         let strategies = JSON.parse(localStorage.getItem('success_strategies')) || [];
         
-        let favoriteFoods = JSON.parse(localStorage.getItem('favorite_foods')) || [
-            { name: 'プロテイン', calorie: 120 },
-            { name: 'ゆで卵', calorie: 90 },
-            { name: 'バナナ', calorie: 80 }
-        ];
+        // プリセット食品の統合初期化（従来の「おすすめ」と「いつもの」も自動マージして引き継ぐ）
+        function loadMergedPresetFoods() {
+            const savedPresets = JSON.parse(localStorage.getItem('preset_foods'));
+            const legacyFavs = JSON.parse(localStorage.getItem('favorite_foods'));
+            const legacyRecs = JSON.parse(localStorage.getItem('recommended_foods'));
 
-        let recommendedFoods = JSON.parse(localStorage.getItem('recommended_foods')) || [
-            { name: 'おにぎり（1個）', calorie: 180 },
-            { name: 'サラダチキン', calorie: 135 },
-            { name: '味噌汁', calorie: 45 },
-            { name: 'オートミール（1食）', calorie: 110 },
-            { name: 'ミックスナッツ（1袋）', calorie: 200 }
-        ];
+            if (savedPresets) {
+                return savedPresets;
+            }
+
+            const defaultPresets = [
+                { name: 'プロテイン', calorie: 120 },
+                { name: 'ゆで卵', calorie: 90 },
+                { name: 'バナナ', calorie: 80 },
+                { name: 'おにぎり（1個）', calorie: 180 },
+                { name: 'サラダチキン', calorie: 135 },
+                { name: '味噌汁', calorie: 45 },
+                { name: 'オートミール（1食）', calorie: 110 },
+                { name: 'ミックスナッツ（1袋）', calorie: 200 }
+            ];
+
+            // 既存の個別データがある場合は統合して重複を排除
+            if (legacyFavs || legacyRecs) {
+                const combined = [...(legacyFavs || []), ...(legacyRecs || [])];
+                const unique = [];
+                const seen = new Set();
+                combined.forEach(item => {
+                    if (item && item.name && !seen.has(item.name)) {
+                        seen.add(item.name);
+                        unique.push(item);
+                    }
+                });
+                const result = unique.length > 0 ? unique : defaultPresets;
+                localStorage.setItem('preset_foods', JSON.stringify(result));
+                return result;
+            }
+
+            return defaultPresets;
+        }
+
+        let presetFoods = loadMergedPresetFoods();
 
         let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
         let goalWeight = parseFloat(localStorage.getItem('goal_weight')) || 60.0;
@@ -625,6 +668,45 @@
         let freezeCount = parseInt(localStorage.getItem('calorie_freeze_count')) || 0;
 
         let weightChartInstance = null;
+
+        // アプリ固有のカスタムメッセージボックス
+        function showAppDialog({ title, message, type = 'alert', onConfirm = null }) {
+            const existing = document.getElementById('app-custom-dialog');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'app-custom-dialog';
+            overlay.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
+
+            const buttonsHtml = type === 'confirm'
+                ? `<div class="flex items-center gap-2 pt-2">
+                    <button id="app-dialog-ok" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition text-xs">OK</button>
+                    <button id="app-dialog-cancel" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">キャンセル</button>
+                   </div>`
+                : `<div class="pt-2">
+                    <button id="app-dialog-ok" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition text-xs">OK</button>
+                   </div>`;
+
+            overlay.innerHTML = `
+                <div class="bg-white rounded-3xl max-w-xs w-full p-5 shadow-2xl border border-slate-100 space-y-3 text-center">
+                    ${title ? `<h4 class="text-sm font-bold text-slate-900">${escapeHtml(title)}</h4>` : ''}
+                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(message)}</p>
+                    ${buttonsHtml}
+                </div>
+            `;
+
+            document.body.appendChild(overlay);
+
+            document.getElementById('app-dialog-ok').onclick = () => {
+                overlay.remove();
+                if (onConfirm) onConfirm();
+            };
+
+            const cancelBtn = document.getElementById('app-dialog-cancel');
+            if (cancelBtn) {
+                cancelBtn.onclick = () => overlay.remove();
+            }
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             updateDateDisplay();
@@ -692,7 +774,7 @@
             if (deficitCount > 0 && deficitCount % 5 === 0) {
                 triggerCelebration(deficitCount);
             } else {
-                alert("締め処理が完了しました。");
+                showAppDialog({ title: '締め処理完了', message: '本日の締め処理が完了しました。' });
             }
         }
 
@@ -749,17 +831,22 @@
         }
 
         function clearStreakData() {
-            if (confirm("ステータスをすべてクリアしますか？")) {
-                playCount = 0;
-                deficitCount = 0;
-                freezeCount = 0;
-                localStorage.setItem('calorie_play_count', playCount);
-                localStorage.setItem('calorie_deficit_count', deficitCount);
-                localStorage.setItem('calorie_freeze_count', freezeCount);
-                
-                closeStreakEditModal();
-                renderApp();
-            }
+            showAppDialog({
+                title: '確認',
+                message: 'ステータスをすべてクリアしますか？',
+                type: 'confirm',
+                onConfirm: () => {
+                    playCount = 0;
+                    deficitCount = 0;
+                    freezeCount = 0;
+                    localStorage.setItem('calorie_play_count', playCount);
+                    localStorage.setItem('calorie_deficit_count', deficitCount);
+                    localStorage.setItem('calorie_freeze_count', freezeCount);
+
+                    closeStreakEditModal();
+                    renderApp();
+                }
+            });
         }
 
         function updateDateDisplay() {
@@ -787,48 +874,65 @@
             document.getElementById('calorie-form').reset();
             document.getElementById('form-title').textContent = 'カロリー記録を追加';
             document.getElementById('submit-btn').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>追加する</span>';
-            switchFoodTab('recommended');
-            renderRecommendedFoods();
-            renderFavoriteFoods();
+            renderPresetFoods();
             showModal('calorie-modal');
         }
 
         function closeCalorieModal() { hideModal('calorie-modal'); }
 
-        function switchFoodTab(tabName) {
-            const btnRecommended = document.getElementById('tab-btn-recommended');
-            const btnFavorite = document.getElementById('tab-btn-favorite');
-            const contentRecommended = document.getElementById('tab-content-recommended');
-            const contentFavorite = document.getElementById('tab-content-favorite');
-
-            if (tabName === 'recommended') {
-                btnRecommended.className = "flex-1 py-2 rounded-lg bg-white text-slate-800 shadow-sm transition flex items-center justify-center gap-1";
-                btnFavorite.className = "flex-1 py-2 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1";
-                contentRecommended.classList.remove('hidden');
-                contentFavorite.classList.add('hidden');
-            } else {
-                btnFavorite.className = "flex-1 py-2 rounded-lg bg-white text-slate-800 shadow-sm transition flex items-center justify-center gap-1";
-                btnRecommended.className = "flex-1 py-2 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1";
-                contentFavorite.classList.remove('hidden');
-                contentRecommended.classList.add('hidden');
-            }
-        }
-
-        function renderRecommendedFoods() {
-            const container = document.getElementById('recommended-foods-container');
-            if (!recommendedFoods || recommendedFoods.length === 0) {
-                container.innerHTML = '<span class="text-[10px] text-amber-900/70 py-1">おすすめの食品はありません</span>';
+        // 統合されたプリセット食品リストを描画（手動並び替え順を優先、未指定時は使用頻度順）
+        function renderPresetFoods() {
+            const container = document.getElementById('preset-foods-container');
+            if (!presetFoods || presetFoods.length === 0) {
+                container.innerHTML = '<span class="text-[10px] text-emerald-800/70 py-1">登録された食品はありません</span>';
                 return;
             }
+
+            const hasCustomOrder = localStorage.getItem('preset_custom_order') === 'true';
+
+            // 記録履歴（records）から各食品の使用回数と最新使用日時を集計
+            const statsMap = new Map();
+            records.forEach(r => {
+                const stat = statsMap.get(r.name) || { count: 0, lastUsed: 0 };
+                stat.count += 1;
+                const time = r.timestamp ? new Date(r.timestamp).getTime() : 0;
+                if (time > stat.lastUsed) {
+                    stat.lastUsed = time;
+                }
+                statsMap.set(r.name, stat);
+            });
+
+            // 元のインデックスを保持
+            const sortedWithIndex = presetFoods.map((item, idx) => {
+                const recordStat = statsMap.get(item.name) || { count: 0, lastUsed: 0 };
+                const totalCount = (item.useCount || 0) + recordStat.count;
+                const latestTime = Math.max(item.lastUsed || 0, recordStat.lastUsed);
+                return { item, idx, totalCount, latestTime };
+            });
+
+            if (!hasCustomOrder) {
+                sortedWithIndex.sort((a, b) => {
+                    // 使用回数が多い順を優先
+                    if (b.totalCount !== a.totalCount) {
+                        return b.totalCount - a.totalCount;
+                    }
+                    // 回数が同じ場合は最近使った順
+                    if (b.latestTime !== a.latestTime) {
+                        return b.latestTime - a.latestTime;
+                    }
+                    return a.idx - b.idx;
+                });
+            }
+
             let html = '';
-            recommendedFoods.forEach((item, index) => {
+            sortedWithIndex.forEach(({ item, idx }) => {
                 html += `
-                    <div class="inline-flex items-center gap-1 bg-white border border-amber-300 hover:border-amber-500 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
-                        <button type="button" onclick="registerFoodDirectly('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1 hover:text-amber-600 transition">
+                    <div class="inline-flex items-center gap-1 bg-white border border-emerald-200 hover:border-emerald-400 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
+                        <button type="button" onclick="registerFoodDirectly('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1 hover:text-emerald-600 transition">
                             <span>⚡ ${escapeHtml(item.name)}</span>
                             <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
                         </button>
-                        <button type="button" onclick="confirmRemoveRecommendedFood(${index}, '${escapeHtml(item.name)}')" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
+                        <button type="button" onclick="confirmRemovePresetFood(${idx}, '${escapeHtml(item.name)}')" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
                             <i data-lucide="x" class="w-3 h-3"></i>
                         </button>
                     </div>
@@ -851,8 +955,18 @@
         }
 
         function registerFoodDirectly(name, calorie) {
-            records.unshift({ id: Date.now().toString(), name, calorie, timestamp: new Date().toISOString() });
+            const now = Date.now();
+            records.unshift({ id: now.toString(), name, calorie, timestamp: new Date(now).toISOString() });
             localStorage.setItem('calorie_records', JSON.stringify(records));
+
+            // プリセット側の使用回数・最終使用日時も更新して次回以降の並びに反映
+            const presetIndex = presetFoods.findIndex(f => f.name === name);
+            if (presetIndex !== -1) {
+                presetFoods[presetIndex].useCount = (presetFoods[presetIndex].useCount || 0) + 1;
+                presetFoods[presetIndex].lastUsed = now;
+                localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
+            }
+
             renderApp();
             showToast("追加しました！");
         }
@@ -872,53 +986,107 @@
 
         function handleItemNameBlur(e) {}
 
-        function saveAsRecommended() {
-            const name = document.getElementById('item-name').value.trim();
-            const calorie = parseInt(document.getElementById('item-calorie').value);
+        function confirmRemovePresetFood(index, name) {
+            showAppDialog({
+                title: '削除の確認',
+                message: `「${name}」をリストから削除しますか？`,
+                type: 'confirm',
+                onConfirm: () => removePresetFood(index)
+            });
+        }
 
-            if (!name || isNaN(calorie)) {
-                alert("項目名とカロリーを入力してから登録してください。");
+        function removePresetFood(index) {
+            presetFoods.splice(index, 1);
+            localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
+            renderPresetFoods();
+        }
+
+        // チップ一覧編集モーダル用の状態と処理
+        let editingPresetDraft = [];
+
+        function getOrderedPresetsForEdit() {
+            const hasCustomOrder = localStorage.getItem('preset_custom_order') === 'true';
+            if (hasCustomOrder) {
+                return presetFoods.map(item => ({ ...item }));
+            }
+
+            const statsMap = new Map();
+            records.forEach(r => {
+                const stat = statsMap.get(r.name) || { count: 0, lastUsed: 0 };
+                stat.count += 1;
+                const time = r.timestamp ? new Date(r.timestamp).getTime() : 0;
+                if (time > stat.lastUsed) stat.lastUsed = time;
+                statsMap.set(r.name, stat);
+            });
+
+            return presetFoods
+                .map((item, idx) => {
+                    const recordStat = statsMap.get(item.name) || { count: 0, lastUsed: 0 };
+                    return {
+                        item: { ...item },
+                        idx,
+                        totalCount: (item.useCount || 0) + recordStat.count,
+                        latestTime: Math.max(item.lastUsed || 0, recordStat.lastUsed)
+                    };
+                })
+                .sort((a, b) => {
+                    if (b.totalCount !== a.totalCount) return b.totalCount - a.totalCount;
+                    if (b.latestTime !== a.latestTime) return b.latestTime - a.latestTime;
+                    return a.idx - b.idx;
+                })
+                .map(entry => entry.item);
+        }
+
+        function openPresetEditModal() {
+            // 現在の表示順を保持したまま編集用ドラフトを作成
+            editingPresetDraft = getOrderedPresetsForEdit();
+            document.getElementById('new-preset-name').value = '';
+            document.getElementById('new-preset-calorie').value = '';
+            renderPresetEditList();
+            showModal('preset-edit-modal');
+        }
+
+        function closePresetEditModal() {
+            hideModal('preset-edit-modal');
+        }
+
+        function moveDraftPreset(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= editingPresetDraft.length) return;
+            const temp = editingPresetDraft[index];
+            editingPresetDraft[index] = editingPresetDraft[targetIndex];
+            editingPresetDraft[targetIndex] = temp;
+            renderPresetEditList();
+        }
+
+        function renderPresetEditList() {
+            const container = document.getElementById('preset-edit-list-container');
+            if (!editingPresetDraft || editingPresetDraft.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-6">登録されているチップはありません</p>';
                 return;
             }
 
-            if (!recommendedFoods.some(f => f.name === name)) {
-                recommendedFoods.push({ name, calorie });
-                localStorage.setItem('recommended_foods', JSON.stringify(recommendedFoods));
-                renderRecommendedFoods();
-                alert(`「${name}」をおすすめに追加しました！`);
-            } else {
-                alert("この食品はすでに「おすすめ」に登録されています。");
-            }
-        }
-
-        function confirmRemoveRecommendedFood(index, name) {
-            if (confirm(`「${name}」をおすすめから削除しますか？`)) {
-                removeRecommendedFood(index);
-            }
-        }
-
-        function removeRecommendedFood(index) {
-            recommendedFoods.splice(index, 1);
-            localStorage.setItem('recommended_foods', JSON.stringify(recommendedFoods));
-            renderRecommendedFoods();
-        }
-
-        function renderFavoriteFoods() {
-            const container = document.getElementById('favorite-foods-container');
-            if (!favoriteFoods || favoriteFoods.length === 0) {
-                container.innerHTML = '<span class="text-[10px] text-sky-900/70 py-1">登録された食品はありません</span>';
-                return;
-            }
             let html = '';
-            favoriteFoods.forEach((item, index) => {
+            editingPresetDraft.forEach((item, index) => {
+                const isFirst = index === 0;
+                const isLast = index === editingPresetDraft.length - 1;
                 html += `
-                    <div class="inline-flex items-center gap-1 bg-white border border-sky-300 hover:border-sky-500 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
-                        <button type="button" onclick="registerFoodDirectly('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1 hover:text-sky-600 transition">
-                            <span>⚡ ${escapeHtml(item.name)}</span>
-                            <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
-                        </button>
-                        <button type="button" onclick="confirmRemoveFavoriteFood(${index}, '${escapeHtml(item.name)}')" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
-                            <i data-lucide="x" class="w-3 h-3"></i>
+                    <div class="flex items-center gap-1 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                        <div class="flex flex-col gap-0.5 shrink-0">
+                            <button type="button" onclick="moveDraftPreset(${index}, -1)" ${isFirst ? 'disabled' : ''} class="p-1 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-30 disabled:pointer-events-none transition" title="上へ移動">
+                                <i data-lucide="chevron-up" class="w-3 h-3"></i>
+                            </button>
+                            <button type="button" onclick="moveDraftPreset(${index}, 1)" ${isLast ? 'disabled' : ''} class="p-1 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-30 disabled:pointer-events-none transition" title="下へ移動">
+                                <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                        <input type="text" value="${escapeHtml(item.name)}" onchange="updateDraftPresetField(${index}, 'name', this.value)" placeholder="食品名" class="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <div class="flex items-center gap-1 shrink-0">
+                            <input type="number" value="${item.calorie}" min="0" onchange="updateDraftPresetField(${index}, 'calorie', this.value)" class="w-16 px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-right font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <span class="text-[10px] text-slate-400">kcal</span>
+                        </div>
+                        <button type="button" onclick="removeDraftPreset(${index})" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition shrink-0" title="削除">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
                 `;
@@ -927,35 +1095,63 @@
             lucide.createIcons();
         }
 
-        function saveAsFavorite() {
-            const name = document.getElementById('item-name').value.trim();
-            const calorie = parseInt(document.getElementById('item-calorie').value);
-
-            if (!name || isNaN(calorie)) {
-                alert("項目名とカロリーを入力してから登録してください。");
-                return;
+        function updateDraftPresetField(index, field, value) {
+            if (!editingPresetDraft[index]) return;
+            if (field === 'name') {
+                const trimmed = value.trim();
+                if (trimmed) {
+                    editingPresetDraft[index].name = trimmed;
+                }
+            } else if (field === 'calorie') {
+                const parsed = parseInt(value, 10);
+                if (!isNaN(parsed) && parsed >= 0) {
+                    editingPresetDraft[index].calorie = parsed;
+                }
             }
+        }
 
-            if (!favoriteFoods.some(f => f.name === name)) {
-                favoriteFoods.push({ name, calorie });
-                localStorage.setItem('favorite_foods', JSON.stringify(favoriteFoods));
-                renderFavoriteFoods();
-                alert(`「${name}」をいつもの食品に登録しました！`);
+        function handleAddPresetInEditModal(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('new-preset-name');
+            const calInput = document.getElementById('new-preset-calorie');
+            const name = nameInput.value.trim();
+            const calorie = parseInt(calInput.value, 10);
+
+            if (!name || isNaN(calorie) || calorie < 0) return;
+
+            const existingIdx = editingPresetDraft.findIndex(f => f.name === name);
+            if (existingIdx !== -1) {
+                editingPresetDraft[existingIdx].calorie = calorie;
             } else {
-                alert("この食品はすでに登録されています。");
+                editingPresetDraft.unshift({ name, calorie, useCount: 0, lastUsed: Date.now() });
             }
+
+            nameInput.value = '';
+            calInput.value = '';
+            renderPresetEditList();
         }
 
-        function confirmRemoveFavoriteFood(index, name) {
-            if (confirm(`「${name}」をいつもの食品から削除しますか？`)) {
-                removeFavoriteFood(index);
-            }
+        function removeDraftPreset(index) {
+            editingPresetDraft.splice(index, 1);
+            renderPresetEditList();
         }
 
-        function removeFavoriteFood(index) {
-            favoriteFoods.splice(index, 1);
-            localStorage.setItem('favorite_foods', JSON.stringify(favoriteFoods));
-            renderFavoriteFoods();
+        function savePresetEdits() {
+            // 空の食品名を除外して保存
+            const cleaned = editingPresetDraft
+                .filter(item => item.name && item.name.trim() !== '')
+                .map(item => ({
+                    ...item,
+                    name: item.name.trim(),
+                    calorie: isNaN(parseInt(item.calorie, 10)) ? 0 : Math.max(0, parseInt(item.calorie, 10))
+                }));
+
+            presetFoods = cleaned;
+            localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
+            localStorage.setItem('preset_custom_order', 'true');
+            renderPresetFoods();
+            closePresetEditModal();
+            showToast("チップ一覧を更新しました");
         }
 
         function openHistoryModal() {
@@ -990,9 +1186,12 @@
         }
 
         function confirmDeleteCalorieRecord(id) {
-            if (confirm("この記録を削除しますか？")) {
-                deleteCalorieRecord(id);
-            }
+            showAppDialog({
+                title: '削除の確認',
+                message: 'この記録を削除しますか？',
+                type: 'confirm',
+                onConfirm: () => deleteCalorieRecord(id)
+            });
         }
 
         function deleteCalorieRecord(id) {
@@ -1036,9 +1235,12 @@
         }
 
         function confirmDeleteWeightRecord(id) {
-            if (confirm("この体重記録を削除しますか？")) {
-                deleteWeightRecord(id);
-            }
+            showAppDialog({
+                title: '削除の確認',
+                message: 'この体重記録を削除しますか？',
+                type: 'confirm',
+                onConfirm: () => deleteWeightRecord(id)
+            });
         }
 
         function deleteWeightRecord(id) {
@@ -1184,8 +1386,7 @@
                 calorie_records: records,
                 weight_records: weightRecords,
                 success_strategies: strategies,
-                favorite_foods: favoriteFoods,
-                recommended_foods: recommendedFoods,
+                preset_foods: presetFoods,
                 calorie_goal: dailyGoal,
                 goal_weight: goalWeight,
                 calorie_play_count: playCount,
@@ -1211,8 +1412,25 @@
                     if (imported.calorie_records) { records = imported.calorie_records; localStorage.setItem('calorie_records', JSON.stringify(records)); }
                     if (imported.weight_records) { weightRecords = imported.weight_records; localStorage.setItem('weight_records', JSON.stringify(weightRecords)); }
                     if (imported.success_strategies) { strategies = imported.success_strategies; localStorage.setItem('success_strategies', JSON.stringify(strategies)); }
-                    if (imported.favorite_foods) { favoriteFoods = imported.favorite_foods; localStorage.setItem('favorite_foods', JSON.stringify(favoriteFoods)); }
-                    if (imported.recommended_foods) { recommendedFoods = imported.recommended_foods; localStorage.setItem('recommended_foods', JSON.stringify(recommendedFoods)); }
+                    
+                    // 新形式と旧形式の両方のバックアップからの復元に対応
+                    if (imported.preset_foods) {
+                        presetFoods = imported.preset_foods;
+                        localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
+                    } else if (imported.favorite_foods || imported.recommended_foods) {
+                        const combined = [...(imported.favorite_foods || []), ...(imported.recommended_foods || [])];
+                        const unique = [];
+                        const seen = new Set();
+                        combined.forEach(item => {
+                            if (item && item.name && !seen.has(item.name)) {
+                                seen.add(item.name);
+                                unique.push(item);
+                            }
+                        });
+                        presetFoods = unique;
+                        localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
+                    }
+
                     if (imported.calorie_goal) { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
                     if (imported.goal_weight) { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
                     if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
@@ -1223,9 +1441,9 @@
                     renderWeightApp();
                     renderStrategies();
                     closeGoalModal();
-                    alert("データを正常に復元しました！");
+                    showAppDialog({ title: '復元完了', message: 'データを正常に復元しました！' });
                 } catch (err) {
-                    alert("ファイルの読み込みに失敗しました。正しいJSONファイルかご確認ください。");
+                    showAppDialog({ title: 'エラー', message: 'ファイルの読み込みに失敗しました。正しいJSONファイルかご確認ください。' });
                 }
             };
         }
@@ -1253,9 +1471,12 @@
         }
 
         function confirmDeleteStrategy(id) {
-            if (confirm("この工夫・対策の記録を削除しますか？")) {
-                deleteStrategy(id);
-            }
+            showAppDialog({
+                title: '削除の確認',
+                message: 'この工夫・対策の記録を削除しますか？',
+                type: 'confirm',
+                onConfirm: () => deleteStrategy(id)
+            });
         }
 
         function deleteStrategy(id) {
@@ -1289,8 +1510,21 @@
             const calorie = parseInt(document.getElementById('item-calorie').value);
             if (!name || isNaN(calorie)) return;
 
-            records.unshift({ id: Date.now().toString(), name, calorie, timestamp: new Date().toISOString() });
+            const now = Date.now();
+            records.unshift({ id: now.toString(), name, calorie, timestamp: new Date(now).toISOString() });
             localStorage.setItem('calorie_records', JSON.stringify(records));
+
+            // いつもの・おすすめリストに未登録であれば自動追加（既存の場合はカロリーと使用実績を更新）
+            const existingIndex = presetFoods.findIndex(f => f.name === name);
+            if (existingIndex === -1) {
+                presetFoods.unshift({ name, calorie, useCount: 1, lastUsed: now });
+            } else {
+                presetFoods[existingIndex].calorie = calorie;
+                presetFoods[existingIndex].useCount = (presetFoods[existingIndex].useCount || 0) + 1;
+                presetFoods[existingIndex].lastUsed = now;
+            }
+            localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
+
             closeCalorieModal();
             renderApp();
         }
