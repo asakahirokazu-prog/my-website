@@ -233,17 +233,22 @@
                 </button>
             </div>
 
-            <!-- 現在の徳ポイント＆ルーレットまでの進捗 -->
+            <!-- 徳ポイント＆ルーレットまでの進捗 -->
             <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl p-4 shadow-sm shrink-0 space-y-2.5">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-[10px] uppercase tracking-wider text-indigo-100 font-semibold">現在の徳ポイント</p>
-                        <div class="flex items-baseline gap-2 mt-0.5">
+                <div class="flex justify-between items-center gap-2">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                            <p class="text-[10px] uppercase tracking-wider text-indigo-100 font-semibold">徳ポイント</p>
+                            <button type="button" onclick="openVirtueHistoryModal()" class="px-2 py-0.5 bg-white/20 hover:bg-white/35 backdrop-blur-md rounded-full text-[10px] text-white font-semibold transition flex items-center gap-1 shadow-2xs shrink-0">
+                                <i data-lucide="history" class="w-2.5 h-2.5"></i> 履歴
+                            </button>
+                        </div>
+                        <div class="flex items-baseline gap-2 mt-0.5 flex-wrap">
                             <span id="virtue-points-display" class="text-2xl font-extrabold">0</span>
                             <span class="text-xs text-indigo-100">pt（累計: <span id="virtue-total-display" class="font-bold text-white">0</span>pt）</span>
                         </div>
                     </div>
-                    <div class="text-right bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
+                    <div class="text-right bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20 shrink-0">
                         <p class="text-[10px] text-indigo-100 font-semibold">保有チケット</p>
                         <p class="text-base font-extrabold"><span id="virtue-modal-ticket-count">0</span><span class="text-[10px] font-normal ml-0.5">枚</span></p>
                     </div>
@@ -265,6 +270,32 @@
 
             <div class="pt-2 border-t border-slate-100 shrink-0">
                 <button type="button" onclick="closeVirtueModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 徳ポイント履歴モーダル -->
+    <div id="virtue-history-modal" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl">
+                        <i data-lucide="history" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">積んだ徳の履歴</h3>
+                        <p class="text-[10px] text-slate-400">削除するとポイントも取り消されます</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeVirtueHistoryModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div id="virtue-history-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
+
+            <div class="pt-2 border-t border-slate-100 shrink-0">
+                <button type="button" onclick="closeVirtueHistoryModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">閉じる</button>
             </div>
         </div>
     </div>
@@ -873,6 +904,8 @@
         let virtuePoints = safeParseInt('virtue_points', 0, 0);
         let virtueTotalPoints = safeParseInt('virtue_total_points', 0, 0);
         let virtuePointsPerPlay = safeParseInt('virtue_points_per_play', 5, 1);
+        let virtueHistory = safeParseJSON('virtue_history_list', []);
+        if (!Array.isArray(virtueHistory)) virtueHistory = [];
         let calorieTickets = safeParseJSON('calorie_tickets', []);
         if (!Array.isArray(calorieTickets)) calorieTickets = [];
 
@@ -995,7 +1028,7 @@
             }
         });
 
-        /* ==================== 徳を積む＆マスタ管理 ==================== */
+        /* ==================== 徳を積む＆履歴・マスタ管理 ==================== */
 
         function updateVirtueSummaryUI() {
             const remainder = virtuePoints % virtuePointsPerPlay;
@@ -1066,9 +1099,29 @@
             }
         }
 
+        function formatVirtueDateTime(isoStr) {
+            if (!isoStr) return '';
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return '';
+            const month = d.getMonth() + 1;
+            const day = d.getDate();
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${month}/${day} ${hours}:${minutes}`;
+        }
+
         function gainVirtuePoint(index) {
             const item = virtueMaster[index];
             if (!item) return;
+
+            const now = Date.now();
+            virtueHistory.unshift({
+                id: `vh_${now}_${Math.random().toString(36).slice(2, 6)}`,
+                title: item.title,
+                points: 1,
+                timestamp: new Date(now).toISOString()
+            });
+            localStorage.setItem('virtue_history_list', JSON.stringify(virtueHistory));
 
             virtuePoints += 1;
             virtueTotalPoints += 1;
@@ -1089,6 +1142,76 @@
                 const remain = virtuePointsPerPlay - (virtuePoints % virtuePointsPerPlay);
                 showToast(`✨ +1pt 獲得！（ルーレットまであと${remain}pt）`);
             }
+        }
+
+        function openVirtueHistoryModal() {
+            renderVirtueHistoryList();
+            showModal('virtue-history-modal');
+        }
+
+        function closeVirtueHistoryModal() {
+            hideModal('virtue-history-modal');
+        }
+
+        function renderVirtueHistoryList() {
+            const container = document.getElementById('virtue-history-list-container');
+            if (!container) return;
+
+            if (!Array.isArray(virtueHistory) || virtueHistory.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-8">積んだ徳の履歴はまだありません</p>';
+                return;
+            }
+
+            let html = '';
+            virtueHistory.forEach(entry => {
+                const dateLabel = formatVirtueDateTime(entry.timestamp);
+                const pts = Number(entry.points) || 1;
+                html += `
+                    <div class="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs">
+                        <div class="min-w-0 flex-1">
+                            <p class="font-bold text-slate-800 break-words leading-snug">${escapeHtml(entry.title)}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">+${pts}pt</span>
+                                ${dateLabel ? `<span class="text-[10px] text-slate-400">${escapeHtml(dateLabel)}</span>` : ''}
+                            </div>
+                        </div>
+                        <button type="button" onclick="confirmDeleteVirtueHistory('${escapeHtml(entry.id)}')" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg transition shrink-0" title="削除">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+        }
+
+        function confirmDeleteVirtueHistory(id) {
+            showAppDialog({
+                title: '履歴の削除確認',
+                message: 'この履歴を削除しますか？（獲得したポイントも差し引かれます）',
+                type: 'confirm',
+                onConfirm: () => deleteVirtueHistory(id)
+            });
+        }
+
+        function deleteVirtueHistory(id) {
+            const target = virtueHistory.find(item => item.id === id);
+            if (!target) return;
+
+            const deduct = Number(target.points) || 1;
+            virtueHistory = virtueHistory.filter(item => item.id !== id);
+            localStorage.setItem('virtue_history_list', JSON.stringify(virtueHistory));
+
+            virtuePoints = Math.max(0, virtuePoints - deduct);
+            virtueTotalPoints = Math.max(0, virtueTotalPoints - deduct);
+            localStorage.setItem('virtue_points', virtuePoints);
+            localStorage.setItem('virtue_total_points', virtueTotalPoints);
+
+            updateVirtueSummaryUI();
+            renderVirtueHistoryList();
+            showToast('履歴を削除しました');
         }
 
         /* ==================== 徳達成ルーレット＆保有チケット管理 ==================== */
@@ -1151,6 +1274,10 @@
         function spinVirtueRoulette() {
             if (isRouletteSpinning) return;
             isRouletteSpinning = true;
+
+            // ルーレットを回したら履歴をクリア
+            virtueHistory = [];
+            localStorage.setItem('virtue_history_list', JSON.stringify(virtueHistory));
 
             const spinBtn = document.getElementById('roulette-spin-btn');
             const wheel = document.getElementById('roulette-wheel');
@@ -1322,10 +1449,13 @@
                             : 'bg-emerald-100 text-emerald-700 border-emerald-200';
 
                 html += `
-                    <div class="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <span class="px-2.5 py-1 rounded-xl border text-xs font-extrabold shrink-0 ${badgeColor}">${escapeHtml(ticket.label)}</span>
-                            <span class="text-[10px] text-slate-400 truncate">取得: ${escapeHtml(ticket.obtainedAt || '')}</span>
+                    <div class="flex items-center justify-between gap-2.5 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                        <div class="flex flex-col items-start gap-1 min-w-0 flex-1">
+                            <span class="px-2.5 py-0.5 rounded-lg border text-xs font-extrabold whitespace-nowrap ${badgeColor}">${escapeHtml(ticket.label)}</span>
+                            <span class="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-3 h-3 text-slate-400 shrink-0"></i>
+                                <span>取得日: ${escapeHtml(ticket.obtainedAt || '不明')}</span>
+                            </span>
                         </div>
                         <button type="button" onclick="confirmUseTicket(${index})" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-2xs transition shrink-0">
                             使う
@@ -1334,6 +1464,9 @@
                 `;
             });
             container.innerHTML = html;
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
         function confirmUseTicket(index) {
@@ -2168,6 +2301,7 @@
                 virtue_points: virtuePoints,
                 virtue_total_points: virtueTotalPoints,
                 virtue_points_per_play: virtuePointsPerPlay,
+                virtue_history_list: virtueHistory,
                 calorie_tickets: calorieTickets
             };
             const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data, null, 2));
@@ -2234,6 +2368,10 @@
                     if (typeof imported.virtue_points_per_play === 'number' && imported.virtue_points_per_play >= 1) {
                         virtuePointsPerPlay = imported.virtue_points_per_play;
                         localStorage.setItem('virtue_points_per_play', virtuePointsPerPlay);
+                    }
+                    if (Array.isArray(imported.virtue_history_list)) {
+                        virtueHistory = imported.virtue_history_list;
+                        localStorage.setItem('virtue_history_list', JSON.stringify(virtueHistory));
                     }
                     if (Array.isArray(imported.calorie_tickets)) {
                         calorieTickets = imported.calorie_tickets;
