@@ -82,7 +82,7 @@
             100% { opacity: 0; transform: translateY(-5px); }
         }
         .animate-toast {
-            animation: toastFade 1.2s ease forwards;
+            animation: toastFade 1s ease forwards;
         }
         @keyframes floatSlow {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -91,12 +91,16 @@
         .animate-float {
             animation: floatSlow 3s ease-in-out infinite;
         }
+        @keyframes pulseGold {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+            50% { box-shadow: 0 0 24px 6px rgba(251, 191, 36, 0.9); }
+        }
+        .animate-jackpot-glow {
+            animation: pulseGold 1.2s ease-in-out infinite;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased overflow-y-auto">
-
-    <!-- グローバルトースト通知コンテナ -->
-    <div id="global-toast-container" class="fixed inset-0 z-[90] pointer-events-none flex items-center justify-center p-4"></div>
 
     <header class="bg-white border-b border-slate-200 shadow-xs">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -108,16 +112,16 @@
             </div>
             <div class="flex items-center space-x-2">
                 <!-- 「締」ボタン -->
-                <button onclick="openClosingModal()" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-lg text-xs transition flex items-center gap-1 shadow-sm">
+                <button type="button" onclick="openClosingModal()" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-lg text-xs transition flex items-center gap-1 shadow-sm">
                     <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
                     <span>締</span>
                 </button>
 
                 <span id="current-date" class="text-xs font-medium bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 hidden sm:inline-block"></span>
-                <button onclick="openGraphModal()" class="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition" title="推移グラフ">
+                <button type="button" onclick="openGraphModal()" class="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition" title="推移グラフ">
                     <i data-lucide="line-chart" class="w-5 h-5"></i>
                 </button>
-                <button onclick="openGoalModal()" class="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition" title="設定・バックアップ">
+                <button type="button" onclick="openGoalModal()" class="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition" title="設定・バックアップ">
                     <i data-lucide="settings" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -132,7 +136,7 @@
                 <div class="flex justify-between items-start mb-1">
                     <p class="text-slate-300 text-[10px] font-medium uppercase tracking-wider">現在の体重</p>
                     <div class="flex items-center gap-1.5">
-                        <button onclick="openWeightHistoryModal()" class="px-2 py-0.5 bg-white/20 hover:bg-white/35 backdrop-blur-md rounded-full text-[10px] text-white transition flex items-center gap-1 shadow-sm">
+                        <button type="button" onclick="openWeightHistoryModal()" class="px-2 py-0.5 bg-white/20 hover:bg-white/35 backdrop-blur-md rounded-full text-[10px] text-white transition flex items-center gap-1 shadow-sm">
                             <i data-lucide="history" class="w-3 h-3"></i> 履歴
                         </button>
                         <span id="weight-diff-badge" class="px-2 py-0.5 bg-white/15 backdrop-blur-md rounded-full text-[10px]">--</span>
@@ -141,7 +145,7 @@
                 <h2 id="latest-weight-display" class="text-2xl font-bold tracking-tight">-- <span class="text-sm font-normal">kg</span></h2>
                 <div class="mt-2 text-[11px] text-slate-300 flex justify-between items-center pt-2 border-t border-white/10">
                     <span>目標: <strong id="goal-weight-display" class="text-white">--kg</strong></span>
-                    <button onclick="openWeightModal()" class="underline hover:text-white">入力</button>
+                    <button type="button" onclick="openWeightModal()" class="underline hover:text-white">入力</button>
                 </div>
             </div>
 
@@ -151,7 +155,7 @@
                     <div class="flex justify-between items-center mb-1">
                         <p class="text-emerald-100 text-[10px] font-medium uppercase tracking-wider">カロリー収支</p>
                         <div class="flex items-center gap-1.5">
-                            <button onclick="openHistoryModal()" class="px-2 py-0.5 bg-white/20 hover:bg-white/35 backdrop-blur-md rounded-full text-[10px] text-white transition flex items-center gap-1">
+                            <button type="button" onclick="openHistoryModal()" class="px-2 py-0.5 bg-white/20 hover:bg-white/35 backdrop-blur-md rounded-full text-[10px] text-white transition flex items-center gap-1">
                                 <i data-lucide="history" class="w-3 h-3"></i> 今日の履歴
                             </button>
                             <span id="balance-status" class="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[10px]">順調</span>
@@ -169,7 +173,7 @@
                             <span class="text-[11px] text-emerald-100">フリーズ:</span>
                             <span id="freeze-count-display" class="text-xs font-bold text-white">0</span>
                             <span class="text-[10px] text-emerald-100">個</span>
-                            <button onclick="openStreakEditModal()" class="text-emerald-200 hover:text-white ml-1 p-0.5 rounded transition" title="ステータス管理">
+                            <button type="button" onclick="openStreakEditModal()" class="text-emerald-200 hover:text-white ml-1 p-0.5 rounded transition" title="ステータス管理">
                                 <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
@@ -177,19 +181,19 @@
                 </div>
                 <div class="mt-2 text-[11px] text-emerald-100 flex justify-between items-center pt-2 border-t border-white/10">
                     <span>残り: <strong id="remaining-calorie" class="text-white">2000</strong>kcal</span>
-                    <button onclick="openCalorieModal()" class="underline hover:text-white">入力</button>
+                    <button type="button" onclick="openCalorieModal()" class="underline hover:text-white">入力</button>
                 </div>
             </div>
         </div>
 
-        <!-- アクションボタン（「カロリー記録」を削除し、同じ位置に「徳を積む」を配置） -->
+        <!-- アクションボタン（左: 徳を積む / 右: 工夫を記録） -->
         <div class="grid grid-cols-2 gap-2 shrink-0">
-            <button onclick="openVirtueModal()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5 active:scale-98">
+            <button type="button" onclick="openVirtueModal()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5">
                 <i data-lucide="heart-handshake" class="w-3.5 h-3.5"></i>
                 <span>徳を積む</span>
-                <span id="virtue-badge-count" class="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5">0pt</span>
+                <span id="main-virtue-badge" class="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">0/5pt</span>
             </button>
-            <button onclick="openSuccessModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5 active:scale-98">
+            <button type="button" onclick="openSuccessModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
                 <span>工夫を記録</span>
             </button>
@@ -202,58 +206,61 @@
 
     <!-- 徳を積むモーダル -->
     <div id="virtue-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
+        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-100 space-y-3.5 max-h-[88vh] flex flex-col">
+            <!-- ヘッダー（タイトル＋閉じるボタン） -->
             <div class="flex justify-between items-center shrink-0">
                 <div class="flex items-center gap-2">
-                    <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl">
+                    <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl shrink-0">
                         <i data-lucide="heart-handshake" class="w-5 h-5"></i>
                     </div>
                     <h3 class="text-base font-bold text-slate-900">徳を積む</h3>
                 </div>
-                <button onclick="closeVirtueModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeVirtueModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition shrink-0">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <!-- 現在の徳ポイント・プレ数進捗カード -->
-            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl p-4 shadow-sm shrink-0 space-y-2.5">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-[10px] text-indigo-100 font-semibold uppercase tracking-wider">現在の徳ポイント</p>
-                        <div class="flex items-baseline gap-2 mt-0.5">
-                            <span id="virtue-points-display" class="text-2xl font-extrabold tracking-tight">0</span>
-                            <span class="text-xs text-indigo-100 font-medium">pt</span>
-                        </div>
-                    </div>
-                    <div class="text-right bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15">
-                        <p class="text-[10px] text-indigo-200">現在のプレ数</p>
-                        <p class="text-sm font-extrabold text-amber-300"><span id="virtue-play-count-display">0</span> <span class="text-[10px] font-normal text-white">/ 3</span></p>
-                    </div>
-                </div>
-
-                <!-- 目標ポイント進捗バー -->
-                <div class="space-y-1">
-                    <div class="flex justify-between text-[10px] text-indigo-100 font-medium">
-                        <span>次のプレ数加算まで</span>
-                        <span id="virtue-next-progress-text">あと 5 pt (0 / 5)</span>
-                    </div>
-                    <div class="w-full h-2 bg-black/25 rounded-full overflow-hidden">
-                        <div id="virtue-progress-bar" class="h-full bg-amber-300 rounded-full transition-all duration-300" style="width: 0%;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 徳リストヘッダー＆マスタ管理ボタン -->
-            <div class="flex justify-between items-center shrink-0 pt-1">
-                <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
-                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-500"></i> 徳リスト
-                </span>
-                <button type="button" onclick="openVirtueMasterModal()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-xl border border-indigo-200 transition flex items-center gap-1">
-                    <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> マスタ管理
+            <!-- サブアクションバー（スマホでも横並び2列で綺麗に収まる） -->
+            <div class="grid grid-cols-2 gap-2 shrink-0">
+                <button type="button" onclick="openTicketModal()" class="w-full text-xs font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 py-2 px-3 rounded-xl border border-amber-200 transition flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="ticket" class="w-3.5 h-3.5 shrink-0"></i>
+                    <span>保有チケット</span>
+                    <span id="virtue-ticket-count-badge" class="bg-amber-500 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">0</span>
+                </button>
+                <button type="button" onclick="openVirtueMasterModal()" class="w-full text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 py-2 px-3 rounded-xl border border-indigo-200 transition flex items-center justify-center gap-1.5 whitespace-nowrap">
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 shrink-0"></i>
+                    <span>マスタ管理</span>
                 </button>
             </div>
 
-            <!-- 徳リスト一覧 -->
+            <!-- 現在の徳ポイント＆ルーレットまでの進捗 -->
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl p-4 shadow-sm shrink-0 space-y-2.5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-wider text-indigo-100 font-semibold">現在の徳ポイント</p>
+                        <div class="flex items-baseline gap-2 mt-0.5">
+                            <span id="virtue-points-display" class="text-2xl font-extrabold">0</span>
+                            <span class="text-xs text-indigo-100">pt（累計: <span id="virtue-total-display" class="font-bold text-white">0</span>pt）</span>
+                        </div>
+                    </div>
+                    <div class="text-right bg-white/15 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/20">
+                        <p class="text-[10px] text-indigo-100 font-semibold">保有チケット</p>
+                        <p class="text-base font-extrabold"><span id="virtue-modal-ticket-count">0</span><span class="text-[10px] font-normal ml-0.5">枚</span></p>
+                    </div>
+                </div>
+                <!-- 目標達成までの進捗バー -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] text-indigo-100 font-medium">
+                        <span>ルーレット発動まで</span>
+                        <span id="virtue-progress-label">あと 5 pt</span>
+                    </div>
+                    <div class="w-full bg-black/25 rounded-full h-2 overflow-hidden">
+                        <div id="virtue-progress-bar" class="bg-amber-300 h-2 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 徳リスト表示エリア -->
             <div id="virtue-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
 
             <div class="pt-2 border-t border-slate-100 shrink-0">
@@ -263,29 +270,32 @@
     </div>
 
     <!-- 徳リスト マスタ管理モーダル -->
-    <div id="virtue-master-modal" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div id="virtue-master-modal" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col">
             <div class="flex justify-between items-center shrink-0">
                 <div class="flex items-center gap-2">
                     <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl">
-                        <i data-lucide="list-plus" class="w-5 h-5"></i>
+                        <i data-lucide="list-checks" class="w-5 h-5"></i>
                     </div>
-                    <h3 class="text-base font-bold text-slate-900">徳リスト マスタ管理</h3>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">徳リスト マスタ管理</h3>
+                        <p class="text-[10px] text-slate-400">▲▼ボタンで表示順を入れ替えられます</p>
+                    </div>
                 </div>
                 <button type="button" onclick="closeVirtueMasterModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <!-- 新規徳項目追加フォーム -->
-            <form onsubmit="handleAddVirtueInMaster(event)" class="flex items-center gap-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shrink-0">
-                <input type="text" id="new-virtue-title" required placeholder="新しい徳の行動（例: ゴミを拾う）" class="flex-1 min-w-0 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <!-- 新規追加フォーム -->
+            <form onsubmit="handleAddVirtueMaster(event)" class="flex items-center gap-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shrink-0">
+                <input type="text" id="new-virtue-title" required placeholder="新しい徳の項目（例: ゴミを拾う）" class="flex-1 min-w-0 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition shrink-0 flex items-center gap-1">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i> 追加
                 </button>
             </form>
 
-            <!-- 編集可能な徳リスト本体 -->
+            <!-- マスタ一覧 -->
             <div id="virtue-master-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
 
             <div class="flex items-center gap-2 pt-2 border-t border-slate-100 shrink-0">
@@ -293,6 +303,104 @@
                     <i data-lucide="check" class="w-4 h-4"></i> <span>保存する</span>
                 </button>
                 <button type="button" onclick="closeVirtueMasterModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition text-xs">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 徳達成ルーレットモーダル -->
+    <div id="virtue-roulette-modal" class="modal fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 hidden">
+        <div id="roulette-modal-card" class="modal-content bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border-2 border-indigo-200 space-y-4 text-center relative overflow-hidden transition-all duration-300">
+            <div class="space-y-1">
+                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider">🎉 徳ポイント目標達成！</span>
+                <h3 class="text-lg font-extrabold text-slate-900 pt-1">ご褒美カロリー券ルーレット</h3>
+                <p id="roulette-status-msg" class="text-xs font-medium text-slate-500 min-h-[1.25rem]">激レア「-1000kcal券(5%)」を狙え！</p>
+            </div>
+
+            <!-- 確率凡例バッジ -->
+            <div class="flex flex-wrap justify-center gap-1 text-[10px] font-bold">
+                <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">-100 (50%)</span>
+                <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">-200 (30%)</span>
+                <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">-500 (15%)</span>
+                <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-300">👑 -1000 (5%)</span>
+            </div>
+
+            <!-- ルーレット盤面（確率に応じた角度配分: 50%=180°, 30%=108°, 15%=54°, 5%=18°） -->
+            <div class="relative w-60 h-60 mx-auto flex items-center justify-center">
+                <!-- 上部ポインター -->
+                <div id="roulette-pointer" class="absolute -top-2 z-20 w-0 h-0 border-l-[13px] border-l-transparent border-r-[13px] border-r-transparent border-t-[22px] border-t-rose-600 drop-shadow-md transition-transform duration-75"></div>
+
+                <!-- 回転ホイール -->
+                <div id="roulette-wheel" class="w-56 h-56 rounded-full border-4 border-slate-800 shadow-xl relative overflow-hidden"
+                     style="background: conic-gradient(from 0deg, #10b981 0deg 180deg, #3b82f6 180deg 288deg, #f59e0b 288deg 342deg, #e11d48 342deg 360deg);">
+                    <!-- 境界線 -->
+                    <div class="absolute inset-0">
+                        <div class="absolute top-0 left-1/2 w-0.5 h-1/2 bg-white/80 origin-bottom -translate-x-1/2 rotate-[0deg]"></div>
+                        <div class="absolute top-0 left-1/2 w-0.5 h-1/2 bg-white/80 origin-bottom -translate-x-1/2 rotate-[180deg]"></div>
+                        <div class="absolute top-0 left-1/2 w-0.5 h-1/2 bg-white/80 origin-bottom -translate-x-1/2 rotate-[288deg]"></div>
+                        <div class="absolute top-0 left-1/2 w-0.5 h-1/2 bg-white/90 origin-bottom -translate-x-1/2 rotate-[342deg]"></div>
+                    </div>
+                    <!-- 各セグメントのラベル（各扇形の中央角度に配置） -->
+                    <div class="absolute inset-0 flex items-start justify-center pt-6 rotate-[90deg]">
+                        <span class="text-white font-black text-sm drop-shadow leading-tight text-center">-100<br><span class="text-[10px] font-bold">kcal券</span></span>
+                    </div>
+                    <div class="absolute inset-0 flex items-start justify-center pt-6 rotate-[234deg]">
+                        <span class="text-white font-black text-xs drop-shadow leading-tight text-center">-200<br><span class="text-[10px] font-bold">kcal券</span></span>
+                    </div>
+                    <div class="absolute inset-0 flex items-start justify-center pt-5 rotate-[315deg]">
+                        <span class="text-white font-black text-xs drop-shadow leading-tight text-center">-500<br><span class="text-[9px] font-bold">kcal券</span></span>
+                    </div>
+                    <div class="absolute inset-0 flex items-start justify-center pt-3 rotate-[351deg]">
+                        <span class="text-amber-200 font-black text-[10px] drop-shadow leading-none text-center tracking-tighter">👑<br>-1000</span>
+                    </div>
+                </div>
+
+                <!-- 中央キャップ -->
+                <div id="roulette-center-cap" class="absolute w-12 h-12 bg-white rounded-full border-4 border-slate-800 shadow-md flex items-center justify-center z-10 transition-colors">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-amber-500"></i>
+                </div>
+            </div>
+
+            <!-- 結果表示エリア -->
+            <div id="roulette-result-box" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3.5 space-y-1">
+                <p id="roulette-result-subtitle" class="text-[11px] font-bold text-amber-700">🎊 獲得しました！（保有チケットに追加済み）</p>
+                <p id="roulette-result-text" class="text-xl font-black text-slate-900">-100kcal券</p>
+            </div>
+
+            <div class="pt-1">
+                <button type="button" id="roulette-spin-btn" onclick="spinVirtueRoulette()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg transition transform active:scale-95 text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>ルーレットを回す！</span>
+                </button>
+                <button type="button" id="roulette-close-btn" onclick="closeVirtueRouletteModal()" class="hidden w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold py-3.5 px-6 rounded-2xl shadow-lg transition transform active:scale-95 text-sm flex items-center justify-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>チケットを受け取って閉じる</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 保有チケット一覧モーダル -->
+    <div id="ticket-list-modal" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[55] flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="bg-amber-100 text-amber-600 p-2 rounded-xl">
+                        <i data-lucide="ticket" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900">保有カロリー券</h3>
+                        <p class="text-[10px] text-slate-400">使用すると本日の摂取カロリーから差し引かれます</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeTicketModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div id="ticket-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
+
+            <div class="pt-2 border-t border-slate-100 shrink-0">
+                <button type="button" onclick="closeTicketModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">閉じる</button>
             </div>
         </div>
     </div>
@@ -387,7 +495,7 @@
                     </div>
                     <h3 class="text-base font-bold text-slate-900">締め処理の確認</h3>
                 </div>
-                <button onclick="closeClosingModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeClosingModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -413,7 +521,7 @@
                     </div>
                     <h3 class="text-base font-bold text-slate-900">ステータス管理</h3>
                 </div>
-                <button onclick="closeStreakEditModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeStreakEditModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -429,10 +537,6 @@
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">フリーズ数 (個)</label>
                     <input type="number" id="edit-freeze-count" required min="0" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                </div>
-                <div>
-                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">徳ポイント (pt)</label>
-                    <input type="number" id="edit-virtue-points" required min="0" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div class="flex items-center gap-2 pt-2">
                     <button type="submit" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
@@ -456,7 +560,7 @@
                     </div>
                     <h3 class="text-base font-bold text-slate-900">体重の記録履歴</h3>
                 </div>
-                <button onclick="closeWeightHistoryModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeWeightHistoryModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -477,7 +581,7 @@
                     </div>
                     <h3 class="text-base font-bold text-slate-900">今日のカロリー履歴</h3>
                 </div>
-                <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeHistoryModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -491,9 +595,6 @@
     <!-- カロリー入力画面のモーダル -->
     <div id="calorie-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto relative">
-            
-            <div id="toast-container" class="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"></div>
-
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <div class="bg-emerald-100 text-emerald-600 p-2 rounded-xl">
@@ -501,7 +602,7 @@
                     </div>
                     <h3 id="form-title" class="text-base font-bold text-slate-900">カロリー記録を追加</h3>
                 </div>
-                <button onclick="closeCalorieModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeCalorieModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -524,7 +625,7 @@
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">カロリー (kcal)</label>
-                    <input type="number" id="item-calorie" required min="0" placeholder="例: 350" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <input type="number" id="item-calorie" required placeholder="例: 350" class="w-full px-3 py-2.5 bg-slate-100 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div class="flex items-center gap-2 pt-2">
                     <button type="submit" id="submit-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
@@ -554,7 +655,7 @@
             <!-- 新規追加フォーム -->
             <form onsubmit="handleAddPresetInEditModal(event)" class="flex items-center gap-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shrink-0">
                 <input type="text" id="new-preset-name" required placeholder="新しい食品名" class="flex-1 min-w-0 px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <input type="number" id="new-preset-calorie" required min="0" placeholder="kcal" class="w-20 px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="number" id="new-preset-calorie" required placeholder="kcal" class="w-20 px-2.5 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-3 py-2 rounded-xl text-xs transition shrink-0 flex items-center gap-1">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i> 追加
                 </button>
@@ -582,7 +683,7 @@
                     </div>
                     <h3 id="weight-form-title" class="text-base font-bold text-slate-900">体重を記録する</h3>
                 </div>
-                <button onclick="closeWeightModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeWeightModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -620,7 +721,7 @@
                     </div>
                     <h3 class="text-base font-bold text-slate-900">体重の推移グラフ</h3>
                 </div>
-                <button onclick="closeGraphModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeGraphModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -643,7 +744,7 @@
                     </div>
                     <h3 class="text-base font-bold text-slate-900">設定・データ管理</h3>
                 </div>
-                <button onclick="closeGoalModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <button type="button" onclick="closeGoalModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -658,7 +759,7 @@
                     <input type="number" id="goal-weight-input" required step="0.1" min="20" max="300" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">プレ数+1に必要な徳ポイント (pt)</label>
+                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">ルーレット発動に必要な徳ポイント (pt)</label>
                     <input type="number" id="virtue-threshold-input" required min="1" max="1000" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">目標を保存する</button>
@@ -688,7 +789,7 @@
                     </div>
                     <h3 id="strategy-modal-title" class="text-sm font-bold text-slate-900 whitespace-nowrap">工夫を記録</h3>
                 </div>
-                <button onclick="closeSuccessModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg shrink-0">
+                <button type="button" onclick="closeSuccessModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg shrink-0">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -723,18 +824,65 @@
         </div>
     </div>
 
-    <script>
-        let records = JSON.parse(localStorage.getItem('calorie_records')) || [];
-        let weightRecords = JSON.parse(localStorage.getItem('weight_records')) || [];
-        let strategies = JSON.parse(localStorage.getItem('success_strategies')) || [];
-        
-        // プリセット食品の統合初期化（従来の「おすすめ」と「いつもの」も自動マージして引き継ぐ）
-        function loadMergedPresetFoods() {
-            const savedPresets = JSON.parse(localStorage.getItem('preset_foods'));
-            const legacyFavs = JSON.parse(localStorage.getItem('favorite_foods'));
-            const legacyRecs = JSON.parse(localStorage.getItem('recommended_foods'));
+    <!-- 共通トーストコンテナ（全モーダルの上面に固定表示） -->
+    <div id="global-toast-container" class="fixed inset-0 z-[120] pointer-events-none flex items-center justify-center"></div>
 
-            if (savedPresets) {
+    <script>
+        /* ==================== 安全なストレージ読み込みヘルパー ==================== */
+        function safeParseJSON(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return fallback;
+                const parsed = JSON.parse(raw);
+                return parsed !== null && parsed !== undefined ? parsed : fallback;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function safeParseInt(key, fallback, min = 0) {
+            const val = parseInt(localStorage.getItem(key), 10);
+            return !isNaN(val) && val >= min ? val : fallback;
+        }
+
+        function safeParseFloat(key, fallback) {
+            const val = parseFloat(localStorage.getItem(key));
+            return !isNaN(val) ? val : fallback;
+        }
+
+        /* ==================== アプリケーション状態 ==================== */
+        let records = safeParseJSON('calorie_records', []);
+        let weightRecords = safeParseJSON('weight_records', []);
+        let strategies = safeParseJSON('success_strategies', []);
+
+        const DEFAULT_VIRTUE_MASTER = [
+            { id: 'v1', title: '靴を揃えた' },
+            { id: 'v2', title: '笑顔で挨拶した' },
+            { id: 'v3', title: '「ありがとう」を伝えた' },
+            { id: 'v4', title: '机や部屋を少し片付けた' },
+            { id: 'v5', title: 'お水を1杯飲んだ' },
+            { id: 'v6', title: '深呼吸して心を落ち着けた' }
+        ];
+
+        let virtueMaster = safeParseJSON('virtue_master_list', null);
+        if (!Array.isArray(virtueMaster) || virtueMaster.length === 0) {
+            virtueMaster = [...DEFAULT_VIRTUE_MASTER];
+            localStorage.setItem('virtue_master_list', JSON.stringify(virtueMaster));
+        }
+
+        let virtuePoints = safeParseInt('virtue_points', 0, 0);
+        let virtueTotalPoints = safeParseInt('virtue_total_points', 0, 0);
+        let virtuePointsPerPlay = safeParseInt('virtue_points_per_play', 5, 1);
+        let calorieTickets = safeParseJSON('calorie_tickets', []);
+        if (!Array.isArray(calorieTickets)) calorieTickets = [];
+
+        // プリセット食品の統合初期化
+        function loadMergedPresetFoods() {
+            const savedPresets = safeParseJSON('preset_foods', null);
+            const legacyFavs = safeParseJSON('favorite_foods', null);
+            const legacyRecs = safeParseJSON('recommended_foods', null);
+
+            if (Array.isArray(savedPresets)) {
                 return savedPresets.map(item => ({
                     ...item,
                     count: typeof item.count === 'number' ? item.count : (item.useCount || 0)
@@ -752,7 +900,7 @@
                 { name: 'ミックスナッツ（1袋）', calorie: 200, count: 0 }
             ];
 
-            if (legacyFavs || legacyRecs) {
+            if (Array.isArray(legacyFavs) || Array.isArray(legacyRecs)) {
                 const combined = [...(legacyFavs || []), ...(legacyRecs || [])];
                 const unique = [];
                 const seen = new Set();
@@ -775,68 +923,31 @@
 
         let presetFoods = loadMergedPresetFoods();
 
-        // 徳リスト マスタデータの初期化
-        function loadVirtueMaster() {
-            const savedVirtues = JSON.parse(localStorage.getItem('virtue_master_list'));
-            if (Array.isArray(savedVirtues)) {
-                return savedVirtues.map((item, index) => ({
-                    id: item.id || `virtue_${index}_${Date.now()}`,
-                    title: item.title || '',
-                    count: typeof item.count === 'number' ? item.count : 0
-                }));
-            }
-            const defaults = [
-                { id: 'v_1', title: '道端のゴミを拾う', count: 0 },
-                { id: 'v_2', title: 'ドアを開けて次の人を待つ', count: 0 },
-                { id: 'v_3', title: '笑顔で「ありがとう」を伝える', count: 0 },
-                { id: 'v_4', title: '電車やバスで席を譲る', count: 0 },
-                { id: 'v_5', title: 'トイレや洗面台を綺麗に使う・拭く', count: 0 },
-                { id: 'v_6', title: '靴を揃える', count: 0 }
-            ];
-            localStorage.setItem('virtue_master_list', JSON.stringify(defaults));
-            return defaults;
-        }
-
-        let virtueList = loadVirtueMaster();
-        let virtuePoints = parseInt(localStorage.getItem('virtue_points')) || 0;
-        let virtuePointsPerPlay = parseInt(localStorage.getItem('virtue_points_per_play')) || 5;
-
-        let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
-        let goalWeight = parseFloat(localStorage.getItem('goal_weight')) || 60.0;
+        let dailyGoal = safeParseInt('calorie_goal', 2000, 1);
+        let goalWeight = safeParseFloat('goal_weight', 60.0);
         
-        let playCount = parseInt(localStorage.getItem('calorie_play_count')) || 0;
-        let deficitCount = parseInt(localStorage.getItem('calorie_deficit_count')) || 0;
-        let freezeCount = parseInt(localStorage.getItem('calorie_freeze_count')) || 0;
+        let playCount = safeParseInt('calorie_play_count', 0, 0);
+        let deficitCount = safeParseInt('calorie_deficit_count', 0, 0);
+        let freezeCount = safeParseInt('calorie_freeze_count', 0, 0);
 
         let weightChartInstance = null;
 
-        // プレ数（3以上でフリーズ1変換）の共通反映ロジック
-        function applyPlayCountThreshold() {
-            if (playCount >= 3) {
-                const earnedFreezes = Math.floor(playCount / 3);
-                freezeCount = Math.min(1, freezeCount + earnedFreezes);
-                playCount = playCount % 3;
-            }
-            localStorage.setItem('calorie_play_count', playCount);
-            localStorage.setItem('calorie_freeze_count', freezeCount);
-        }
-
-        // アプリ固有のカスタムメッセージボックス
+        /* ==================== 共通UIヘルパー ==================== */
         function showAppDialog({ title, message, type = 'alert', onConfirm = null }) {
             const existing = document.getElementById('app-custom-dialog');
             if (existing) existing.remove();
 
             const overlay = document.createElement('div');
             overlay.id = 'app-custom-dialog';
-            overlay.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4';
+            overlay.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[130] flex items-center justify-center p-4';
 
             const buttonsHtml = type === 'confirm'
                 ? `<div class="flex items-center gap-2 pt-2">
-                    <button id="app-dialog-ok" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition text-xs">OK</button>
-                    <button id="app-dialog-cancel" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">キャンセル</button>
+                    <button type="button" id="app-dialog-ok" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition text-xs">OK</button>
+                    <button type="button" id="app-dialog-cancel" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">キャンセル</button>
                    </div>`
                 : `<div class="pt-2">
-                    <button id="app-dialog-ok" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition text-xs">OK</button>
+                    <button type="button" id="app-dialog-ok" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition text-xs">OK</button>
                    </div>`;
 
             overlay.innerHTML = `
@@ -860,16 +971,61 @@
             }
         }
 
+        function showToast(message) {
+            const container = document.getElementById('global-toast-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const toast = document.createElement('div');
+            toast.className = 'bg-slate-900/95 text-white text-sm font-bold px-6 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md animate-toast whitespace-nowrap border border-white/20 pointer-events-auto';
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                if (toast.parentNode) toast.remove();
+            }, 1200);
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             updateDateDisplay();
             renderApp();
             renderWeightApp();
             renderStrategies();
             updateVirtueSummaryUI();
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         });
 
-        /* ==================== 徳を積む機能 ==================== */
+        /* ==================== 徳を積む＆マスタ管理 ==================== */
+
+        function updateVirtueSummaryUI() {
+            const remainder = virtuePoints % virtuePointsPerPlay;
+            const remaining = virtuePointsPerPlay - remainder;
+            const progressPercent = Math.min(100, Math.round((remainder / virtuePointsPerPlay) * 100));
+
+            const badge = document.getElementById('main-virtue-badge');
+            if (badge) {
+                badge.textContent = `${remainder}/${virtuePointsPerPlay}pt`;
+            }
+
+            const pointsEl = document.getElementById('virtue-points-display');
+            if (pointsEl) pointsEl.textContent = remainder;
+
+            const totalEl = document.getElementById('virtue-total-display');
+            if (totalEl) totalEl.textContent = virtueTotalPoints;
+
+            const ticketCount = Array.isArray(calorieTickets) ? calorieTickets.length : 0;
+            const modalTicketEl = document.getElementById('virtue-modal-ticket-count');
+            if (modalTicketEl) modalTicketEl.textContent = ticketCount;
+
+            const ticketBadgeEl = document.getElementById('virtue-ticket-count-badge');
+            if (ticketBadgeEl) ticketBadgeEl.textContent = ticketCount;
+
+            const progressLabel = document.getElementById('virtue-progress-label');
+            if (progressLabel) progressLabel.textContent = `あと ${remaining} pt`;
+
+            const progressBar = document.getElementById('virtue-progress-bar');
+            if (progressBar) progressBar.style.width = `${progressPercent}%`;
+        }
 
         function openVirtueModal() {
             updateVirtueSummaryUI();
@@ -881,117 +1037,347 @@
             hideModal('virtue-modal');
         }
 
-        function updateVirtueSummaryUI() {
-            // メイン画面ボタン上のバッジ更新
-            const badgeEl = document.getElementById('virtue-badge-count');
-            if (badgeEl) {
-                badgeEl.textContent = `${virtuePoints}pt`;
-            }
-
-            // モーダル内のポイント・進捗表示更新
-            const pointsEl = document.getElementById('virtue-points-display');
-            if (pointsEl) {
-                pointsEl.textContent = virtuePoints;
-            }
-
-            const playEl = document.getElementById('virtue-play-count-display');
-            if (playEl) {
-                playEl.textContent = playCount;
-            }
-
-            const threshold = Math.max(1, virtuePointsPerPlay);
-
-            const modThreshold = virtuePoints % threshold;
-            const remainingToNext = threshold - modThreshold;
-            const progressPercent = (modThreshold / threshold) * 100;
-
-            const nextTextEl = document.getElementById('virtue-next-progress-text');
-            if (nextTextEl) {
-                nextTextEl.textContent = `あと ${remainingToNext} pt (${modThreshold} / ${threshold})`;
-            }
-
-            const barEl = document.getElementById('virtue-progress-bar');
-            if (barEl) {
-                barEl.style.width = `${progressPercent}%`;
-            }
-        }
-
         function renderVirtueList() {
             const container = document.getElementById('virtue-list-container');
-            if (!virtueList || virtueList.length === 0) {
-                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-8">徳リストが登録されていません。「マスタ管理」から追加してください。</p>';
+            if (!container) return;
+
+            if (!Array.isArray(virtueMaster) || virtueMaster.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-6">マスタ管理から徳リストを追加してください</p>';
                 return;
             }
 
             let html = '';
-            virtueList.forEach((item, index) => {
-                const count = typeof item.count === 'number' ? item.count : 0;
+            virtueMaster.forEach((item, index) => {
                 html += `
-                    <button type="button" onclick="earnVirtuePoint(${index})" class="w-full text-left flex items-center justify-between gap-2 p-3 sm:p-3.5 bg-indigo-50/60 hover:bg-indigo-100/80 active:scale-98 border border-indigo-100 hover:border-indigo-300 rounded-2xl transition group shadow-2xs">
-                        <div class="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
-                            <div class="bg-white text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white p-2 rounded-xl shadow-2xs transition shrink-0 mt-0.5 sm:mt-0">
-                                <i data-lucide="sparkles" class="w-4 h-4"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-800 whitespace-normal break-words leading-snug">${escapeHtml(item.title)}</span>
+                    <button type="button" onclick="gainVirtuePoint(${index})" class="w-full text-left flex items-center justify-between gap-2.5 p-3.5 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-2xl transition active:scale-[0.98] group">
+                        <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                            <span class="w-7 h-7 mt-0.5 rounded-xl bg-indigo-100 group-hover:bg-indigo-500 text-indigo-600 group-hover:text-white flex items-center justify-center shrink-0 transition">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                            </span>
+                            <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-900 break-words leading-relaxed">${escapeHtml(item.title)}</span>
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
-                            <span class="text-[10px] font-semibold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-100">累計 ${count}回</span>
-                            <span class="bg-indigo-500 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-xl shadow-xs group-hover:bg-indigo-600 transition">+1 pt</span>
-                        </div>
+                        <span class="bg-indigo-500 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-xl shadow-2xs shrink-0">+1pt</span>
                     </button>
                 `;
             });
             container.innerHTML = html;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
-        function earnVirtuePoint(index) {
-            if (!virtueList[index]) return;
+        function gainVirtuePoint(index) {
+            const item = virtueMaster[index];
+            if (!item) return;
 
-            // 項目ごとの実行回数を加算
-            virtueList[index].count = (virtueList[index].count || 0) + 1;
-            localStorage.setItem('virtue_master_list', JSON.stringify(virtueList));
-
-            // 徳ポイントを1加算
             virtuePoints += 1;
-            localStorage.setItem('virtue_points', virtuePoints);
+            virtueTotalPoints += 1;
 
-            // 設定されたポイントごとにプレ数を1加算
-            const threshold = Math.max(1, virtuePointsPerPlay);
-            let bonusTriggered = false;
-            if (virtuePoints % threshold === 0) {
-                playCount += 1;
-                applyPlayCountThreshold();
-                bonusTriggered = true;
+            const reachedTarget = virtuePoints >= virtuePointsPerPlay;
+            if (reachedTarget) {
+                virtuePoints = virtuePoints % virtuePointsPerPlay;
             }
+
+            localStorage.setItem('virtue_points', virtuePoints);
+            localStorage.setItem('virtue_total_points', virtueTotalPoints);
 
             updateVirtueSummaryUI();
-            renderVirtueList();
-            renderApp();
 
-            if (bonusTriggered) {
-                showGlobalToast(`✨ 徳${threshold}pt区切り達成！プレ数が +1 されました！(現在 ${virtuePoints}pt)`);
-                if (typeof confetti === 'function') {
-                    confetti({
-                        particleCount: 90,
-                        spread: 80,
-                        origin: { y: 0.5 }
-                    });
-                }
+            if (reachedTarget) {
+                openVirtueRouletteModal();
             } else {
-                const remain = threshold - (virtuePoints % threshold);
-                showGlobalToast(`✨ 徳を積みました！ +1pt（プレ数まであと ${remain}pt）`);
+                const remain = virtuePointsPerPlay - (virtuePoints % virtuePointsPerPlay);
+                showToast(`✨ +1pt 獲得！（ルーレットまであと${remain}pt）`);
             }
         }
 
-        /* ==================== 徳リスト マスタ管理 ==================== */
+        /* ==================== 徳達成ルーレット＆保有チケット管理 ==================== */
 
+        let isRouletteSpinning = false;
+        let currentWheelRotation = 0;
+
+        // 確率配分: -100kcal(50%=180°), -200kcal(30%=108°), -500kcal(15%=54°), -1000kcal(5%=18°)
+        const ROULETTE_PRIZES = [
+            { label: '-100kcal券', value: -100, probability: 50, startAngle: 0, endAngle: 180 },
+            { label: '-200kcal券', value: -200, probability: 30, startAngle: 180, endAngle: 288 },
+            { label: '-500kcal券', value: -500, probability: 15, startAngle: 288, endAngle: 342 },
+            { label: '-1000kcal券', value: -1000, probability: 5, startAngle: 342, endAngle: 360 }
+        ];
+
+        function pickWeightedPrize() {
+            const rand = Math.random() * 100;
+            let cumulative = 0;
+            for (const prize of ROULETTE_PRIZES) {
+                cumulative += prize.probability;
+                if (rand < cumulative) {
+                    return prize;
+                }
+            }
+            return ROULETTE_PRIZES[0];
+        }
+
+        function openVirtueRouletteModal() {
+            isRouletteSpinning = false;
+            const wheel = document.getElementById('roulette-wheel');
+            const pointer = document.getElementById('roulette-pointer');
+            const spinBtn = document.getElementById('roulette-spin-btn');
+            const closeBtn = document.getElementById('roulette-close-btn');
+            const resultBox = document.getElementById('roulette-result-box');
+            const modalCard = document.getElementById('roulette-modal-card');
+            const statusMsg = document.getElementById('roulette-status-msg');
+
+            currentWheelRotation = 0;
+            if (wheel) wheel.style.transform = 'rotate(0deg)';
+            if (pointer) pointer.style.transform = 'scale(1) rotate(0deg)';
+            if (modalCard) {
+                modalCard.classList.remove('animate-jackpot-glow', 'border-rose-400');
+                modalCard.classList.add('border-indigo-200');
+            }
+            if (statusMsg) {
+                statusMsg.textContent = '激レア「-1000kcal券(5%)」を狙え！';
+                statusMsg.className = 'text-xs font-medium text-slate-500 min-h-[1.25rem]';
+            }
+
+            if (spinBtn) {
+                spinBtn.disabled = false;
+                spinBtn.classList.remove('hidden', 'opacity-50', 'cursor-not-allowed');
+            }
+            if (closeBtn) closeBtn.classList.add('hidden');
+            if (resultBox) resultBox.classList.add('hidden');
+
+            showModal('virtue-roulette-modal');
+        }
+
+        function spinVirtueRoulette() {
+            if (isRouletteSpinning) return;
+            isRouletteSpinning = true;
+
+            const spinBtn = document.getElementById('roulette-spin-btn');
+            const wheel = document.getElementById('roulette-wheel');
+            const pointer = document.getElementById('roulette-pointer');
+            const statusMsg = document.getElementById('roulette-status-msg');
+
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const prize = pickWeightedPrize();
+
+            const span = prize.endAngle - prize.startAngle;
+            const margin = Math.min(3, span * 0.2);
+            const stopInSegment = prize.startAngle + margin + Math.random() * (span - margin * 2);
+
+            const extraSpins = 7 * 360;
+            const targetAngle = extraSpins + (360 - stopInSegment);
+
+            const duration = 5200;
+            const startTime = performance.now();
+            let lastSector = -1;
+
+            function easeOutQuint(t) {
+                return 1 - Math.pow(1 - t, 5);
+            }
+
+            function animateWheel(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = easeOutQuint(progress);
+                const currentAngle = targetAngle * eased;
+                currentWheelRotation = currentAngle;
+                wheel.style.transform = `rotate(${currentAngle}deg)`;
+
+                const pointerAngle = (360 - (currentAngle % 360)) % 360;
+                let currentSector = 0;
+                if (pointerAngle >= 342) currentSector = 3;
+                else if (pointerAngle >= 288) currentSector = 2;
+                else if (pointerAngle >= 180) currentSector = 1;
+
+                if (currentSector !== lastSector) {
+                    lastSector = currentSector;
+                    pointer.style.transform = 'scale(1.22) rotate(-10deg)';
+                    setTimeout(() => {
+                        pointer.style.transform = 'scale(1) rotate(0deg)';
+                    }, 70);
+                }
+
+                if (progress > 0.55 && progress < 1) {
+                    if (pointerAngle >= 332 || pointerAngle <= 12) {
+                        statusMsg.textContent = '🔥 くるか！？ -1000kcalゾーン接近中…！！';
+                        statusMsg.className = 'text-xs font-extrabold text-rose-600 animate-pulse min-h-[1.25rem]';
+                    } else if (pointerAngle >= 285) {
+                        statusMsg.textContent = '⚡ 高額ゾーン突入！そのまま伸びろ…！';
+                        statusMsg.className = 'text-xs font-bold text-amber-600 min-h-[1.25rem]';
+                    } else {
+                        statusMsg.textContent = 'ドキドキ…どこで止まる！？';
+                        statusMsg.className = 'text-xs font-semibold text-indigo-600 min-h-[1.25rem]';
+                    }
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateWheel);
+                } else {
+                    finishRouletteSpin(prize);
+                }
+            }
+
+            requestAnimationFrame(animateWheel);
+        }
+
+        function finishRouletteSpin(prize) {
+            const spinBtn = document.getElementById('roulette-spin-btn');
+            const statusMsg = document.getElementById('roulette-status-msg');
+            const resultBox = document.getElementById('roulette-result-box');
+            const resultSubtitle = document.getElementById('roulette-result-subtitle');
+            const resultText = document.getElementById('roulette-result-text');
+            const modalCard = document.getElementById('roulette-modal-card');
+
+            calorieTickets.unshift({
+                id: `ticket_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                label: prize.label,
+                value: prize.value,
+                obtainedAt: new Date().toLocaleDateString('ja-JP')
+            });
+            localStorage.setItem('calorie_tickets', JSON.stringify(calorieTickets));
+            updateVirtueSummaryUI();
+
+            const isJackpot = prize.value === -1000;
+            const isHigh = prize.value === -500;
+
+            if (isJackpot) {
+                statusMsg.textContent = '👑 奇跡の5%当選！！超大当たり！！';
+                statusMsg.className = 'text-xs font-black text-rose-600 min-h-[1.25rem]';
+                modalCard.classList.remove('border-indigo-200');
+                modalCard.classList.add('animate-jackpot-glow', 'border-rose-400');
+                resultBox.className = 'bg-gradient-to-r from-rose-50 via-amber-50 to-rose-50 border-2 border-rose-400 rounded-2xl p-3.5 space-y-1';
+                resultSubtitle.textContent = '👑 LEGENDARY JACKPOT!!（保有チケットに追加済み）';
+                resultSubtitle.className = 'text-[11px] font-black text-rose-600';
+                resultText.className = 'text-2xl font-black text-rose-600';
+            } else if (isHigh) {
+                statusMsg.textContent = '✨ 15%のレアチケット獲得！おめでとう！';
+                statusMsg.className = 'text-xs font-bold text-amber-600 min-h-[1.25rem]';
+                resultBox.className = 'bg-amber-50 border border-amber-300 rounded-2xl p-3.5 space-y-1';
+                resultSubtitle.textContent = '🎊 大当たり！（保有チケットに追加済み）';
+                resultSubtitle.className = 'text-[11px] font-bold text-amber-700';
+                resultText.className = 'text-xl font-black text-amber-700';
+            } else {
+                statusMsg.textContent = '🎉 チケットをゲットしました！';
+                statusMsg.className = 'text-xs font-bold text-emerald-600 min-h-[1.25rem]';
+                resultBox.className = 'bg-amber-50 border border-amber-200 rounded-2xl p-3.5 space-y-1';
+                resultSubtitle.textContent = '🎊 獲得しました！（保有チケットに追加済み）';
+                resultSubtitle.className = 'text-[11px] font-bold text-amber-700';
+                resultText.className = 'text-xl font-black text-slate-900';
+            }
+
+            resultText.textContent = prize.label;
+            resultBox.classList.remove('hidden');
+
+            spinBtn.classList.add('hidden');
+            document.getElementById('roulette-close-btn').classList.remove('hidden');
+            isRouletteSpinning = false;
+
+            if (typeof confetti === 'function') {
+                if (isJackpot) {
+                    confetti({ particleCount: 180, spread: 120, origin: { y: 0.5 } });
+                    setTimeout(() => confetti({ particleCount: 120, spread: 100, origin: { y: 0.6 } }), 350);
+                } else {
+                    confetti({
+                        particleCount: isHigh ? 130 : 80,
+                        spread: 85,
+                        origin: { y: 0.55 }
+                    });
+                }
+            }
+        }
+
+        function closeVirtueRouletteModal() {
+            if (isRouletteSpinning) return;
+            hideModal('virtue-roulette-modal');
+        }
+
+        function openTicketModal() {
+            renderTicketList();
+            showModal('ticket-list-modal');
+        }
+
+        function closeTicketModal() {
+            hideModal('ticket-list-modal');
+        }
+
+        function renderTicketList() {
+            const container = document.getElementById('ticket-list-container');
+            if (!container) return;
+
+            if (!Array.isArray(calorieTickets) || calorieTickets.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-8">保有しているチケットはありません。<br>徳ポイントを貯めてルーレットを回しましょう！</p>';
+                return;
+            }
+
+            let html = '';
+            calorieTickets.forEach((ticket, index) => {
+                const badgeColor = ticket.value === -1000
+                    ? 'bg-rose-100 text-rose-700 border-rose-300'
+                    : ticket.value === -500
+                        ? 'bg-amber-100 text-amber-700 border-amber-200'
+                        : ticket.value === -200
+                            ? 'bg-blue-100 text-blue-700 border-blue-200'
+                            : 'bg-emerald-100 text-emerald-700 border-emerald-200';
+
+                html += `
+                    <div class="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="px-2.5 py-1 rounded-xl border text-xs font-extrabold shrink-0 ${badgeColor}">${escapeHtml(ticket.label)}</span>
+                            <span class="text-[10px] text-slate-400 truncate">取得: ${escapeHtml(ticket.obtainedAt || '')}</span>
+                        </div>
+                        <button type="button" onclick="confirmUseTicket(${index})" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-2xs transition shrink-0">
+                            使う
+                        </button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function confirmUseTicket(index) {
+            const ticket = calorieTickets[index];
+            if (!ticket) return;
+
+            showAppDialog({
+                title: 'チケットの使用確認',
+                message: `「${ticket.label}」を使用して、本日のカロリーから ${Math.abs(ticket.value)}kcal 差し引きますか？`,
+                type: 'confirm',
+                onConfirm: () => useCalorieTicket(index)
+            });
+        }
+
+        function useCalorieTicket(index) {
+            const ticket = calorieTickets[index];
+            if (!ticket) return;
+
+            const now = Date.now();
+            records.unshift({
+                id: now.toString(),
+                name: `🎫 ${ticket.label}`,
+                calorie: ticket.value,
+                timestamp: new Date(now).toISOString()
+            });
+            localStorage.setItem('calorie_records', JSON.stringify(records));
+
+            calorieTickets.splice(index, 1);
+            localStorage.setItem('calorie_tickets', JSON.stringify(calorieTickets));
+
+            renderApp();
+            updateVirtueSummaryUI();
+            renderTicketList();
+            showToast(`🎫 ${ticket.label}を使用しました！`);
+        }
+
+        // マスタ管理モーダル用ドラフト状態と操作
         let editingVirtueDraft = [];
         let draggedVirtueIndex = null;
 
         function openVirtueMasterModal() {
-            editingVirtueDraft = virtueList.map(item => ({ ...item }));
-            document.getElementById('new-virtue-title').value = '';
+            editingVirtueDraft = virtueMaster.map(item => ({ ...item }));
+            const inputEl = document.getElementById('new-virtue-title');
+            if (inputEl) inputEl.value = '';
             renderVirtueMasterList();
             showModal('virtue-master-modal');
         }
@@ -1002,61 +1388,71 @@
 
         function renderVirtueMasterList() {
             const container = document.getElementById('virtue-master-list-container');
+            if (!container) return;
+
             if (!editingVirtueDraft || editingVirtueDraft.length === 0) {
-                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-6">登録されている徳リストはありません</p>';
+                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-6">登録されている項目はありません</p>';
                 return;
             }
 
+            const total = editingVirtueDraft.length;
             let html = '';
-            const lastIndex = editingVirtueDraft.length - 1;
             editingVirtueDraft.forEach((item, index) => {
-                const count = typeof item.count === 'number' ? item.count : 0;
                 const isFirst = index === 0;
-                const isLast = index === lastIndex;
+                const isLast = index === total - 1;
                 html += `
                     <div draggable="true"
                          ondragstart="handleVirtueDragStart(event, ${index})"
                          ondragover="handleVirtueDragOver(event)"
                          ondrop="handleVirtueDrop(event, ${index})"
                          ondragend="handleVirtueDragEnd(event)"
-                         class="virtue-master-row flex items-center gap-1.5 bg-slate-50 p-2 rounded-2xl border border-slate-200 transition">
+                         class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-2xl border border-slate-200 transition">
                         <div class="flex flex-col gap-0.5 shrink-0">
-                            <button type="button" onclick="moveDraftVirtue(${index}, -1)" ${isFirst ? 'disabled' : ''} class="p-0.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-25 disabled:pointer-events-none transition" title="上へ移動">
+                            <button type="button" onclick="moveVirtueMasterItem(${index}, -1)" ${isFirst ? 'disabled' : ''} class="p-1 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-25 disabled:pointer-events-none transition" title="上へ移動">
                                 <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button type="button" onclick="moveDraftVirtue(${index}, 1)" ${isLast ? 'disabled' : ''} class="p-0.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-25 disabled:pointer-events-none transition" title="下へ移動">
+                            <button type="button" onclick="moveVirtueMasterItem(${index}, 1)" ${isLast ? 'disabled' : ''} class="p-1 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-25 disabled:pointer-events-none transition" title="下へ移動">
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
                             </button>
                         </div>
-                        <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg shrink-0" title="実践回数">${count}回</span>
-                        <input type="text" value="${escapeHtml(item.title)}" onchange="updateDraftVirtueTitle(${index}, this.value)" placeholder="徳の行動内容" class="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button type="button" onclick="removeDraftVirtue(${index})" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition shrink-0" title="削除">
+                        <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg shrink-0">${index + 1}</span>
+                        <input type="text" value="${escapeHtml(item.title)}" onchange="updateVirtueMasterTitle(${index}, this.value)" placeholder="徳の内容" class="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" onclick="removeVirtueMasterItem(${index})" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition shrink-0" title="削除">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
                 `;
             });
             container.innerHTML = html;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
-        function moveDraftVirtue(index, direction) {
+        function moveVirtueMasterItem(index, direction) {
             const targetIndex = index + direction;
             if (targetIndex < 0 || targetIndex >= editingVirtueDraft.length) return;
-            const [movedItem] = editingVirtueDraft.splice(index, 1);
-            editingVirtueDraft.splice(targetIndex, 0, movedItem);
+            const temp = editingVirtueDraft[index];
+            editingVirtueDraft[index] = editingVirtueDraft[targetIndex];
+            editingVirtueDraft[targetIndex] = temp;
             renderVirtueMasterList();
         }
 
         function handleVirtueDragStart(e, index) {
             draggedVirtueIndex = index;
-            e.dataTransfer.effectAllowed = 'move';
-            e.currentTarget.classList.add('opacity-50', 'border-indigo-400');
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = 'move';
+            }
+            if (e.currentTarget) {
+                e.currentTarget.classList.add('opacity-50', 'border-indigo-400');
+            }
         }
 
         function handleVirtueDragOver(e) {
             e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'move';
+            }
         }
 
         function handleVirtueDrop(e, targetIndex) {
@@ -1070,18 +1466,12 @@
 
         function handleVirtueDragEnd(e) {
             draggedVirtueIndex = null;
-            e.currentTarget.classList.remove('opacity-50', 'border-indigo-400');
-        }
-
-        function updateDraftVirtueTitle(index, value) {
-            if (!editingVirtueDraft[index]) return;
-            const trimmed = value.trim();
-            if (trimmed) {
-                editingVirtueDraft[index].title = trimmed;
+            if (e.currentTarget) {
+                e.currentTarget.classList.remove('opacity-50', 'border-indigo-400');
             }
         }
 
-        function handleAddVirtueInMaster(e) {
+        function handleAddVirtueMaster(e) {
             e.preventDefault();
             const input = document.getElementById('new-virtue-title');
             const title = input.value.trim();
@@ -1089,47 +1479,39 @@
 
             editingVirtueDraft.push({
                 id: `v_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-                title,
-                count: 0
+                title
             });
             input.value = '';
             renderVirtueMasterList();
         }
 
-        function removeDraftVirtue(index) {
+        function updateVirtueMasterTitle(index, value) {
+            if (!editingVirtueDraft[index]) return;
+            const trimmed = value.trim();
+            if (trimmed) {
+                editingVirtueDraft[index].title = trimmed;
+            }
+        }
+
+        function removeVirtueMasterItem(index) {
             editingVirtueDraft.splice(index, 1);
             renderVirtueMasterList();
         }
 
         function saveVirtueMaster() {
-            const cleaned = editingVirtueDraft
+            virtueMaster = editingVirtueDraft
                 .filter(item => item.title && item.title.trim() !== '')
                 .map((item, idx) => ({
                     id: item.id || `v_${Date.now()}_${idx}`,
-                    title: item.title.trim(),
-                    count: typeof item.count === 'number' ? item.count : 0
+                    title: item.title.trim()
                 }));
-
-            virtueList = cleaned;
-            localStorage.setItem('virtue_master_list', JSON.stringify(virtueList));
+            localStorage.setItem('virtue_master_list', JSON.stringify(virtueMaster));
             renderVirtueList();
             closeVirtueMasterModal();
-            showGlobalToast("徳リストを保存しました");
+            showToast('徳リストマスタを保存しました');
         }
 
-        function showGlobalToast(message) {
-            const container = document.getElementById('global-toast-container');
-            container.innerHTML = '';
-            const toast = document.createElement('div');
-            toast.className = "bg-slate-900/95 text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md animate-toast border border-white/20 pointer-events-auto text-center max-w-xs sm:max-w-md";
-            toast.textContent = message;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 1300);
-        }
-
-        /* ==================== 既存締め・ステータス・カロリー・体重処理 ==================== */
+        /* ==================== 締め処理・連続記録 ==================== */
 
         function openClosingModal() {
             showModal('closing-modal');
@@ -1155,7 +1537,7 @@
 
         function executeClosingAction() {
             let totalIntake = 0;
-            records.forEach(i => { totalIntake += i.calorie; });
+            records.forEach(i => { totalIntake += Number(i.calorie) || 0; });
 
             if (totalIntake < 2400) {
                 playCount += 1;
@@ -1172,7 +1554,10 @@
                 }
             }
 
-            applyPlayCountThreshold();
+            if (playCount >= 3) {
+                freezeCount = 1;
+                playCount = 0;
+            }
 
             localStorage.setItem('calorie_play_count', playCount);
             localStorage.setItem('calorie_deficit_count', deficitCount);
@@ -1214,7 +1599,6 @@
             document.getElementById('edit-play-count').value = playCount;
             document.getElementById('edit-streak-count').value = deficitCount;
             document.getElementById('edit-freeze-count').value = freezeCount;
-            document.getElementById('edit-virtue-points').value = virtuePoints;
             showModal('streak-edit-modal');
         }
 
@@ -1224,20 +1608,17 @@
 
         function handleStreakFormSubmit(e) {
             e.preventDefault();
-            const pCount = parseInt(document.getElementById('edit-play-count').value);
-            const sCount = parseInt(document.getElementById('edit-streak-count').value);
-            const fCount = parseInt(document.getElementById('edit-freeze-count').value);
-            const vPoints = parseInt(document.getElementById('edit-virtue-points').value);
+            const pCount = parseInt(document.getElementById('edit-play-count').value, 10);
+            const sCount = parseInt(document.getElementById('edit-streak-count').value, 10);
+            const fCount = parseInt(document.getElementById('edit-freeze-count').value, 10);
 
             if (!isNaN(pCount) && pCount >= 0) playCount = pCount;
             if (!isNaN(sCount) && sCount >= 0) deficitCount = sCount;
             if (!isNaN(fCount) && fCount >= 0) freezeCount = fCount;
-            if (!isNaN(vPoints) && vPoints >= 0) virtuePoints = vPoints;
 
             localStorage.setItem('calorie_play_count', playCount);
             localStorage.setItem('calorie_deficit_count', deficitCount);
             localStorage.setItem('calorie_freeze_count', freezeCount);
-            localStorage.setItem('virtue_points', virtuePoints);
 
             closeStreakEditModal();
             renderApp();
@@ -1257,11 +1638,9 @@
                     playCount = 0;
                     deficitCount = 0;
                     freezeCount = 0;
-                    virtuePoints = 0;
                     localStorage.setItem('calorie_play_count', playCount);
                     localStorage.setItem('calorie_deficit_count', deficitCount);
                     localStorage.setItem('calorie_freeze_count', freezeCount);
-                    localStorage.setItem('virtue_points', virtuePoints);
 
                     closeStreakEditModal();
                     renderApp();
@@ -1272,24 +1651,33 @@
 
         function updateDateDisplay() {
             const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
-            document.getElementById('current-date').textContent = new Date().toLocaleDateString('ja-JP', options);
+            const dateEl = document.getElementById('current-date');
+            if (dateEl) {
+                dateEl.textContent = new Date().toLocaleDateString('ja-JP', options);
+            }
         }
 
         function showModal(id) {
             const modal = document.getElementById(id);
+            if (!modal) return;
             modal.classList.remove('hidden');
             document.body.classList.add('modal-open');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
         function hideModal(id) {
             const modal = document.getElementById(id);
+            if (!modal) return;
             modal.classList.add('hidden');
             const openModals = document.querySelectorAll('.modal:not(.hidden)');
             if (openModals.length === 0) {
                 document.body.classList.remove('modal-open');
             }
         }
+
+        /* ==================== カロリー記録・プリセット管理 ==================== */
 
         function openCalorieModal() {
             document.getElementById('calorie-form').reset();
@@ -1322,6 +1710,7 @@
 
         function renderPresetFoods() {
             const container = document.getElementById('preset-foods-container');
+            if (!container) return;
             if (!presetFoods || presetFoods.length === 0) {
                 container.innerHTML = '<span class="text-[10px] text-emerald-800/70 py-1">登録された食品はありません</span>';
                 return;
@@ -1333,48 +1722,38 @@
             sortedWithIndex.forEach(({ item, idx, count }) => {
                 html += `
                     <div class="inline-flex items-center gap-1 bg-white border border-emerald-200 hover:border-emerald-400 px-2.5 py-1.5 rounded-xl text-xs shadow-xs transition group">
-                        <button type="button" onclick="registerFoodDirectly('${escapeHtml(item.name)}', ${item.calorie})" class="text-slate-700 font-medium flex items-center gap-1 hover:text-emerald-600 transition">
+                        <button type="button" onclick="registerFoodDirectly(${idx})" class="text-slate-700 font-medium flex items-center gap-1 hover:text-emerald-600 transition">
                             <span>⚡ ${escapeHtml(item.name)}</span>
                             <span class="text-slate-400 text-[10px]">(${item.calorie}kcal)</span>
                             <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5">${count}</span>
                         </button>
-                        <button type="button" onclick="confirmRemovePresetFood(${idx}, '${escapeHtml(item.name)}')" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
+                        <button type="button" onclick="confirmRemovePresetFood(${idx})" class="text-slate-300 hover:text-rose-500 transition ml-0.5" title="削除">
                             <i data-lucide="x" class="w-3 h-3"></i>
                         </button>
                     </div>
                 `;
             });
             container.innerHTML = html;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
-        function showToast(message) {
-            const container = document.getElementById('toast-container');
-            container.innerHTML = '';
-            const toast = document.createElement('div');
-            toast.className = "bg-slate-900/95 text-white text-sm font-bold px-6 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md animate-toast whitespace-nowrap border border-white/20 pointer-events-auto";
-            toast.textContent = message;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 1200);
-        }
+        function registerFoodDirectly(index) {
+            const item = presetFoods[index];
+            if (!item) return;
 
-        function registerFoodDirectly(name, calorie) {
             const now = Date.now();
-            records.unshift({ id: now.toString(), name, calorie, timestamp: new Date(now).toISOString() });
+            records.unshift({ id: now.toString(), name: item.name, calorie: item.calorie, timestamp: new Date(now).toISOString() });
             localStorage.setItem('calorie_records', JSON.stringify(records));
 
-            const presetIndex = presetFoods.findIndex(f => f.name === name);
-            if (presetIndex !== -1) {
-                presetFoods[presetIndex].count = (presetFoods[presetIndex].count || 0) + 1;
-                presetFoods[presetIndex].lastUsed = now;
-                localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
-            }
+            presetFoods[index].count = (presetFoods[index].count || 0) + 1;
+            presetFoods[index].lastUsed = now;
+            localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
 
             renderApp();
             renderPresetFoods();
-            showToast("追加しました！");
+            showToast('追加しました！');
         }
 
         function handleItemNameKeydown(e) {
@@ -1392,10 +1771,12 @@
 
         function handleItemNameBlur(e) {}
 
-        function confirmRemovePresetFood(index, name) {
+        function confirmRemovePresetFood(index) {
+            const item = presetFoods[index];
+            if (!item) return;
             showAppDialog({
                 title: '削除の確認',
-                message: `「${name}」をリストから削除しますか？`,
+                message: `「${item.name}」をリストから削除しますか？`,
                 type: 'confirm',
                 onConfirm: () => removePresetFood(index)
             });
@@ -1423,6 +1804,7 @@
 
         function renderPresetEditList() {
             const container = document.getElementById('preset-edit-list-container');
+            if (!container) return;
             if (!editingPresetDraft || editingPresetDraft.length === 0) {
                 container.innerHTML = '<p class="text-center text-xs text-slate-400 py-6">登録されているチップはありません</p>';
                 return;
@@ -1436,7 +1818,7 @@
                         <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg shrink-0" title="使用回数">${count}回</span>
                         <input type="text" value="${escapeHtml(item.name)}" onchange="updateDraftPresetField(${index}, 'name', this.value)" placeholder="食品名" class="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                         <div class="flex items-center gap-1 shrink-0">
-                            <input type="number" value="${item.calorie}" min="0" onchange="updateDraftPresetField(${index}, 'calorie', this.value)" class="w-16 px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-right font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <input type="number" value="${item.calorie}" onchange="updateDraftPresetField(${index}, 'calorie', this.value)" class="w-16 px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-right font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <span class="text-[10px] text-slate-400">kcal</span>
                         </div>
                         <button type="button" onclick="removeDraftPreset(${index})" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition shrink-0" title="削除">
@@ -1446,7 +1828,9 @@
                 `;
             });
             container.innerHTML = html;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
         function updateDraftPresetField(index, field, value) {
@@ -1458,7 +1842,7 @@
                 }
             } else if (field === 'calorie') {
                 const parsed = parseInt(value, 10);
-                if (!isNaN(parsed) && parsed >= 0) {
+                if (!isNaN(parsed)) {
                     editingPresetDraft[index].calorie = parsed;
                 }
             }
@@ -1471,7 +1855,7 @@
             const name = nameInput.value.trim();
             const calorie = parseInt(calInput.value, 10);
 
-            if (!name || isNaN(calorie) || calorie < 0) return;
+            if (!name || isNaN(calorie)) return;
 
             const existingIdx = editingPresetDraft.findIndex(f => f.name === name);
             if (existingIdx !== -1) {
@@ -1496,7 +1880,7 @@
                 .map(item => ({
                     ...item,
                     name: item.name.trim(),
-                    calorie: isNaN(parseInt(item.calorie, 10)) ? 0 : Math.max(0, parseInt(item.calorie, 10)),
+                    calorie: isNaN(parseInt(item.calorie, 10)) ? 0 : parseInt(item.calorie, 10),
                     count: typeof item.count === 'number' ? item.count : 0
                 }));
 
@@ -1504,7 +1888,7 @@
             localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
             renderPresetFoods();
             closePresetEditModal();
-            showToast("チップ一覧を更新しました");
+            showToast('チップ一覧を更新しました');
         }
 
         function openHistoryModal() {
@@ -1516,26 +1900,32 @@
 
         function renderHistoryList() {
             const container = document.getElementById('history-list-container');
+            if (!container) return;
             if (!records || records.length === 0) {
                 container.innerHTML = '<p class="text-center text-xs text-slate-400 py-4">本日の記録はまだありません</p>';
                 return;
             }
             let html = '';
             records.forEach(item => {
+                const calVal = Number(item.calorie) || 0;
+                const formattedCal = calVal >= 0 ? `+${calVal.toLocaleString()} kcal` : `${calVal.toLocaleString()} kcal`;
+                const calClass = calVal < 0 ? 'text-emerald-600 font-bold' : 'text-slate-400';
                 html += `
                     <div class="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-2xl text-xs">
                         <div>
                             <p class="font-bold text-slate-800">${escapeHtml(item.name)}</p>
-                            <p class="text-[10px] text-slate-400">+${item.calorie.toLocaleString()} kcal</p>
+                            <p class="text-[10px] ${calClass}">${formattedCal}</p>
                         </div>
-                        <button onclick="confirmDeleteCalorieRecord('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg transition" title="削除">
+                        <button type="button" onclick="confirmDeleteCalorieRecord('${escapeHtml(item.id)}')" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg transition" title="削除">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
                 `;
             });
             container.innerHTML = html;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
         function confirmDeleteCalorieRecord(id) {
@@ -1554,6 +1944,8 @@
             renderHistoryList();
         }
 
+        /* ==================== 体重管理 ==================== */
+
         function openWeightHistoryModal() {
             renderWeightHistoryList();
             showModal('weight-history-modal');
@@ -1563,6 +1955,7 @@
 
         function renderWeightHistoryList() {
             const container = document.getElementById('weight-history-list-container');
+            if (!container) return;
             if (!weightRecords || weightRecords.length === 0) {
                 container.innerHTML = '<p class="text-center text-xs text-slate-400 py-4">体重の記録はまだありません</p>';
                 return;
@@ -1574,17 +1967,19 @@
                         <div class="flex items-center gap-3">
                             <div class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg font-medium text-[11px]">${escapeHtml(item.date)}</div>
                             <div>
-                                <p class="font-bold text-slate-800 text-sm">${item.weight.toFixed(1)} <span class="text-xs font-normal text-slate-500">kg</span></p>
+                                <p class="font-bold text-slate-800 text-sm">${Number(item.weight).toFixed(1)} <span class="text-xs font-normal text-slate-500">kg</span></p>
                             </div>
                         </div>
-                        <button onclick="confirmDeleteWeightRecord('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg transition" title="削除">
+                        <button type="button" onclick="confirmDeleteWeightRecord('${escapeHtml(item.id)}')" class="text-slate-300 hover:text-rose-500 p-1.5 rounded-lg transition" title="削除">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </div>
                 `;
             });
             container.innerHTML = html;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
         function confirmDeleteWeightRecord(id) {
@@ -1608,7 +2003,7 @@
             document.getElementById('weight-form-title').textContent = '体重を記録する';
             document.getElementById('weight-submit-btn').innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>記録する</span>';
             
-            let initialVal = weightRecords.length > 0 ? weightRecords[0].weight : 60.0;
+            let initialVal = weightRecords.length > 0 ? Number(weightRecords[0].weight) : 60.0;
             document.getElementById('weight-value').value = initialVal.toFixed(1);
             
             showModal('weight-modal');
@@ -1622,7 +2017,7 @@
             const input = document.getElementById('weight-value');
             let currentVal = parseFloat(input.value);
             if (isNaN(currentVal)) {
-                currentVal = weightRecords.length > 0 ? weightRecords[0].weight : 60.0;
+                currentVal = weightRecords.length > 0 ? Number(weightRecords[0].weight) : 60.0;
             }
             let newVal = Math.max(20, Math.min(300, currentVal + amount));
             input.value = newVal.toFixed(1);
@@ -1680,7 +2075,9 @@
         function closeGraphModal() { hideModal('graph-modal'); }
 
         function renderWeightChart() {
-            const ctx = document.getElementById('weightChart').getContext('2d');
+            const canvas = document.getElementById('weightChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const ctx = canvas.getContext('2d');
             const sortedRecords = [...weightRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
             const labels = sortedRecords.map(r => r.date);
             const data = sortedRecords.map(r => r.weight);
@@ -1715,6 +2112,8 @@
             });
         }
 
+        /* ==================== 設定・エクスポート／インポート ==================== */
+
         function openGoalModal() {
             document.getElementById('goal-input').value = dailyGoal;
             document.getElementById('goal-weight-input').value = goalWeight;
@@ -1726,19 +2125,32 @@
 
         function handleGoalSubmit(e) {
             e.preventDefault();
-            const val = parseInt(document.getElementById('goal-input').value);
+            const val = parseInt(document.getElementById('goal-input').value, 10);
             const gWeight = parseFloat(document.getElementById('goal-weight-input').value);
-            const vThreshold = parseInt(document.getElementById('virtue-threshold-input').value);
-            if (val > 0) { dailyGoal = val; localStorage.setItem('calorie_goal', dailyGoal); }
-            if (!isNaN(gWeight)) { goalWeight = gWeight; localStorage.setItem('goal_weight', goalWeight); }
+            const vThreshold = parseInt(document.getElementById('virtue-threshold-input').value, 10);
+
+            if (!isNaN(val) && val > 0) {
+                dailyGoal = val;
+                localStorage.setItem('calorie_goal', dailyGoal);
+            }
+            if (!isNaN(gWeight)) {
+                goalWeight = gWeight;
+                localStorage.setItem('goal_weight', goalWeight);
+            }
             if (!isNaN(vThreshold) && vThreshold >= 1) {
                 virtuePointsPerPlay = vThreshold;
                 localStorage.setItem('virtue_points_per_play', virtuePointsPerPlay);
+                if (virtuePoints >= virtuePointsPerPlay) {
+                    virtuePoints = virtuePoints % virtuePointsPerPlay;
+                    localStorage.setItem('virtue_points', virtuePoints);
+                }
             }
+
             closeGoalModal();
             renderApp();
             renderWeightApp();
             updateVirtueSummaryUI();
+            showToast('設定を保存しました');
         }
 
         function exportData() {
@@ -1747,19 +2159,21 @@
                 weight_records: weightRecords,
                 success_strategies: strategies,
                 preset_foods: presetFoods,
-                virtue_master_list: virtueList,
-                virtue_points: virtuePoints,
-                virtue_points_per_play: virtuePointsPerPlay,
                 calorie_goal: dailyGoal,
                 goal_weight: goalWeight,
                 calorie_play_count: playCount,
                 calorie_deficit_count: deficitCount,
-                calorie_freeze_count: freezeCount
+                calorie_freeze_count: freezeCount,
+                virtue_master_list: virtueMaster,
+                virtue_points: virtuePoints,
+                virtue_total_points: virtueTotalPoints,
+                virtue_points_per_play: virtuePointsPerPlay,
+                calorie_tickets: calorieTickets
             };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
+            const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data, null, 2));
             const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `diet_tracker_backup_${new Date().toISOString().split('T')[0]}.json`);
+            downloadAnchor.setAttribute('href', dataStr);
+            downloadAnchor.setAttribute('download', `diet_tracker_backup_${new Date().toISOString().split('T')[0]}.json`);
             document.body.appendChild(downloadAnchor);
             downloadAnchor.click();
             downloadAnchor.remove();
@@ -1767,22 +2181,22 @@
 
         function importData(event) {
             const fileReader = new FileReader();
-            if (event.target.files.length === 0) return;
-            fileReader.readAsText(event.target.files[0], "UTF-8");
+            if (!event.target.files || event.target.files.length === 0) return;
+            fileReader.readAsText(event.target.files[0], 'UTF-8');
             fileReader.onload = e => {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if (imported.calorie_records) { records = imported.calorie_records; localStorage.setItem('calorie_records', JSON.stringify(records)); }
-                    if (imported.weight_records) { weightRecords = imported.weight_records; localStorage.setItem('weight_records', JSON.stringify(weightRecords)); }
-                    if (imported.success_strategies) { strategies = imported.success_strategies; localStorage.setItem('success_strategies', JSON.stringify(strategies)); }
+                    if (Array.isArray(imported.calorie_records)) { records = imported.calorie_records; localStorage.setItem('calorie_records', JSON.stringify(records)); }
+                    if (Array.isArray(imported.weight_records)) { weightRecords = imported.weight_records; localStorage.setItem('weight_records', JSON.stringify(weightRecords)); }
+                    if (Array.isArray(imported.success_strategies)) { strategies = imported.success_strategies; localStorage.setItem('success_strategies', JSON.stringify(strategies)); }
                     
-                    if (imported.preset_foods) {
+                    if (Array.isArray(imported.preset_foods)) {
                         presetFoods = imported.preset_foods.map(item => ({
                             ...item,
                             count: typeof item.count === 'number' ? item.count : (item.useCount || 0)
                         }));
                         localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
-                    } else if (imported.favorite_foods || imported.recommended_foods) {
+                    } else if (Array.isArray(imported.favorite_foods) || Array.isArray(imported.recommended_foods)) {
                         const combined = [...(imported.favorite_foods || []), ...(imported.recommended_foods || [])];
                         const unique = [];
                         const seen = new Set();
@@ -1799,24 +2213,32 @@
                         localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
                     }
 
-                    if (Array.isArray(imported.virtue_master_list)) {
-                        virtueList = imported.virtue_master_list;
-                        localStorage.setItem('virtue_master_list', JSON.stringify(virtueList));
+                    if (typeof imported.calorie_goal === 'number') { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
+                    if (typeof imported.goal_weight === 'number') { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
+                    if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
+                    if (typeof imported.calorie_deficit_count === 'number') { deficitCount = imported.calorie_deficit_count; localStorage.setItem('calorie_deficit_count', deficitCount); }
+                    if (typeof imported.calorie_freeze_count === 'number') { freezeCount = imported.calorie_freeze_count; localStorage.setItem('calorie_freeze_count', freezeCount); }
+
+                    if (Array.isArray(imported.virtue_master_list) && imported.virtue_master_list.length > 0) {
+                        virtueMaster = imported.virtue_master_list;
+                        localStorage.setItem('virtue_master_list', JSON.stringify(virtueMaster));
                     }
                     if (typeof imported.virtue_points === 'number') {
                         virtuePoints = imported.virtue_points;
                         localStorage.setItem('virtue_points', virtuePoints);
                     }
+                    if (typeof imported.virtue_total_points === 'number') {
+                        virtueTotalPoints = imported.virtue_total_points;
+                        localStorage.setItem('virtue_total_points', virtueTotalPoints);
+                    }
                     if (typeof imported.virtue_points_per_play === 'number' && imported.virtue_points_per_play >= 1) {
                         virtuePointsPerPlay = imported.virtue_points_per_play;
                         localStorage.setItem('virtue_points_per_play', virtuePointsPerPlay);
                     }
-
-                    if (imported.calorie_goal) { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
-                    if (imported.goal_weight) { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
-                    if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
-                    if (typeof imported.calorie_deficit_count === 'number') { deficitCount = imported.calorie_deficit_count; localStorage.setItem('calorie_deficit_count', deficitCount); }
-                    if (typeof imported.calorie_freeze_count === 'number') { freezeCount = imported.calorie_freeze_count; localStorage.setItem('calorie_freeze_count', freezeCount); }
+                    if (Array.isArray(imported.calorie_tickets)) {
+                        calorieTickets = imported.calorie_tickets;
+                        localStorage.setItem('calorie_tickets', JSON.stringify(calorieTickets));
+                    }
                     
                     renderApp();
                     renderWeightApp();
@@ -1829,6 +2251,8 @@
                 }
             };
         }
+
+        /* ==================== 工夫・対策の記録 ==================== */
 
         function openSuccessModal() {
             document.getElementById('success-form').reset();
@@ -1843,7 +2267,8 @@
             e.preventDefault();
             const feeling = document.getElementById('strategy-feeling').value.trim();
             const workaround = document.getElementById('strategy-workaround').value.trim();
-            const result = document.querySelector('input[name="strategy-result"]:checked').value;
+            const resultEl = document.querySelector('input[name="strategy-result"]:checked');
+            const result = resultEl ? resultEl.value : 'できた';
             if (!feeling || !workaround) return;
 
             strategies.unshift({ id: Date.now().toString(), feeling, workaround, result, timestamp: new Date().toISOString() });
@@ -1889,7 +2314,7 @@
         function handleFormSubmit(e) {
             e.preventDefault();
             const name = document.getElementById('item-name').value.trim();
-            const calorie = parseInt(document.getElementById('item-calorie').value);
+            const calorie = parseInt(document.getElementById('item-calorie').value, 10);
             if (!name || isNaN(calorie)) return;
 
             const now = Date.now();
@@ -1910,23 +2335,28 @@
             renderApp();
         }
 
+        /* ==================== メイン画面描画 ==================== */
+
         function renderWeightApp() {
             document.getElementById('goal-weight-display').textContent = `${goalWeight}kg`;
             if (weightRecords.length > 0) {
                 const latest = weightRecords[0];
-                document.getElementById('latest-weight-display').innerHTML = `${latest.weight.toFixed(1)} <span class="text-sm font-normal">kg</span>`;
+                document.getElementById('latest-weight-display').innerHTML = `${Number(latest.weight).toFixed(1)} <span class="text-sm font-normal">kg</span>`;
                 if (weightRecords.length > 1) {
-                    const diff = latest.weight - weightRecords[1].weight;
+                    const diff = Number(latest.weight) - Number(weightRecords[1].weight);
                     document.getElementById('weight-diff-badge').textContent = (diff > 0 ? `+${diff.toFixed(1)}` : diff.toFixed(1)) + 'kg';
                 } else {
                     document.getElementById('weight-diff-badge').textContent = '初回';
                 }
+            } else {
+                document.getElementById('latest-weight-display').innerHTML = `-- <span class="text-sm font-normal">kg</span>`;
+                document.getElementById('weight-diff-badge').textContent = '--';
             }
         }
 
         function renderApp() {
             let totalIntake = 0;
-            records.forEach(i => { totalIntake += i.calorie; });
+            records.forEach(i => { totalIntake += Number(i.calorie) || 0; });
             const remaining = dailyGoal - totalIntake;
 
             document.getElementById('balance-amount').innerHTML = `${totalIntake.toLocaleString()} <span class="text-sm font-normal">kcal</span>`;
@@ -1945,19 +2375,20 @@
             }
 
             const calorieCardBg = document.getElementById('calorie-card-bg');
-            calorieCardBg.className = "text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between transition-colors duration-300 ";
+            calorieCardBg.className = 'text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between transition-colors duration-300 ';
             
             if (remaining < 200) {
-                calorieCardBg.classList.add("bg-gradient-to-br", "from-red-600", "to-rose-700");
+                calorieCardBg.classList.add('bg-gradient-to-br', 'from-red-600', 'to-rose-700');
             } else if (remaining < 400) {
-                calorieCardBg.classList.add("bg-gradient-to-br", "from-pink-500", "to-rose-400");
+                calorieCardBg.classList.add('bg-gradient-to-br', 'from-pink-500', 'to-rose-400');
             } else {
-                calorieCardBg.classList.add("bg-gradient-to-br", "from-emerald-500", "to-teal-600");
+                calorieCardBg.classList.add('bg-gradient-to-br', 'from-emerald-500', 'to-teal-600');
             }
         }
 
         function renderStrategies() {
             const container = document.getElementById('strategy-container');
+            if (!container) return;
             if (!strategies || strategies.length === 0) {
                 container.innerHTML = '';
                 return;
@@ -1976,7 +2407,7 @@
                             </span>
                             <div class="flex items-center gap-2">
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}">${badgeText}</span>
-                                <button onclick="confirmDeleteStrategy('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition" title="削除">
+                                <button type="button" onclick="confirmDeleteStrategy('${escapeHtml(item.id)}')" class="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition" title="削除">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -1989,10 +2420,13 @@
                 `;
             });
             container.innerHTML = html;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
         }
 
         function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
             return String(str).replace(/[&'`<>"]/g, function (match) {
                 return {
                     '&': '&amp;',
