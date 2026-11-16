@@ -987,6 +987,7 @@
         /* ==================== 徳リスト マスタ管理 ==================== */
 
         let editingVirtueDraft = [];
+        let draggedVirtueIndex = null;
 
         function openVirtueMasterModal() {
             editingVirtueDraft = virtueList.map(item => ({ ...item }));
@@ -1007,10 +1008,26 @@
             }
 
             let html = '';
+            const lastIndex = editingVirtueDraft.length - 1;
             editingVirtueDraft.forEach((item, index) => {
                 const count = typeof item.count === 'number' ? item.count : 0;
+                const isFirst = index === 0;
+                const isLast = index === lastIndex;
                 html += `
-                    <div class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                    <div draggable="true"
+                         ondragstart="handleVirtueDragStart(event, ${index})"
+                         ondragover="handleVirtueDragOver(event)"
+                         ondrop="handleVirtueDrop(event, ${index})"
+                         ondragend="handleVirtueDragEnd(event)"
+                         class="virtue-master-row flex items-center gap-1.5 bg-slate-50 p-2 rounded-2xl border border-slate-200 transition">
+                        <div class="flex flex-col gap-0.5 shrink-0">
+                            <button type="button" onclick="moveDraftVirtue(${index}, -1)" ${isFirst ? 'disabled' : ''} class="p-0.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-25 disabled:pointer-events-none transition" title="上へ移動">
+                                <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button type="button" onclick="moveDraftVirtue(${index}, 1)" ${isLast ? 'disabled' : ''} class="p-0.5 rounded text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-25 disabled:pointer-events-none transition" title="下へ移動">
+                                <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
                         <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg shrink-0" title="実践回数">${count}回</span>
                         <input type="text" value="${escapeHtml(item.title)}" onchange="updateDraftVirtueTitle(${index}, this.value)" placeholder="徳の行動内容" class="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <button type="button" onclick="removeDraftVirtue(${index})" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition shrink-0" title="削除">
@@ -1021,6 +1038,39 @@
             });
             container.innerHTML = html;
             lucide.createIcons();
+        }
+
+        function moveDraftVirtue(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= editingVirtueDraft.length) return;
+            const [movedItem] = editingVirtueDraft.splice(index, 1);
+            editingVirtueDraft.splice(targetIndex, 0, movedItem);
+            renderVirtueMasterList();
+        }
+
+        function handleVirtueDragStart(e, index) {
+            draggedVirtueIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+            e.currentTarget.classList.add('opacity-50', 'border-indigo-400');
+        }
+
+        function handleVirtueDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleVirtueDrop(e, targetIndex) {
+            e.preventDefault();
+            if (draggedVirtueIndex === null || draggedVirtueIndex === targetIndex) return;
+            const [movedItem] = editingVirtueDraft.splice(draggedVirtueIndex, 1);
+            editingVirtueDraft.splice(targetIndex, 0, movedItem);
+            draggedVirtueIndex = null;
+            renderVirtueMasterList();
+        }
+
+        function handleVirtueDragEnd(e) {
+            draggedVirtueIndex = null;
+            e.currentTarget.classList.remove('opacity-50', 'border-indigo-400');
         }
 
         function updateDraftVirtueTitle(index, value) {
