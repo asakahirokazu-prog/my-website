@@ -82,7 +82,7 @@
             100% { opacity: 0; transform: translateY(-5px); }
         }
         .animate-toast {
-            animation: toastFade 1s ease forwards;
+            animation: toastFade 1.2s ease forwards;
         }
         @keyframes floatSlow {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
@@ -94,6 +94,9 @@
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased overflow-y-auto">
+
+    <!-- グローバルトースト通知コンテナ -->
+    <div id="global-toast-container" class="fixed inset-0 z-[90] pointer-events-none flex items-center justify-center p-4"></div>
 
     <header class="bg-white border-b border-slate-200 shadow-xs">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -179,13 +182,16 @@
             </div>
         </div>
 
-        <!-- アクションボタン -->
+        <!-- アクションボタン（「カロリー記録」を削除し、同じ位置に「徳を積む」を配置） -->
         <div class="grid grid-cols-2 gap-2 shrink-0">
-            <button onclick="openCalorieModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5">
-                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> カロリー記録
+            <button onclick="openVirtueModal()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5 active:scale-98">
+                <i data-lucide="heart-handshake" class="w-3.5 h-3.5"></i>
+                <span>徳を積む</span>
+                <span id="virtue-badge-count" class="bg-white/20 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full ml-0.5">0pt</span>
             </button>
-            <button onclick="openSuccessModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 工夫を記録
+            <button onclick="openSuccessModal()" class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2.5 px-3 rounded-xl text-xs font-semibold shadow-sm transition flex items-center justify-center gap-1.5 active:scale-98">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>工夫を記録</span>
             </button>
         </div>
 
@@ -194,10 +200,106 @@
 
     </main>
 
+    <!-- 徳を積むモーダル -->
+    <div id="virtue-modal" class="modal fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl">
+                        <i data-lucide="heart-handshake" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">徳を積む</h3>
+                </div>
+                <button onclick="closeVirtueModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- 現在の徳ポイント・プレ数進捗カード -->
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl p-4 shadow-sm shrink-0 space-y-2.5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] text-indigo-100 font-semibold uppercase tracking-wider">現在の徳ポイント</p>
+                        <div class="flex items-baseline gap-2 mt-0.5">
+                            <span id="virtue-points-display" class="text-2xl font-extrabold tracking-tight">0</span>
+                            <span class="text-xs text-indigo-100 font-medium">pt</span>
+                        </div>
+                    </div>
+                    <div class="text-right bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/15">
+                        <p class="text-[10px] text-indigo-200">現在のプレ数</p>
+                        <p class="text-sm font-extrabold text-amber-300"><span id="virtue-play-count-display">0</span> <span class="text-[10px] font-normal text-white">/ 3</span></p>
+                    </div>
+                </div>
+
+                <!-- 目標ポイント進捗バー -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] text-indigo-100 font-medium">
+                        <span>次のプレ数加算まで</span>
+                        <span id="virtue-next-progress-text">あと 5 pt (0 / 5)</span>
+                    </div>
+                    <div class="w-full h-2 bg-black/25 rounded-full overflow-hidden">
+                        <div id="virtue-progress-bar" class="h-full bg-amber-300 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 徳リストヘッダー＆マスタ管理ボタン -->
+            <div class="flex justify-between items-center shrink-0 pt-1">
+                <span class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-500"></i> 徳リスト
+                </span>
+                <button type="button" onclick="openVirtueMasterModal()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-xl border border-indigo-200 transition flex items-center gap-1">
+                    <i data-lucide="settings-2" class="w-3.5 h-3.5"></i> マスタ管理
+                </button>
+            </div>
+
+            <!-- 徳リスト一覧 -->
+            <div id="virtue-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
+
+            <div class="pt-2 border-t border-slate-100 shrink-0">
+                <button type="button" onclick="closeVirtueModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 徳リスト マスタ管理モーダル -->
+    <div id="virtue-master-modal" class="modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="bg-indigo-100 text-indigo-600 p-2 rounded-xl">
+                        <i data-lucide="list-plus" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900">徳リスト マスタ管理</h3>
+                </div>
+                <button type="button" onclick="closeVirtueMasterModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- 新規徳項目追加フォーム -->
+            <form onsubmit="handleAddVirtueInMaster(event)" class="flex items-center gap-1.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200 shrink-0">
+                <input type="text" id="new-virtue-title" required placeholder="新しい徳の行動（例: ゴミを拾う）" class="flex-1 min-w-0 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button type="submit" class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition shrink-0 flex items-center gap-1">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> 追加
+                </button>
+            </form>
+
+            <!-- 編集可能な徳リスト本体 -->
+            <div id="virtue-master-list-container" class="overflow-y-auto space-y-2 flex-1 pr-1"></div>
+
+            <div class="flex items-center gap-2 pt-2 border-t border-slate-100 shrink-0">
+                <button type="button" onclick="saveVirtueMaster()" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1 text-xs">
+                    <i data-lucide="check" class="w-4 h-4"></i> <span>保存する</span>
+                </button>
+                <button type="button" onclick="closeVirtueMasterModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 px-4 rounded-xl transition text-xs">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 目標達成 超盛大お祝いモーダル -->
     <div id="goal-achievement-modal" class="modal fixed inset-0 bg-slate-950/90 backdrop-blur-lg z-50 flex items-center justify-center p-4 hidden">
         <div class="modal-content bg-gradient-to-b from-amber-400 via-orange-500 to-rose-600 rounded-3xl max-w-md w-full p-8 shadow-2xl text-white text-center space-y-6 border-4 border-amber-200 relative overflow-hidden animate-float">
-            <!-- 光の演出用エフェクト -->
             <div class="absolute -top-20 -left-20 w-40 h-40 bg-white/35 rounded-full blur-3xl pointer-events-none"></div>
             <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-yellow-200/35 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -327,6 +429,10 @@
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">フリーズ数 (個)</label>
                     <input type="number" id="edit-freeze-count" required min="0" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">徳ポイント (pt)</label>
+                    <input type="number" id="edit-virtue-points" required min="0" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div class="flex items-center gap-2 pt-2">
                     <button type="submit" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-1">
@@ -551,6 +657,10 @@
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">目標体重 (kg)</label>
                     <input type="number" id="goal-weight-input" required step="0.1" min="20" max="300" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">プレ数+1に必要な徳ポイント (pt)</label>
+                    <input type="number" id="virtue-threshold-input" required min="1" max="1000" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
                 <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">目標を保存する</button>
             </form>
             <div class="space-y-3 pt-2 text-xs">
@@ -642,7 +752,6 @@
                 { name: 'ミックスナッツ（1袋）', calorie: 200, count: 0 }
             ];
 
-            // 既存の個別データがある場合は統合して重複を排除
             if (legacyFavs || legacyRecs) {
                 const combined = [...(legacyFavs || []), ...(legacyRecs || [])];
                 const unique = [];
@@ -666,6 +775,32 @@
 
         let presetFoods = loadMergedPresetFoods();
 
+        // 徳リスト マスタデータの初期化
+        function loadVirtueMaster() {
+            const savedVirtues = JSON.parse(localStorage.getItem('virtue_master_list'));
+            if (Array.isArray(savedVirtues)) {
+                return savedVirtues.map((item, index) => ({
+                    id: item.id || `virtue_${index}_${Date.now()}`,
+                    title: item.title || '',
+                    count: typeof item.count === 'number' ? item.count : 0
+                }));
+            }
+            const defaults = [
+                { id: 'v_1', title: '道端のゴミを拾う', count: 0 },
+                { id: 'v_2', title: 'ドアを開けて次の人を待つ', count: 0 },
+                { id: 'v_3', title: '笑顔で「ありがとう」を伝える', count: 0 },
+                { id: 'v_4', title: '電車やバスで席を譲る', count: 0 },
+                { id: 'v_5', title: 'トイレや洗面台を綺麗に使う・拭く', count: 0 },
+                { id: 'v_6', title: '靴を揃える', count: 0 }
+            ];
+            localStorage.setItem('virtue_master_list', JSON.stringify(defaults));
+            return defaults;
+        }
+
+        let virtueList = loadVirtueMaster();
+        let virtuePoints = parseInt(localStorage.getItem('virtue_points')) || 0;
+        let virtuePointsPerPlay = parseInt(localStorage.getItem('virtue_points_per_play')) || 5;
+
         let dailyGoal = parseInt(localStorage.getItem('calorie_goal')) || 2000;
         let goalWeight = parseFloat(localStorage.getItem('goal_weight')) || 60.0;
         
@@ -674,6 +809,17 @@
         let freezeCount = parseInt(localStorage.getItem('calorie_freeze_count')) || 0;
 
         let weightChartInstance = null;
+
+        // プレ数（3以上でフリーズ1変換）の共通反映ロジック
+        function applyPlayCountThreshold() {
+            if (playCount >= 3) {
+                const earnedFreezes = Math.floor(playCount / 3);
+                freezeCount = Math.min(1, freezeCount + earnedFreezes);
+                playCount = playCount % 3;
+            }
+            localStorage.setItem('calorie_play_count', playCount);
+            localStorage.setItem('calorie_freeze_count', freezeCount);
+        }
 
         // アプリ固有のカスタムメッセージボックス
         function showAppDialog({ title, message, type = 'alert', onConfirm = null }) {
@@ -719,8 +865,221 @@
             renderApp();
             renderWeightApp();
             renderStrategies();
+            updateVirtueSummaryUI();
             lucide.createIcons();
         });
+
+        /* ==================== 徳を積む機能 ==================== */
+
+        function openVirtueModal() {
+            updateVirtueSummaryUI();
+            renderVirtueList();
+            showModal('virtue-modal');
+        }
+
+        function closeVirtueModal() {
+            hideModal('virtue-modal');
+        }
+
+        function updateVirtueSummaryUI() {
+            // メイン画面ボタン上のバッジ更新
+            const badgeEl = document.getElementById('virtue-badge-count');
+            if (badgeEl) {
+                badgeEl.textContent = `${virtuePoints}pt`;
+            }
+
+            // モーダル内のポイント・進捗表示更新
+            const pointsEl = document.getElementById('virtue-points-display');
+            if (pointsEl) {
+                pointsEl.textContent = virtuePoints;
+            }
+
+            const playEl = document.getElementById('virtue-play-count-display');
+            if (playEl) {
+                playEl.textContent = playCount;
+            }
+
+            const threshold = Math.max(1, virtuePointsPerPlay);
+
+            const modThreshold = virtuePoints % threshold;
+            const remainingToNext = threshold - modThreshold;
+            const progressPercent = (modThreshold / threshold) * 100;
+
+            const nextTextEl = document.getElementById('virtue-next-progress-text');
+            if (nextTextEl) {
+                nextTextEl.textContent = `あと ${remainingToNext} pt (${modThreshold} / ${threshold})`;
+            }
+
+            const barEl = document.getElementById('virtue-progress-bar');
+            if (barEl) {
+                barEl.style.width = `${progressPercent}%`;
+            }
+        }
+
+        function renderVirtueList() {
+            const container = document.getElementById('virtue-list-container');
+            if (!virtueList || virtueList.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-8">徳リストが登録されていません。「マスタ管理」から追加してください。</p>';
+                return;
+            }
+
+            let html = '';
+            virtueList.forEach((item, index) => {
+                const count = typeof item.count === 'number' ? item.count : 0;
+                html += `
+                    <button type="button" onclick="earnVirtuePoint(${index})" class="w-full text-left flex items-center justify-between gap-2 p-3 sm:p-3.5 bg-indigo-50/60 hover:bg-indigo-100/80 active:scale-98 border border-indigo-100 hover:border-indigo-300 rounded-2xl transition group shadow-2xs">
+                        <div class="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
+                            <div class="bg-white text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white p-2 rounded-xl shadow-2xs transition shrink-0 mt-0.5 sm:mt-0">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            </div>
+                            <span class="text-xs font-bold text-slate-800 whitespace-normal break-words leading-snug">${escapeHtml(item.title)}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="text-[10px] font-semibold text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-100">累計 ${count}回</span>
+                            <span class="bg-indigo-500 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-xl shadow-xs group-hover:bg-indigo-600 transition">+1 pt</span>
+                        </div>
+                    </button>
+                `;
+            });
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function earnVirtuePoint(index) {
+            if (!virtueList[index]) return;
+
+            // 項目ごとの実行回数を加算
+            virtueList[index].count = (virtueList[index].count || 0) + 1;
+            localStorage.setItem('virtue_master_list', JSON.stringify(virtueList));
+
+            // 徳ポイントを1加算
+            virtuePoints += 1;
+            localStorage.setItem('virtue_points', virtuePoints);
+
+            // 設定されたポイントごとにプレ数を1加算
+            const threshold = Math.max(1, virtuePointsPerPlay);
+            let bonusTriggered = false;
+            if (virtuePoints % threshold === 0) {
+                playCount += 1;
+                applyPlayCountThreshold();
+                bonusTriggered = true;
+            }
+
+            updateVirtueSummaryUI();
+            renderVirtueList();
+            renderApp();
+
+            if (bonusTriggered) {
+                showGlobalToast(`✨ 徳${threshold}pt区切り達成！プレ数が +1 されました！(現在 ${virtuePoints}pt)`);
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 90,
+                        spread: 80,
+                        origin: { y: 0.5 }
+                    });
+                }
+            } else {
+                const remain = threshold - (virtuePoints % threshold);
+                showGlobalToast(`✨ 徳を積みました！ +1pt（プレ数まであと ${remain}pt）`);
+            }
+        }
+
+        /* ==================== 徳リスト マスタ管理 ==================== */
+
+        let editingVirtueDraft = [];
+
+        function openVirtueMasterModal() {
+            editingVirtueDraft = virtueList.map(item => ({ ...item }));
+            document.getElementById('new-virtue-title').value = '';
+            renderVirtueMasterList();
+            showModal('virtue-master-modal');
+        }
+
+        function closeVirtueMasterModal() {
+            hideModal('virtue-master-modal');
+        }
+
+        function renderVirtueMasterList() {
+            const container = document.getElementById('virtue-master-list-container');
+            if (!editingVirtueDraft || editingVirtueDraft.length === 0) {
+                container.innerHTML = '<p class="text-center text-xs text-slate-400 py-6">登録されている徳リストはありません</p>';
+                return;
+            }
+
+            let html = '';
+            editingVirtueDraft.forEach((item, index) => {
+                const count = typeof item.count === 'number' ? item.count : 0;
+                html += `
+                    <div class="flex items-center gap-1.5 bg-slate-50 p-2 rounded-2xl border border-slate-200">
+                        <span class="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg shrink-0" title="実践回数">${count}回</span>
+                        <input type="text" value="${escapeHtml(item.title)}" onchange="updateDraftVirtueTitle(${index}, this.value)" placeholder="徳の行動内容" class="flex-1 min-w-0 px-2.5 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="button" onclick="removeDraftVirtue(${index})" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition shrink-0" title="削除">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function updateDraftVirtueTitle(index, value) {
+            if (!editingVirtueDraft[index]) return;
+            const trimmed = value.trim();
+            if (trimmed) {
+                editingVirtueDraft[index].title = trimmed;
+            }
+        }
+
+        function handleAddVirtueInMaster(e) {
+            e.preventDefault();
+            const input = document.getElementById('new-virtue-title');
+            const title = input.value.trim();
+            if (!title) return;
+
+            editingVirtueDraft.push({
+                id: `v_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                title,
+                count: 0
+            });
+            input.value = '';
+            renderVirtueMasterList();
+        }
+
+        function removeDraftVirtue(index) {
+            editingVirtueDraft.splice(index, 1);
+            renderVirtueMasterList();
+        }
+
+        function saveVirtueMaster() {
+            const cleaned = editingVirtueDraft
+                .filter(item => item.title && item.title.trim() !== '')
+                .map((item, idx) => ({
+                    id: item.id || `v_${Date.now()}_${idx}`,
+                    title: item.title.trim(),
+                    count: typeof item.count === 'number' ? item.count : 0
+                }));
+
+            virtueList = cleaned;
+            localStorage.setItem('virtue_master_list', JSON.stringify(virtueList));
+            renderVirtueList();
+            closeVirtueMasterModal();
+            showGlobalToast("徳リストを保存しました");
+        }
+
+        function showGlobalToast(message) {
+            const container = document.getElementById('global-toast-container');
+            container.innerHTML = '';
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-900/95 text-white text-xs sm:text-sm font-bold px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md animate-toast border border-white/20 pointer-events-auto text-center max-w-xs sm:max-w-md";
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 1300);
+        }
+
+        /* ==================== 既存締め・ステータス・カロリー・体重処理 ==================== */
 
         function openClosingModal() {
             showModal('closing-modal');
@@ -763,10 +1122,7 @@
                 }
             }
 
-            if (playCount >= 3) {
-                freezeCount = 1;
-                playCount = 0;
-            }
+            applyPlayCountThreshold();
 
             localStorage.setItem('calorie_play_count', playCount);
             localStorage.setItem('calorie_deficit_count', deficitCount);
@@ -776,6 +1132,7 @@
             localStorage.setItem('calorie_records', JSON.stringify(records));
 
             renderApp();
+            updateVirtueSummaryUI();
 
             if (deficitCount > 0 && deficitCount % 5 === 0) {
                 triggerCelebration(deficitCount);
@@ -807,6 +1164,7 @@
             document.getElementById('edit-play-count').value = playCount;
             document.getElementById('edit-streak-count').value = deficitCount;
             document.getElementById('edit-freeze-count').value = freezeCount;
+            document.getElementById('edit-virtue-points').value = virtuePoints;
             showModal('streak-edit-modal');
         }
 
@@ -819,17 +1177,21 @@
             const pCount = parseInt(document.getElementById('edit-play-count').value);
             const sCount = parseInt(document.getElementById('edit-streak-count').value);
             const fCount = parseInt(document.getElementById('edit-freeze-count').value);
+            const vPoints = parseInt(document.getElementById('edit-virtue-points').value);
 
             if (!isNaN(pCount) && pCount >= 0) playCount = pCount;
             if (!isNaN(sCount) && sCount >= 0) deficitCount = sCount;
             if (!isNaN(fCount) && fCount >= 0) freezeCount = fCount;
+            if (!isNaN(vPoints) && vPoints >= 0) virtuePoints = vPoints;
 
             localStorage.setItem('calorie_play_count', playCount);
             localStorage.setItem('calorie_deficit_count', deficitCount);
             localStorage.setItem('calorie_freeze_count', freezeCount);
+            localStorage.setItem('virtue_points', virtuePoints);
 
             closeStreakEditModal();
             renderApp();
+            updateVirtueSummaryUI();
 
             if (deficitCount > 0 && deficitCount % 5 === 0) {
                 triggerCelebration(deficitCount);
@@ -845,12 +1207,15 @@
                     playCount = 0;
                     deficitCount = 0;
                     freezeCount = 0;
+                    virtuePoints = 0;
                     localStorage.setItem('calorie_play_count', playCount);
                     localStorage.setItem('calorie_deficit_count', deficitCount);
                     localStorage.setItem('calorie_freeze_count', freezeCount);
+                    localStorage.setItem('virtue_points', virtuePoints);
 
                     closeStreakEditModal();
                     renderApp();
+                    updateVirtueSummaryUI();
                 }
             });
         }
@@ -886,7 +1251,6 @@
 
         function closeCalorieModal() { hideModal('calorie-modal'); }
 
-        // カウンターが多い順にソートしたプリセット一覧を取得
         function getSortedPresetsWithIndex() {
             return presetFoods
                 .map((item, idx) => ({
@@ -906,7 +1270,6 @@
                 });
         }
 
-        // プリセット食品リストを描画（カウンター数が多い順に表示上位へ）
         function renderPresetFoods() {
             const container = document.getElementById('preset-foods-container');
             if (!presetFoods || presetFoods.length === 0) {
@@ -952,7 +1315,6 @@
             records.unshift({ id: now.toString(), name, calorie, timestamp: new Date(now).toISOString() });
             localStorage.setItem('calorie_records', JSON.stringify(records));
 
-            // 押下されたチップのカウンターをカウントアップして保存・再描画
             const presetIndex = presetFoods.findIndex(f => f.name === name);
             if (presetIndex !== -1) {
                 presetFoods[presetIndex].count = (presetFoods[presetIndex].count || 0) + 1;
@@ -995,11 +1357,9 @@
             renderPresetFoods();
         }
 
-        // チップ一覧編集モーダル用の状態と処理
         let editingPresetDraft = [];
 
         function openPresetEditModal() {
-            // カウンター順を保持したまま編集用ドラフトを作成
             editingPresetDraft = getSortedPresetsWithIndex().map(entry => ({ ...entry.item }));
             document.getElementById('new-preset-name').value = '';
             document.getElementById('new-preset-calorie').value = '';
@@ -1081,7 +1441,6 @@
         }
 
         function savePresetEdits() {
-            // 空の食品名を除外して保存
             const cleaned = editingPresetDraft
                 .filter(item => item.name && item.name.trim() !== '')
                 .map(item => ({
@@ -1309,6 +1668,7 @@
         function openGoalModal() {
             document.getElementById('goal-input').value = dailyGoal;
             document.getElementById('goal-weight-input').value = goalWeight;
+            document.getElementById('virtue-threshold-input').value = virtuePointsPerPlay;
             showModal('goal-modal');
         }
 
@@ -1318,11 +1678,17 @@
             e.preventDefault();
             const val = parseInt(document.getElementById('goal-input').value);
             const gWeight = parseFloat(document.getElementById('goal-weight-input').value);
+            const vThreshold = parseInt(document.getElementById('virtue-threshold-input').value);
             if (val > 0) { dailyGoal = val; localStorage.setItem('calorie_goal', dailyGoal); }
             if (!isNaN(gWeight)) { goalWeight = gWeight; localStorage.setItem('goal_weight', goalWeight); }
+            if (!isNaN(vThreshold) && vThreshold >= 1) {
+                virtuePointsPerPlay = vThreshold;
+                localStorage.setItem('virtue_points_per_play', virtuePointsPerPlay);
+            }
             closeGoalModal();
             renderApp();
             renderWeightApp();
+            updateVirtueSummaryUI();
         }
 
         function exportData() {
@@ -1331,6 +1697,9 @@
                 weight_records: weightRecords,
                 success_strategies: strategies,
                 preset_foods: presetFoods,
+                virtue_master_list: virtueList,
+                virtue_points: virtuePoints,
+                virtue_points_per_play: virtuePointsPerPlay,
                 calorie_goal: dailyGoal,
                 goal_weight: goalWeight,
                 calorie_play_count: playCount,
@@ -1357,7 +1726,6 @@
                     if (imported.weight_records) { weightRecords = imported.weight_records; localStorage.setItem('weight_records', JSON.stringify(weightRecords)); }
                     if (imported.success_strategies) { strategies = imported.success_strategies; localStorage.setItem('success_strategies', JSON.stringify(strategies)); }
                     
-                    // 新形式と旧形式の両方のバックアップからの復元に対応
                     if (imported.preset_foods) {
                         presetFoods = imported.preset_foods.map(item => ({
                             ...item,
@@ -1381,6 +1749,19 @@
                         localStorage.setItem('preset_foods', JSON.stringify(presetFoods));
                     }
 
+                    if (Array.isArray(imported.virtue_master_list)) {
+                        virtueList = imported.virtue_master_list;
+                        localStorage.setItem('virtue_master_list', JSON.stringify(virtueList));
+                    }
+                    if (typeof imported.virtue_points === 'number') {
+                        virtuePoints = imported.virtue_points;
+                        localStorage.setItem('virtue_points', virtuePoints);
+                    }
+                    if (typeof imported.virtue_points_per_play === 'number' && imported.virtue_points_per_play >= 1) {
+                        virtuePointsPerPlay = imported.virtue_points_per_play;
+                        localStorage.setItem('virtue_points_per_play', virtuePointsPerPlay);
+                    }
+
                     if (imported.calorie_goal) { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
                     if (imported.goal_weight) { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
                     if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
@@ -1390,6 +1771,7 @@
                     renderApp();
                     renderWeightApp();
                     renderStrategies();
+                    updateVirtueSummaryUI();
                     closeGoalModal();
                     showAppDialog({ title: '復元完了', message: 'データを正常に復元しました！' });
                 } catch (err) {
@@ -1464,7 +1846,6 @@
             records.unshift({ id: now.toString(), name, calorie, timestamp: new Date(now).toISOString() });
             localStorage.setItem('calorie_records', JSON.stringify(records));
 
-            // いつもの・おすすめリストに未登録であれば自動追加（既存の場合はカロリーとカウンターを更新）
             const existingIndex = presetFoods.findIndex(f => f.name === name);
             if (existingIndex === -1) {
                 presetFoods.push({ name, calorie, count: 1, lastUsed: now });
@@ -1562,7 +1943,7 @@
         }
 
         function escapeHtml(str) {
-            return str.replace(/[&'`<>"]/g, function (match) {
+            return String(str).replace(/[&'`<>"]/g, function (match) {
                 return {
                     '&': '&amp;',
                     "'": '&#x27;',
