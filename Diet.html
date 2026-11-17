@@ -117,7 +117,6 @@
                     <span>締</span>
                 </button>
 
-                <span id="current-date" class="text-xs font-medium bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 hidden sm:inline-block"></span>
                 <button type="button" onclick="openGraphModal()" class="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-slate-100 rounded-lg transition" title="推移グラフ">
                     <i data-lucide="line-chart" class="w-5 h-5"></i>
                 </button>
@@ -130,9 +129,9 @@
 
     <main class="max-w-3xl w-full mx-auto p-3 sm:p-4 flex-1 flex flex-col gap-3 justify-start">
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
+        <div id="summary-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 shrink-0">
             <!-- 体重サマリー -->
-            <div class="bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl p-4 shadow-sm">
+            <div id="weight-summary-card" class="bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl p-4 shadow-sm">
                 <div class="flex justify-between items-start mb-1">
                     <p class="text-slate-300 text-[10px] font-medium uppercase tracking-wider">現在の体重</p>
                     <div class="flex items-center gap-1.5">
@@ -140,6 +139,9 @@
                             <i data-lucide="history" class="w-3 h-3"></i> 履歴
                         </button>
                         <span id="weight-diff-badge" class="px-2 py-0.5 bg-white/15 backdrop-blur-md rounded-full text-[10px]">--</span>
+                        <button type="button" onclick="toggleWeightCardVisibility()" class="px-2 py-0.5 bg-white/20 hover:bg-white/35 backdrop-blur-md rounded-full text-[10px] text-white transition flex items-center gap-1 shadow-sm" title="体重カードを非表示にする">
+                            <i data-lucide="eye-off" class="w-3 h-3"></i>
+                        </button>
                     </div>
                 </div>
                 <h2 id="latest-weight-display" class="text-2xl font-bold tracking-tight">-- <span class="text-sm font-normal">kg</span></h2>
@@ -153,10 +155,15 @@
             <div id="calorie-card-bg" class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between transition-colors duration-300">
                 <div>
                     <div class="flex justify-between items-center mb-1">
-                        <p class="text-emerald-100 text-[10px] font-medium uppercase tracking-wider">カロリー収支</p>
+                        <div class="flex items-center gap-1.5">
+                            <p class="text-emerald-100 text-[10px] font-medium uppercase tracking-wider">カロリー収支</p>
+                            <button type="button" id="show-weight-card-btn" onclick="toggleWeightCardVisibility()" class="hidden px-2 py-0.5 bg-white/20 hover:bg-white/35 backdrop-blur-md rounded-full text-[10px] text-white transition items-center gap-1 shadow-sm" title="体重カードを表示する">
+                                <i data-lucide="scale" class="w-3 h-3"></i> 体重表示
+                            </button>
+                        </div>
                         <div class="flex items-center gap-1.5">
                             <button type="button" onclick="openHistoryModal()" class="px-2 py-0.5 bg-white/20 hover:bg-white/35 backdrop-blur-md rounded-full text-[10px] text-white transition flex items-center gap-1">
-                                <i data-lucide="history" class="w-3 h-3"></i> 今日の履歴
+                                <i data-lucide="history" class="w-3 h-3"></i> 履歴
                             </button>
                             <span id="balance-status" class="px-2 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[10px]">順調</span>
                         </div>
@@ -904,6 +911,7 @@
         let records = safeParseJSON('calorie_records', []);
         let weightRecords = safeParseJSON('weight_records', []);
         let strategies = safeParseJSON('success_strategies', []);
+        let isWeightCardHidden = safeParseBool('hide_weight_card', false);
 
         const DEFAULT_VIRTUE_MASTER = [
             { id: 'v1', title: '靴を揃えた' },
@@ -1038,7 +1046,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            updateDateDisplay();
+            applyWeightCardVisibility();
             renderApp();
             renderWeightApp();
             renderStrategies();
@@ -1047,6 +1055,32 @@
                 lucide.createIcons();
             }
         });
+
+        /* ==================== 体重表示カードの開閉切り替え ==================== */
+        function applyWeightCardVisibility() {
+            const weightCard = document.getElementById('weight-summary-card');
+            const summaryGrid = document.getElementById('summary-cards-grid');
+            const showBtn = document.getElementById('show-weight-card-btn');
+            if (!weightCard || !summaryGrid || !showBtn) return;
+
+            if (isWeightCardHidden) {
+                weightCard.classList.add('hidden');
+                summaryGrid.classList.remove('sm:grid-cols-2');
+                showBtn.classList.remove('hidden');
+                showBtn.classList.add('inline-flex');
+            } else {
+                weightCard.classList.remove('hidden');
+                summaryGrid.classList.add('sm:grid-cols-2');
+                showBtn.classList.add('hidden');
+                showBtn.classList.remove('inline-flex');
+            }
+        }
+
+        function toggleWeightCardVisibility() {
+            isWeightCardHidden = !isWeightCardHidden;
+            localStorage.setItem('hide_weight_card', isWeightCardHidden);
+            applyWeightCardVisibility();
+        }
 
         /* ==================== 徳を積む＆履歴・マスタ管理 ==================== */
 
@@ -1804,14 +1838,6 @@
                     updateVirtueSummaryUI();
                 }
             });
-        }
-
-        function updateDateDisplay() {
-            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' };
-            const dateEl = document.getElementById('current-date');
-            if (dateEl) {
-                dateEl.textContent = new Date().toLocaleDateString('ja-JP', options);
-            }
         }
 
         function showModal(id) {
