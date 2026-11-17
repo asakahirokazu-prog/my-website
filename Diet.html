@@ -780,7 +780,7 @@
                 </button>
             </div>
             <form onsubmit="handleGoalSubmit(event)" class="space-y-3 text-xs border-b border-slate-100 pb-4">
-                <h4 class="font-bold text-slate-700 uppercase text-[10px] tracking-wider">目標の設定</h4>
+                <h4 class="font-bold text-slate-700 uppercase text-[10px] tracking-wider">目標・システム設定</h4>
                 <div>
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">1日の目標摂取カロリー (kcal)</label>
                     <input type="number" id="goal-input" required min="500" max="10000" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
@@ -793,7 +793,20 @@
                     <label class="block font-semibold text-slate-600 mb-1 uppercase text-[10px]">ルーレット発動に必要な徳ポイント (pt)</label>
                     <input type="number" id="virtue-threshold-input" required min="1" max="1000" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
-                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">目標を保存する</button>
+                <!-- 締処理時のお酒質問マスタ設定 -->
+                <div class="pt-1">
+                    <label class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100/70 transition">
+                        <div class="pr-2">
+                            <span class="block font-bold text-slate-700 text-xs">締処理時にお酒を飲んだか確認する</span>
+                            <span class="block text-[10px] text-slate-400 mt-0.5">ONにすると締め実行時に「お酒を飲みましたか？」と質問します</span>
+                        </div>
+                        <div class="relative inline-flex items-center shrink-0">
+                            <input type="checkbox" id="ask-alcohol-checkbox" class="sr-only peer">
+                            <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </div>
+                    </label>
+                </div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl transition shadow-sm">設定を保存する</button>
             </form>
             <div class="space-y-3 pt-2 text-xs">
                 <h4 class="font-bold text-slate-700 uppercase text-[10px] tracking-wider">データのバックアップ・復元 (JSON)</h4>
@@ -881,6 +894,12 @@
             return !isNaN(val) ? val : fallback;
         }
 
+        function safeParseBool(key, fallback) {
+            const raw = localStorage.getItem(key);
+            if (raw === null) return fallback;
+            return raw === 'true';
+        }
+
         /* ==================== アプリケーション状態 ==================== */
         let records = safeParseJSON('calorie_records', []);
         let weightRecords = safeParseJSON('weight_records', []);
@@ -958,6 +977,7 @@
 
         let dailyGoal = safeParseInt('calorie_goal', 2000, 1);
         let goalWeight = safeParseFloat('goal_weight', 60.0);
+        let askAlcoholOnClose = safeParseBool('ask_alcohol_on_close', true);
         
         let playCount = safeParseInt('calorie_play_count', 0, 0);
         let deficitCount = safeParseInt('calorie_deficit_count', 0, 0);
@@ -1656,7 +1676,11 @@
 
         function startClosingFlow() {
             closeClosingModal();
-            showModal('alcohol-check-modal');
+            if (askAlcoholOnClose) {
+                showModal('alcohol-check-modal');
+            } else {
+                executeClosingAction();
+            }
         }
 
         function answerAlcohol(ans) {
@@ -2251,6 +2275,7 @@
             document.getElementById('goal-input').value = dailyGoal;
             document.getElementById('goal-weight-input').value = goalWeight;
             document.getElementById('virtue-threshold-input').value = virtuePointsPerPlay;
+            document.getElementById('ask-alcohol-checkbox').checked = askAlcoholOnClose;
             showModal('goal-modal');
         }
 
@@ -2261,6 +2286,7 @@
             const val = parseInt(document.getElementById('goal-input').value, 10);
             const gWeight = parseFloat(document.getElementById('goal-weight-input').value);
             const vThreshold = parseInt(document.getElementById('virtue-threshold-input').value, 10);
+            const askAlcohol = document.getElementById('ask-alcohol-checkbox').checked;
 
             if (!isNaN(val) && val > 0) {
                 dailyGoal = val;
@@ -2279,6 +2305,9 @@
                 }
             }
 
+            askAlcoholOnClose = askAlcohol;
+            localStorage.setItem('ask_alcohol_on_close', askAlcoholOnClose);
+
             closeGoalModal();
             renderApp();
             renderWeightApp();
@@ -2294,6 +2323,7 @@
                 preset_foods: presetFoods,
                 calorie_goal: dailyGoal,
                 goal_weight: goalWeight,
+                ask_alcohol_on_close: askAlcoholOnClose,
                 calorie_play_count: playCount,
                 calorie_deficit_count: deficitCount,
                 calorie_freeze_count: freezeCount,
@@ -2349,6 +2379,7 @@
 
                     if (typeof imported.calorie_goal === 'number') { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
                     if (typeof imported.goal_weight === 'number') { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
+                    if (typeof imported.ask_alcohol_on_close === 'boolean') { askAlcoholOnClose = imported.ask_alcohol_on_close; localStorage.setItem('ask_alcohol_on_close', askAlcoholOnClose); }
                     if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
                     if (typeof imported.calorie_deficit_count === 'number') { deficitCount = imported.calorie_deficit_count; localStorage.setItem('calorie_deficit_count', deficitCount); }
                     if (typeof imported.calorie_freeze_count === 'number') { freezeCount = imported.calorie_freeze_count; localStorage.setItem('calorie_freeze_count', freezeCount); }
