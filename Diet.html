@@ -2350,6 +2350,7 @@
                 calorie_goal: dailyGoal,
                 goal_weight: goalWeight,
                 ask_alcohol_on_close: askAlcoholOnClose,
+                hide_weight_card: isWeightCardHidden,
                 calorie_play_count: playCount,
                 calorie_deficit_count: deficitCount,
                 calorie_freeze_count: freezeCount,
@@ -2406,6 +2407,7 @@
                     if (typeof imported.calorie_goal === 'number') { dailyGoal = imported.calorie_goal; localStorage.setItem('calorie_goal', dailyGoal); }
                     if (typeof imported.goal_weight === 'number') { goalWeight = imported.goal_weight; localStorage.setItem('goal_weight', goalWeight); }
                     if (typeof imported.ask_alcohol_on_close === 'boolean') { askAlcoholOnClose = imported.ask_alcohol_on_close; localStorage.setItem('ask_alcohol_on_close', askAlcoholOnClose); }
+                    if (typeof imported.hide_weight_card === 'boolean') { isWeightCardHidden = imported.hide_weight_card; localStorage.setItem('hide_weight_card', isWeightCardHidden); }
                     if (typeof imported.calorie_play_count === 'number') { playCount = imported.calorie_play_count; localStorage.setItem('calorie_play_count', playCount); }
                     if (typeof imported.calorie_deficit_count === 'number') { deficitCount = imported.calorie_deficit_count; localStorage.setItem('calorie_deficit_count', deficitCount); }
                     if (typeof imported.calorie_freeze_count === 'number') { freezeCount = imported.calorie_freeze_count; localStorage.setItem('calorie_freeze_count', freezeCount); }
@@ -2435,13 +2437,16 @@
                         localStorage.setItem('calorie_tickets', JSON.stringify(calorieTickets));
                     }
                     
+                    applyWeightCardVisibility();
                     renderApp();
                     renderWeightApp();
                     renderStrategies();
                     updateVirtueSummaryUI();
                     closeGoalModal();
+                    event.target.value = '';
                     showAppDialog({ title: '復元完了', message: 'データを正常に復元しました！' });
                 } catch (err) {
+                    event.target.value = '';
                     showAppDialog({ title: 'エラー', message: 'ファイルの読み込みに失敗しました。正しいJSONファイルかご確認ください。' });
                 }
             };
