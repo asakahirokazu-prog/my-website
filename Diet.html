@@ -486,7 +486,7 @@
                 </div>
             </div>
             <h3 class="text-base font-bold text-slate-900">お酒を飲みましたか？</h3>
-            <p class="text-xs text-slate-500">※「いいえ」を選ぶとプレ数が1加算されます。</p>
+            <p class="text-xs text-slate-500">※カロリー目標達成かつ「いいえ」の場合、プレ数が1加算されます。</p>
             <div class="flex items-center gap-2 pt-2">
                 <button type="button" onclick="answerAlcohol('no')" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-sm">いいえ</button>
                 <button type="button" onclick="answerAlcohol('yes')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-500 font-medium py-2.5 rounded-xl transition text-xs">はい</button>
@@ -1705,6 +1705,8 @@
 
         /* ==================== 締め処理・連続記録 ==================== */
 
+        let pendingNoAlcoholBonus = false;
+
         function openClosingModal() {
             showModal('closing-modal');
         }
@@ -1715,6 +1717,7 @@
 
         function startClosingFlow() {
             closeClosingModal();
+            pendingNoAlcoholBonus = false;
             if (askAlcoholOnClose) {
                 showModal('alcohol-check-modal');
             } else {
@@ -1724,10 +1727,7 @@
 
         function answerAlcohol(ans) {
             hideModal('alcohol-check-modal');
-            if (ans === 'no') {
-                playCount += 1;
-                localStorage.setItem('calorie_play_count', playCount);
-            }
+            pendingNoAlcoholBonus = (ans === 'no');
             executeClosingAction();
         }
 
@@ -1738,11 +1738,20 @@
             let isStreakBroken = false;
             const lostTicketsCount = Array.isArray(calorieTickets) ? calorieTickets.length : 0;
 
-            if (totalIntake < 2400) {
+            // カロリー目標（dailyGoal）以下であれば達成、超過でオーバー扱い
+            if (totalIntake <= dailyGoal) {
                 playCount += 1;
+                if (pendingNoAlcoholBonus) {
+                    playCount += 1;
+                }
                 deficitCount += 1;
+
+                if (playCount >= playsPerFreeze) {
+                    freezeCount = 1;
+                    playCount = 0;
+                }
             } else {
-                if (freezeCount === 1) {
+                if (freezeCount >= 1) {
                     deficitCount += 1;
                     playCount = 0;
                     freezeCount = 0;
@@ -1756,10 +1765,7 @@
                 }
             }
 
-            if (playCount >= playsPerFreeze) {
-                freezeCount = 1;
-                playCount = 0;
-            }
+            pendingNoAlcoholBonus = false;
 
             localStorage.setItem('calorie_play_count', playCount);
             localStorage.setItem('calorie_deficit_count', deficitCount);
@@ -1777,7 +1783,7 @@
                     : '保有していた徳のカロリー券もすべてリセットされました。';
                 showAppDialog({
                     title: '💔 連続記録が途絶えました',
-                    message: `本日の摂取カロリーが上限を超過し、フリーズもなかったため連続記録が0日にリセットされました。\n\n${ticketMsg}\nまた今日から気持ちを切り替えて積み上げていきましょう！`
+                    message: `本日の摂取カロリー（${totalIntake.toLocaleString()}kcal）が目標上限（${dailyGoal.toLocaleString()}kcal）を超過し、フリーズもなかったため連続記録が0日にリセットされました。\n\n${ticketMsg}\nまた今日から気持ちを切り替えて積み上げていきましょう！`
                 });
             } else if (deficitCount > 0 && deficitCount % 5 === 0) {
                 triggerCelebration(deficitCount);
