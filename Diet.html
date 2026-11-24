@@ -1019,7 +1019,7 @@
             overlay.innerHTML = `
                 <div class="bg-white rounded-3xl max-w-xs w-full p-5 shadow-2xl border border-slate-100 space-y-3 text-center">
                     ${title ? `<h4 class="text-sm font-bold text-slate-900">${escapeHtml(title)}</h4>` : ''}
-                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(message)}</p>
+                    <p class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">${escapeHtml(message)}</p>
                     ${buttonsHtml}
                 </div>
             `;
@@ -1735,6 +1735,9 @@
             let totalIntake = 0;
             records.forEach(i => { totalIntake += Number(i.calorie) || 0; });
 
+            let isStreakBroken = false;
+            const lostTicketsCount = Array.isArray(calorieTickets) ? calorieTickets.length : 0;
+
             if (totalIntake < 2400) {
                 playCount += 1;
                 deficitCount += 1;
@@ -1744,9 +1747,12 @@
                     playCount = 0;
                     freezeCount = 0;
                 } else {
+                    isStreakBroken = true;
                     playCount = 0;
                     freezeCount = 0;
                     deficitCount = 0;
+                    calorieTickets = [];
+                    localStorage.setItem('calorie_tickets', JSON.stringify(calorieTickets));
                 }
             }
 
@@ -1765,7 +1771,15 @@
             renderApp();
             updateVirtueSummaryUI();
 
-            if (deficitCount > 0 && deficitCount % 5 === 0) {
+            if (isStreakBroken) {
+                const ticketMsg = lostTicketsCount > 0
+                    ? `保有していた徳のカロリー券（${lostTicketsCount}枚）もすべて没収されました。`
+                    : '保有していた徳のカロリー券もすべてリセットされました。';
+                showAppDialog({
+                    title: '💔 連続記録が途絶えました',
+                    message: `本日の摂取カロリーが上限を超過し、フリーズもなかったため連続記録が0日にリセットされました。\n\n${ticketMsg}\nまた今日から気持ちを切り替えて積み上げていきましょう！`
+                });
+            } else if (deficitCount > 0 && deficitCount % 5 === 0) {
                 triggerCelebration(deficitCount);
             } else {
                 showAppDialog({ title: '締め処理完了', message: '本日の締め処理が完了しました。' });
