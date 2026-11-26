@@ -6,6 +6,53 @@
   <title>マイ リンク集</title>
   <!-- ワンソースで完結するインラインSVGファビコン -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23007bff'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M26 38a12 12 0 0 1 0-17l6-6a12 12 0 0 1 17 17l-3 3'/%3E%3Cpath d='M38 26a12 12 0 0 1 0 17l-6 6a12 12 0 0 1-17-17l3-3'/%3E%3C/g%3E%3C/svg%3E">
+  <!-- Apple Touch Icon 用プレースホルダー（スクリプトでPNGを動的生成してセット） -->
+  <link id="apple-touch-icon" rel="apple-touch-icon" sizes="180x180">
+
+  <script>
+    // 外部ファイルなしで180x180のPNG形式Apple Touch Iconをワンソース生成
+    (function generateAppleTouchIcon() {
+      try {
+        const size = 180;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // 1. 背景色（iOSが自動で角丸に切り抜くため、四隅まで塗りつぶす）
+        ctx.fillStyle = '#007bff';
+        ctx.fillRect(0, 0, size, size);
+
+        // 2. ファビコンの64x64座標系にスケーリングしてリンクアイコンを描画
+        const scale = size / 64;
+        ctx.save();
+        ctx.scale(scale, scale);
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 5.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // SVGパスと同じ形状を描画
+        const path1 = new Path2D('M26 38a12 12 0 0 1 0-17l6-6a12 12 0 0 1 17 17l-3 3');
+        const path2 = new Path2D('M38 26a12 12 0 0 1 0 17l-6 6a12 12 0 0 1-17-17l3-3');
+        ctx.stroke(path1);
+        ctx.stroke(path2);
+
+        ctx.restore();
+
+        // 3. PNGのData URLをlinkタグに適用
+        const linkTag = document.getElementById('apple-touch-icon');
+        if (linkTag) {
+          linkTag.href = canvas.toDataURL('image/png');
+        }
+      } catch (e) {
+        console.error('Apple Touch Iconの生成に失敗しました:', e);
+      }
+    })();
+  </script>
+
   <style>
     :root {
       --bg-color: #f4f7f6;
