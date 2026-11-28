@@ -40,27 +40,9 @@
             background-color: rgba(203, 213, 225, 0.8);
             border-radius: 9999px;
         }
-        /* ドラッグ＆ドロップ中のスタイル */
+        /* タスク行のトランジション */
         .task-item {
-            touch-action: pan-y;
-            transition: background-color 0.15s ease, opacity 0.15s ease;
-        }
-        .drag-handle {
-            touch-action: none;
-            cursor: grab;
-        }
-        .drag-handle:active {
-            cursor: grabbing;
-        }
-        .task-dragging {
-            opacity: 0.45;
-            background-color: #eef2ff !important;
-        }
-        .drop-indicator-top {
-            box-shadow: inset 0 2px 0 0 #4f46e5;
-        }
-        .drop-indicator-bottom {
-            box-shadow: inset 0 -2px 0 0 #4f46e5;
+            transition: background-color 0.15s ease;
         }
     </style>
 </head>
@@ -232,8 +214,8 @@
 
     <script>
         /**
-         * シンプルタスク管理アプリケーション（完全版）
-         * - すべてのイベント処理・描画・ストレージ保存・ドラッグ＆ドロップを完備
+         * シンプルタスク管理アプリケーション
+         * - ドラッグ＆ドロップを廃止し、「一番上に移動」「一番下に移動」ボタンを搭載
          */
         document.addEventListener('DOMContentLoaded', () => {
             // --- ストレージキーとデフォルト定型サジェスト ---
@@ -263,11 +245,6 @@
             let selectedSuggestionIndex = -1;
             let isComposing = false; // 日本語IME変換中フラグ
             let isModalOpen = false;
-
-            // --- ドラッグ＆ドロップ状態 ---
-            let draggedTaskId = null;
-            let dropTargetTaskId = null;
-            let dropPosition = null; // 'top' | 'bottom'
 
             // --- DOM要素の取得 ---
             const taskList = document.getElementById('task-list');
@@ -362,7 +339,7 @@
             }
 
             // =========================================================
-            // タスクの追加・完了切替・一括削除・並べ替え
+            // タスクの追加・完了切替・一括削除・上下端への移動
             // =========================================================
             function addTask(rawText) {
                 const text = (rawText || '').trim();
@@ -399,23 +376,26 @@
                 renderTasks();
             }
 
-            function reorderTasks(sourceId, targetId, position) {
-                if (!sourceId || !targetId || sourceId === targetId) return;
+            /**
+             * 指定したタスクをリストの一番上に移動する
+             */
+            function moveTaskToTop(id) {
+                const index = tasks.findIndex(t => t.id === id);
+                if (index <= 0) return;
+                const [targetTask] = tasks.splice(index, 1);
+                tasks.unshift(targetTask);
+                saveToStorage(STORAGE_KEY_TASKS, tasks);
+                renderTasks();
+            }
 
-                const sourceIndex = tasks.findIndex(t => t.id === sourceId);
-                if (sourceIndex === -1) return;
-
-                const [movedTask] = tasks.splice(sourceIndex, 1);
-                let targetIndex = tasks.findIndex(t => t.id === targetId);
-                if (targetIndex === -1) {
-                    tasks.push(movedTask);
-                } else {
-                    if (position === 'bottom') {
-                        targetIndex += 1;
-                    }
-                    tasks.splice(targetIndex, 0, movedTask);
-                }
-
+            /**
+             * 指定したタスクをリストの一番下に移動する
+             */
+            function moveTaskToBottom(id) {
+                const index = tasks.findIndex(t => t.id === id);
+                if (index === -1 || index === tasks.length - 1) return;
+                const [targetTask] = tasks.splice(index, 1);
+                tasks.push(targetTask);
                 saveToStorage(STORAGE_KEY_TASKS, tasks);
                 renderTasks();
             }
@@ -538,7 +518,6 @@
                         addTask(item.text);
                     });
 
-                    // ×ボタンタップで候補を削除（入力欄へフォーカスさせない）
                     delBtn.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -552,7 +531,7 @@
             }
 
             // =========================================================
-            // タスク一覧の描画＆ドラッグ＆ドロップ（PC・スマホ両対応）
+            // タスク一覧の描画（一番上へ・一番下へボタン付き）
             // =========================================================
             function renderTasks() {
                 const hasCompleted = tasks.some(t => t.completed);
@@ -584,23 +563,15 @@
 
                 emptyState.classList.add('hidden');
 
-                filteredTasks.forEach(task => {
+                filteredTasks.forEach((task, index) => {
+                    const isFirstInView = index === 0;
+                    const isLastInView = index === filteredTasks.length - 1;
+
                     const li = document.createElement('li');
                     li.dataset.taskId = task.id;
-                    li.className = 'task-item group flex items-center gap-3 px-4 sm:px-5 py-3.5 bg-white hover:bg-slate-50/90 select-none';
+                    li.className = 'task-item group flex items-center gap-2.5 sm:gap-3 px-4 sm:px-5 py-3.5 bg-white hover:bg-slate-50/90 select-none';
 
-                    // 1. 左端：ドラッグハンドル（⋮⋮）
-                    const dragHandle = document.createElement('div');
-                    dragHandle.title = 'ドラッグして並べ替え';
-                    dragHandle.setAttribute('aria-label', '並べ替えハンドル');
-                    dragHandle.className = 'drag-handle p-1.5 -ml-1.5 text-slate-300 hover:text-slate-500 active:text-indigo-600 rounded-lg transition-colors shrink-0 flex items-center justify-center';
-                    dragHandle.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z" />
-                        </svg>
-                    `;
-
-                    // 2. 中央：タスクテキスト（タップでも完了切替可能）
+                    // 1. 左側：タスクテキスト（タップでも完了切替可能）
                     const textSpan = document.createElement('span');
                     textSpan.textContent = task.text;
                     textSpan.className = `flex-1 min-w-0 text-sm sm:text-base break-words cursor-pointer py-1 transition-colors ${
@@ -608,13 +579,62 @@
                     }`;
                     textSpan.addEventListener('click', () => toggleTask(task.id));
 
+                    // 2. 中央右寄り：一番上に移動・一番下に移動ボタン群
+                    const moveBtnGroup = document.createElement('div');
+                    moveBtnGroup.className = 'flex items-center gap-1 shrink-0';
+
+                    // 一番上に移動するボタン
+                    const moveTopBtn = document.createElement('button');
+                    moveTopBtn.type = 'button';
+                    moveTopBtn.title = '一番上に移動';
+                    moveTopBtn.setAttribute('aria-label', '一番上に移動');
+                    moveTopBtn.disabled = isFirstInView;
+                    moveTopBtn.className = `p-1.5 rounded-lg border transition-all ${
+                        isFirstInView
+                            ? 'border-transparent text-slate-200 cursor-not-allowed'
+                            : 'border-slate-200/80 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/70 active:scale-90 bg-white'
+                    }`;
+                    moveTopBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 4h14M12 8v12m0-12l-5 5m5-5l5 5" />
+                        </svg>
+                    `;
+                    moveTopBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        moveTaskToTop(task.id);
+                    });
+
+                    // 一番下に移動するボタン
+                    const moveBottomBtn = document.createElement('button');
+                    moveBottomBtn.type = 'button';
+                    moveBottomBtn.title = '一番下に移動';
+                    moveBottomBtn.setAttribute('aria-label', '一番下に移動');
+                    moveBottomBtn.disabled = isLastInView;
+                    moveBottomBtn.className = `p-1.5 rounded-lg border transition-all ${
+                        isLastInView
+                            ? 'border-transparent text-slate-200 cursor-not-allowed'
+                            : 'border-slate-200/80 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/70 active:scale-90 bg-white'
+                    }`;
+                    moveBottomBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 20h14M12 4v12m0 0l-5-5m5 5l5-5" />
+                        </svg>
+                    `;
+                    moveBottomBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        moveTaskToBottom(task.id);
+                    });
+
+                    moveBtnGroup.appendChild(moveTopBtn);
+                    moveBtnGroup.appendChild(moveBottomBtn);
+
                     // 3. 右端：完了チェックボックス
                     const checkBtn = document.createElement('button');
                     checkBtn.type = 'button';
                     checkBtn.setAttribute('role', 'checkbox');
                     checkBtn.setAttribute('aria-checked', task.completed ? 'true' : 'false');
                     checkBtn.setAttribute('aria-label', task.completed ? '未完了に戻す' : '完了にする');
-                    checkBtn.className = `w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all active:scale-90 ${
+                    checkBtn.className = `w-7 h-7 ml-0.5 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all active:scale-90 ${
                         task.completed
                             ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
                             : 'border-slate-300 hover:border-indigo-500 bg-white text-transparent'
@@ -629,81 +649,10 @@
                         toggleTask(task.id);
                     });
 
-                    setupPointerDragAndDrop(dragHandle, li, task.id);
-
-                    li.appendChild(dragHandle);
                     li.appendChild(textSpan);
+                    li.appendChild(moveBtnGroup);
                     li.appendChild(checkBtn);
                     taskList.appendChild(li);
-                });
-            }
-
-            /**
-             * マウス・タッチ両対応のポインタードラッグ並べ替え処理
-             */
-            function setupPointerDragAndDrop(handle, rowElement, taskId) {
-                handle.addEventListener('pointerdown', (e) => {
-                    if (e.pointerType === 'mouse' && e.button !== 0) return;
-                    e.preventDefault();
-
-                    draggedTaskId = taskId;
-                    dropTargetTaskId = null;
-                    dropPosition = null;
-                    rowElement.classList.add('task-dragging');
-
-                    try {
-                        handle.setPointerCapture(e.pointerId);
-                    } catch (_) {}
-
-                    const onPointerMove = (moveEvent) => {
-                        if (!draggedTaskId) return;
-
-                        document.querySelectorAll('.task-item').forEach(el => {
-                            el.classList.remove('drop-indicator-top', 'drop-indicator-bottom');
-                        });
-
-                        const elemBelow = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
-                        const targetRow = elemBelow ? elemBelow.closest('.task-item') : null;
-
-                        if (targetRow && targetRow.dataset.taskId && targetRow.dataset.taskId !== draggedTaskId) {
-                            const rect = targetRow.getBoundingClientRect();
-                            const midY = rect.top + rect.height / 2;
-                            dropTargetTaskId = targetRow.dataset.taskId;
-
-                            if (moveEvent.clientY < midY) {
-                                dropPosition = 'top';
-                                targetRow.classList.add('drop-indicator-top');
-                            } else {
-                                dropPosition = 'bottom';
-                                targetRow.classList.add('drop-indicator-bottom');
-                            }
-                        } else {
-                            dropTargetTaskId = null;
-                            dropPosition = null;
-                        }
-                    };
-
-                    const onPointerUp = () => {
-                        handle.removeEventListener('pointermove', onPointerMove);
-                        handle.removeEventListener('pointerup', onPointerUp);
-                        handle.removeEventListener('pointercancel', onPointerUp);
-
-                        document.querySelectorAll('.task-item').forEach(el => {
-                            el.classList.remove('task-dragging', 'drop-indicator-top', 'drop-indicator-bottom');
-                        });
-
-                        if (draggedTaskId && dropTargetTaskId && dropPosition) {
-                            reorderTasks(draggedTaskId, dropTargetTaskId, dropPosition);
-                        }
-
-                        draggedTaskId = null;
-                        dropTargetTaskId = null;
-                        dropPosition = null;
-                    };
-
-                    handle.addEventListener('pointermove', onPointerMove);
-                    handle.addEventListener('pointerup', onPointerUp);
-                    handle.addEventListener('pointercancel', onPointerUp);
                 });
             }
 
